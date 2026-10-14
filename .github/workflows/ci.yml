@@ -25,7 +25,7 @@ jobs:
           node-version: 22
       - run: bun install --frozen-lockfile
       - run: npx playwright install --with-deps chromium
-      - name: Gate (build, typecheck, lint, 36 tests, config and secret checks)
+      - name: Gate (build, typecheck, lint, 42 tests, config and secret checks)
         run: bash scripts/check.sh
       - name: End to end in Chromium against a fake Cloudflare
         run: |

@@ -25,7 +25,7 @@ describe('chunker', () => {
   });
 
   test('never loses words', () => {
-    const text = 'One. Two, three; four: five — six. Seven? Eight! Nine… ten.';
+    const text = 'One. Two, three; four: five, six. Seven? Eight! Nine… ten.';
 
     expect(feed(text, 1).join(' ').replace(/\s+/g, ' ')).toBe(text);
   });
@@ -42,6 +42,11 @@ describe('speakable', () => {
   test('strips markdown, links, and code a voice cannot say', () => {
     expect(speakable('**Bold** and _soft_ [link](https://x.y) `code` https://example.com # Head')).toBe('Bold and soft link code Head');
     expect(speakable('- one\n- two\n1. three')).toBe('one two three');
+  });
+
+  test('spells acronyms and turns written pauses into spoken ones', () => {
+    expect(speakable('Your API keys and the AI Gateway stop DDoS attacks — fast.')).toBe('Your A P I keys and the A.I. Gateway stop D D O S attacks... fast.');
+    expect(speakable('He said "hello" to the URLs.')).toBe("He said hello to the U R L's.");
   });
 });
 

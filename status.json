@@ -17,13 +17,14 @@
     { "id": "owner-review", "done": false }
   ],
   "proven": [
-    "36 offline tests: sign-in round trip, gateway refusal, upstream routing, turn order, eager gate, barge-in abort, client stories",
-    "15/15 e2e in headless Chromium against a fake Cloudflare: weather card, memory, painting, barge-in, DO alarm timer, goodbye, layout on desktop and phone"
+    "42 offline tests: sign-in round trip, gateway refusal, upstream routing, turn order, streaming, eager gate, barge-in abort, filler and recovery speech, speech prep, client stories",
+    "17/17 e2e in headless Chromium against a fake Cloudflare: weather card, memory, painting, barge-in, DO alarm timer, camera look, goodbye, one-tap re-wake, layout on desktop and phone"
   ],
   "unproven": [
     "Flux over the AI Gateway WebSocket with an OAuth token (scripts/probe.mjs checks it)",
     "Aura 2 linear16 container none through the gateway",
-    "Gemma 4 streamed tool calls through the gateway's OpenAI-compatible route",
+    "GPT-OSS 20B streamed tool calls through the gateway's OpenAI-compatible route",
+    "Live latency against the internal 2,416 ms p50 baseline (scripts/bench.mjs)",
     "Echo cancellation on real hardware"
   ],
   "blocked": [

@@ -1,6 +1,6 @@
 import { Schema } from 'effect';
 import { defineMessageUnion } from 'foldkit/message';
-import { Brain, ServerFrame, Voice } from '../../shared/protocol';
+import { Brain, ServerFrame, SpeechEngine, Voice } from '../../shared/protocol';
 
 export const Message = defineMessageUnion({
   ClickedOrb: {},
@@ -11,6 +11,7 @@ export const Message = defineMessageUnion({
   ClosedSheet: {},
   PickedVoice: { voice: Voice },
   PickedBrain: { brain: Brain },
+  PickedEngine: { engine: SpeechEngine },
   ClickedSignOut: {},
   DismissedVisual: { id: Schema.String },
   DismissedFault: {},

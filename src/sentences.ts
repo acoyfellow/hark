@@ -8,6 +8,8 @@ const END = /[.!?…]["')\]]?(?=\s)|[\n]/gu;
 
 const SOFT = /[,;:—–](?=\s)/gu;
 
+const ACRONYM = /(?<![\p{L}\p{N}_])(DDoS|\p{Lu}{2,5})(s)?(?![\p{L}\p{N}_])/gu;
+
 export const speakable = (text: string): string =>
   text
     .replace(/```[\s\S]*?```/gu, ' ')
@@ -21,6 +23,14 @@ export const speakable = (text: string): string =>
     .replace(/(\*\*|__|\*|_|~~)(?=\S)([^*_~]+?)\1/gu, '$2')
     .replace(/<\/?[a-z][^>]*>/giu, ' ')
     .replace(/[*#>|]/gu, ' ')
+    .replace(/["\u201c\u201d]/gu, '')
+    .replace(/\s*(?:--+|\u2014)\s*/gu, '... ')
+    .replace(ACRONYM, (_match: string, acronym: string, plural: string | undefined) => {
+      const letters = acronym === 'AI' ? 'A.I.' : [...acronym.toUpperCase()].join(' ');
+
+      return plural === undefined ? letters : `${letters}'s`;
+    })
+    .replace(/\s+([,.!?])/gu, '$1')
     .replace(/\s+/gu, ' ')
     .trim();
 

@@ -5,15 +5,18 @@ import {
   type Brain,
   type ClientFrame,
   DEFAULT_BRAIN,
+  DEFAULT_ENGINE,
   DEFAULT_VOICE,
   decodeClientFrame,
   encodeServerFrame,
   type Presence,
   type ServerFrame,
   type Settings,
+  type SpeechEngine,
   speechPacket,
   VOICES,
   type Voice,
+  voicesFor,
 } from '../shared/protocol';
 import { refreshedToken, SignedOut, TOKEN_REFRESH_MARGIN_MS } from './auth/refresh';
 import { DIRECTORY_NAME, type Grant } from './directory';
@@ -32,6 +35,8 @@ const SNAP_TIMEOUT_MS = 6_000;
 
 const BARGE_MIN_CHARS = 6;
 
+const SIGNED_OUT = /sign-in expired|failed \(401\)/u;
+
 type FluxEvent = {
   readonly event: string;
   readonly transcript: string;
@@ -49,6 +54,8 @@ type Running = {
   confirmed: boolean;
   doing: string | null;
   endOfSpeechAt: number;
+  lastAudioAt: number | null;
+  readonly tools: string[];
 };
 
 type Session = {
@@ -100,9 +107,14 @@ const isBrain = (value: string): value is Brain => BRAINS.some((brain) => brain.
 const isVoice = (value: string): value is Voice => VOICES.some((voice) => voice === value);
 
 const thinkingOptions = (brain: Brain): Record<string, unknown> =>
-  brain === '@cf/zai-org/glm-5.3-flash'
+  brain.startsWith('@cf/openai/gpt-oss')
     ? { reasoning_effort: 'low' }
     : { chat_template_kwargs: { enable_thinking: false } };
+
+const engineOf = (value: string): SpeechEngine => (value === 'aura-2' ? 'aura-2' : DEFAULT_ENGINE);
+
+const fitVoice = (voice: Voice, engine: SpeechEngine): Voice =>
+  voicesFor(engine).includes(voice) ? voice : engine === 'aura-1' ? DEFAULT_VOICE : 'luna';
 
 export class Hark extends DurableObject<Env> {
   private session: Session | null = null;
@@ -258,6 +270,8 @@ export class Hark extends DurableObject<Env> {
         void this.wake(session);
         return;
       case 'Played':
+        console.info(JSON.stringify({ event: 'hark.played', turn: frame.turn, current: session.playing === frame.turn }));
+
         if (session.playing === frame.turn) session.playing = null;
 
         if (session.running === null && session.playing === null) {
@@ -287,15 +301,22 @@ export class Hark extends DurableObject<Env> {
     const rows = this.ctx.storage.sql.exec<{ key: string; value: string }>('SELECT key, value FROM settings').toArray();
     const voice = rows.find((row) => row.key === 'voice')?.value ?? '';
     const brain = rows.find((row) => row.key === 'brain')?.value ?? '';
+    const engine = engineOf(rows.find((row) => row.key === 'engine')?.value ?? '');
 
     return {
-      voice: isVoice(voice) ? voice : DEFAULT_VOICE,
+      voice: fitVoice(isVoice(voice) ? voice : DEFAULT_VOICE, engine),
       brain: isBrain(brain) ? brain : DEFAULT_BRAIN,
+      engine,
     };
   }
 
   private saveSettings(settings: Settings) {
-    this.ctx.storage.sql.exec("INSERT OR REPLACE INTO settings (key, value) VALUES ('voice', ?), ('brain', ?)", settings.voice, settings.brain);
+    this.ctx.storage.sql.exec(
+      "INSERT OR REPLACE INTO settings (key, value) VALUES ('voice', ?), ('brain', ?), ('engine', ?)",
+      fitVoice(settings.voice, settings.engine),
+      settings.brain,
+      settings.engine,
+    );
   }
 
   private memories(): string[] {
@@ -661,7 +682,17 @@ export class Hark extends DurableObject<Env> {
 
         return session.upstream.imagine(prompt, AbortSignal.timeout(45_000));
       },
-      setVoice: (voice) => this.saveSettings({ ...this.settings(), voice }),
+      setVoice: (voice) => {
+        const current = this.settings();
+        const engine = voicesFor(current.engine).includes(voice) ? current.engine : current.engine === 'aura-1' ? 'aura-2' : 'aura-1';
+
+        this.saveSettings({ ...current, voice, engine });
+      },
+      see: (image, question) => {
+        if (session.upstream === null) return Promise.reject(new Error('not awake'));
+
+        return session.upstream.see(image, question, AbortSignal.timeout(20_000));
+      },
       fetch: (input, init) => fetch(input, init),
       id: () => crypto.randomUUID(),
     };
@@ -710,13 +741,18 @@ export class Hark extends DurableObject<Env> {
             signal,
           );
         },
-        speak: (text, signal) => live.speak(text, this.settings().voice, signal),
+        speak: (text, signal) => {
+          const { voice, engine } = this.settings();
+
+          return live.speak(text, voice, engine, signal);
+        },
         label: (call) => toolLabel(call.name, parseArguments(call.arguments)),
         tool: (call) => runTool(call.name, parseArguments(call.arguments), host),
         doing: (label) => {
           if (session.running?.turn !== turn) return;
 
           session.running.doing = label;
+          session.running.tools.push(label);
 
           if (session.running.confirmed) this.send(session, { _tag: 'Doing', label });
         },
@@ -731,6 +767,8 @@ export class Hark extends DurableObject<Env> {
           }
 
           session.playing = turn;
+
+          if (session.running !== null) session.running.lastAudioAt = Date.now();
 
           try {
             session.client.send(speechPacket(turn, pcm));
@@ -754,6 +792,8 @@ export class Hark extends DurableObject<Env> {
       confirmed: !eager,
       doing: null,
       endOfSpeechAt: Date.now(),
+      lastAudioAt: null,
+      tools: [],
     };
 
     session.running = running;
@@ -762,6 +802,8 @@ export class Hark extends DurableObject<Env> {
     if (!eager) this.presence(session, 'thinking');
 
     fiber.addObserver((exit) => {
+      this.trace(running, Exit.isSuccess(exit) ? 'spoke' : Cause.hasInterrupts(exit.cause) ? 'interrupted' : 'failed');
+
       if (session.running !== running) return;
 
       session.running = null;
@@ -790,9 +832,38 @@ export class Hark extends DurableObject<Env> {
             ? failure.message
             : 'Something went wrong.';
 
+      if (SIGNED_OUT.test(reason)) {
+        this.send(session, { _tag: 'Fault', reason: 'Your Cloudflare sign-in has run out. Sign in again to keep talking.', fatal: true });
+        this.close(session, 4401, 'signed out');
+        return;
+      }
+
       this.send(session, { _tag: 'Fault', reason, fatal: false });
       this.presence(session, 'listening');
     });
+  }
+
+  private trace(running: Running, outcome: 'spoke' | 'interrupted' | 'failed') {
+    const since = (at: number | null) => (at === null ? null : at - running.endOfSpeechAt);
+    const { brain, engine } = this.settings();
+
+    console.info(
+      JSON.stringify({
+        event: 'hark.turn',
+        turn: running.turn,
+        outcome,
+        eager: running.eager,
+        confirmed: running.confirmed,
+        brain,
+        engine,
+        tools: running.tools,
+        thinkMs: running.progress.firstTokenAt === null ? null : running.progress.firstTokenAt - running.startedAt,
+        firstAudioMs: since(running.progress.firstAudioAt),
+        lastAudioMs: since(running.lastAudioAt),
+        endedMs: since(Date.now()),
+        sentences: running.progress.spoken.length,
+      }),
+    );
   }
 
   private measure(session: Session, running: Running | null) {

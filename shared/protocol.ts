@@ -12,7 +12,22 @@ export const Presence = Schema.Literals(['waking', 'listening', 'hearing', 'thin
 
 export type Presence = typeof Presence.Type;
 
-export const VOICES = [
+export const FAST_VOICES = [
+  'asteria',
+  'luna',
+  'athena',
+  'hera',
+  'stella',
+  'orion',
+  'arcas',
+  'zeus',
+  'orpheus',
+  'angus',
+  'perseus',
+  'helios',
+] as const;
+
+export const RICH_VOICES = [
   'luna',
   'asteria',
   'athena',
@@ -27,23 +42,45 @@ export const VOICES = [
   'draco',
 ] as const;
 
-export const Voice = Schema.Literals(VOICES);
+export const VOICES = [...new Set([...FAST_VOICES, ...RICH_VOICES])] as readonly (
+  | (typeof FAST_VOICES)[number]
+  | (typeof RICH_VOICES)[number]
+)[];
+
+export const Voice = Schema.Literals([...FAST_VOICES, ...RICH_VOICES.filter((voice) => !(FAST_VOICES as readonly string[]).includes(voice))] as const);
 
 export type Voice = typeof Voice.Type;
 
+export const SpeechEngine = Schema.Literals(['aura-1', 'aura-2']);
+
+export type SpeechEngine = typeof SpeechEngine.Type;
+
+export const ENGINES = [
+  { id: 'aura-1', label: 'Quick', note: 'Aura 1. Starts talking fastest.', voices: FAST_VOICES },
+  { id: 'aura-2', label: 'Rich', note: 'Aura 2. More natural, slower to start.', voices: RICH_VOICES },
+] as const;
+
+export const voicesFor = (engine: SpeechEngine): readonly string[] =>
+  engine === 'aura-1' ? FAST_VOICES : RICH_VOICES;
+
 export const BRAINS = [
-  { id: '@cf/google/gemma-4-26b-a4b-it', label: 'Gemma 4', note: 'Quickest. Sees through your camera.' },
-  { id: '@cf/zai-org/glm-5.3-flash', label: 'GLM 5.3 Flash', note: 'Sharper. Sees through your camera.' },
-  { id: '@cf/moonshotai/kimi-k2.6', label: 'Kimi K2.6', note: 'Deepest. Slower to answer.' },
+  { id: '@cf/openai/gpt-oss-20b', label: 'GPT-OSS 20B', note: 'Quickest. The internal voice benchmark baseline.' },
+  { id: '@cf/openai/gpt-oss-120b', label: 'GPT-OSS 120B', note: 'Sharper, a little slower.' },
+  { id: '@cf/google/gemma-4-26b-a4b-it', label: 'Gemma 4', note: 'Thinking off. Measure before you trust it.' },
+  { id: '@cf/moonshotai/kimi-k2.6', label: 'Kimi K2.6', note: 'Deepest. Slow to answer.' },
 ] as const;
 
 export const Brain = Schema.Literals(BRAINS.map((brain) => brain.id));
 
 export type Brain = typeof Brain.Type;
 
-export const DEFAULT_BRAIN: Brain = '@cf/google/gemma-4-26b-a4b-it';
+export const DEFAULT_BRAIN: Brain = '@cf/openai/gpt-oss-20b';
 
-export const DEFAULT_VOICE: Voice = 'luna';
+export const DEFAULT_ENGINE: SpeechEngine = 'aura-1';
+
+export const DEFAULT_VOICE: Voice = 'asteria';
+
+export const EYES_MODEL = '@cf/google/gemma-4-26b-a4b-it';
 
 export const WeatherDay = Schema.Struct({
   day: Schema.String,
@@ -91,7 +128,7 @@ export const Latency = Schema.Struct({
 
 export type Latency = typeof Latency.Type;
 
-export const Settings = Schema.Struct({ voice: Voice, brain: Brain });
+export const Settings = Schema.Struct({ voice: Voice, brain: Brain, engine: SpeechEngine });
 
 export type Settings = typeof Settings.Type;
 

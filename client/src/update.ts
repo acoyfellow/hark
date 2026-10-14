@@ -1,8 +1,8 @@
 import { Match, Option } from 'effect';
 import type { Command, Update } from 'foldkit';
 import { modifyFields } from 'foldkit/struct';
-import { DEFAULT_BRAIN, DEFAULT_VOICE, type ServerFrame, type Settings, type Visual } from '../../shared/protocol';
-import { Send, SignOut, Snap } from './command';
+import { DEFAULT_BRAIN, DEFAULT_ENGINE, DEFAULT_VOICE, type ServerFrame, type Settings, type Visual, voicesFor } from '../../shared/protocol';
+import { SendHome, Send, SignOut, Snap } from './command';
 import { Message } from './message';
 import { MAX_VISUALS, type Model } from './model';
 import type { Resources } from './resources';
@@ -17,7 +17,7 @@ const withVisual = (visuals: readonly Visual[], visual: Visual): Visual[] =>
   [...visuals.filter((each) => each.id !== visual.id), visual].slice(-MAX_VISUALS);
 
 const settingsOf = (model: Model): Settings =>
-  Option.getOrElse(model.settings, () => ({ voice: DEFAULT_VOICE, brain: DEFAULT_BRAIN }));
+  Option.getOrElse(model.settings, () => ({ voice: DEFAULT_VOICE, brain: DEFAULT_BRAIN, engine: DEFAULT_ENGINE }));
 
 const configure = (model: Model, settings: Settings): Return => ({
   model: modifyFields(model, { settings: () => Option.some(settings) }),
@@ -61,7 +61,7 @@ const onFrame = (model: Model, frame: ServerFrame): Return =>
       Ready: ({ settings, account, gateway, memories }): Return => {
         const chosen = Option.getOrElse(model.settings, () => settings);
         const commands: AnyCommand[] =
-          chosen.voice === settings.voice && chosen.brain === settings.brain
+          chosen.voice === settings.voice && chosen.brain === settings.brain && chosen.engine === settings.engine
             ? []
             : [Send({ frame: { _tag: 'Configure', settings: chosen } })];
 
@@ -122,6 +122,13 @@ export const update = (model: Model, message: Message): Return =>
     ClosedSheet: () => ({ model: modifyFields(model, { sheet: () => false }) }),
     PickedVoice: ({ voice }) => configure(model, { ...settingsOf(model), voice }),
     PickedBrain: ({ brain }) => configure(model, { ...settingsOf(model), brain }),
+    PickedEngine: ({ engine }) => {
+      const current = settingsOf(model);
+      const voices = voicesFor(engine);
+      const voice = voices.includes(current.voice) ? current.voice : (voices[0] as Settings['voice']);
+
+      return configure(model, { ...current, engine, voice });
+    },
     ClickedSignOut: () => ({ model: sleep(model, Option.none()), commands: [SignOut()] }),
     DismissedVisual: ({ id }) => ({
       model: modifyFields(model, { visuals: (visuals) => visuals.filter((visual) => visual.id !== id) }),
@@ -134,7 +141,9 @@ export const update = (model: Model, message: Message): Return =>
     StoppedEngine: () => ({ model: modifyFields(model, { connected: () => false }) }),
     ReceivedFrame: ({ frame }) => onFrame(model, frame),
     LostLine: ({ code, reason }) =>
-      model.awake
+      code === 4401
+        ? { model: sleep(model, Option.none()), commands: [SendHome()] }
+        : model.awake
         ? {
             model: sleep(
               modifyFields(model, {

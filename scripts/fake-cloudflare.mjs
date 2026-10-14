@@ -12,6 +12,7 @@ const SCRIPT = (
     'Paint me a lighthouse in a storm.',
     'Tell me a long story about the sea.',
     'Set a timer for four seconds for tea.',
+    'What am I holding up to the camera?',
     "Thanks, that's all for now.",
   ].join('|')
 ).split('|');
@@ -137,6 +138,7 @@ const reply = (messages) => {
       remember: "Got it. Orange it is, and I'll keep that in mind.",
       imagine: 'There you go, a lighthouse holding its own against the storm.',
       set_timer: 'Timer set. Four seconds for tea.',
+      look: 'That looks like a colorful test pattern.',
       rest: 'Talk soon.',
     };
 
@@ -152,6 +154,8 @@ const reply = (messages) => {
   if (text.includes('paint')) return { deltas: words('Painting it now. '), calls: [{ name: 'imagine', args: { prompt: 'A lighthouse in a violent storm, oil painting, warm beam' } }] };
 
   if (text.includes('story')) return { deltas: words(LONG.repeat(3)), calls: [] };
+
+  if (text.includes('camera')) return { deltas: [], calls: [{ name: 'look', args: { question: 'what they are holding' } }] };
 
   if (text.includes('timer')) return { deltas: [], calls: [{ name: 'set_timer', args: { seconds: 4, label: 'tea' } }] };
 
@@ -182,7 +186,14 @@ const server = createServer(async (request, response) => {
   }
 
   if (url.pathname.endsWith('/workers-ai/v1/chat/completions')) {
-    const { messages } = JSON.parse(body.toString('utf8'));
+    const { messages, stream } = JSON.parse(body.toString('utf8'));
+
+    if (stream !== true) {
+      response.writeHead(200, { 'content-type': 'application/json' });
+      response.end(JSON.stringify({ choices: [{ message: { role: 'assistant', content: 'A bright test pattern with colored bars.' } }] }));
+      return;
+    }
+
     const { deltas, calls } = reply(messages);
 
     await sleep(120);
@@ -190,7 +201,7 @@ const server = createServer(async (request, response) => {
     return;
   }
 
-  if (url.pathname.endsWith('/@cf/deepgram/aura-2-en')) {
+  if (url.pathname.endsWith('/@cf/deepgram/aura-2-en') || url.pathname.endsWith('/@cf/deepgram/aura-1')) {
     const { text } = JSON.parse(body.toString('utf8'));
     const pcm = tone(text);
 

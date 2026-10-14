@@ -2,7 +2,7 @@ import { Option } from 'effect';
 import { Command, given, message, model, story } from 'foldkit/story';
 import { describe, expect, test } from 'vitest';
 import type { ServerFrame, Visual } from '../../shared/protocol';
-import { Send, Snap } from './command';
+import { Send, SendHome, Snap } from './command';
 import { initialModel } from './main';
 import { Message } from './message';
 import { update } from './update';
@@ -13,7 +13,7 @@ const frame = (value: ServerFrame) => Message.ReceivedFrame({ frame: value });
 
 const ready = frame({
   _tag: 'Ready',
-  settings: { voice: 'luna', brain: '@cf/google/gemma-4-26b-a4b-it' },
+  settings: { voice: 'asteria', brain: '@cf/openai/gpt-oss-20b', engine: 'aura-1' },
   account: 'Jordan’s Account',
   gateway: 'default',
   memories: 2,
@@ -45,7 +45,7 @@ describe('waking and sleeping', () => {
       model((current) => {
         expect(current.account).toEqual(Option.some('Jordan’s Account'));
         expect(current.memories).toBe(2);
-        expect(Option.map(current.settings, (settings) => settings.voice)).toEqual(Option.some('luna'));
+        expect(Option.map(current.settings, (settings) => settings.voice)).toEqual(Option.some('asteria'));
       }),
       Command.expectNone(),
     );
@@ -194,5 +194,26 @@ describe('settings', () => {
 
   test('a brain picked while awake is sent right away', () => {
     story(update, given(awake), message(Message.PickedBrain({ brain: '@cf/moonshotai/kimi-k2.6' })), Command.expectHas(Send), Command.resolve(Send, Message.CompletedSend()));
+  });
+
+  test('switching to the rich engine keeps a voice it has, or picks its first', () => {
+    story(
+      update,
+      given(awake),
+      message(ready),
+      message(Message.PickedEngine({ engine: 'aura-2' })),
+      model((current) => expect(Option.map(current.settings, (s) => [s.engine, s.voice])).toEqual(Option.some(['aura-2', 'asteria']))),
+      Command.expectHas(Send),
+      Command.resolve(Send, Message.CompletedSend()),
+      message(Message.PickedVoice({ voice: 'draco' })),
+      Command.resolve(Send, Message.CompletedSend()),
+      message(Message.PickedEngine({ engine: 'aura-1' })),
+      model((current) => expect(Option.map(current.settings, (s) => [s.engine, s.voice])).toEqual(Option.some(['aura-1', 'asteria']))),
+      Command.resolve(Send, Message.CompletedSend()),
+    );
+  });
+
+  test('a signed-out line sends you back to the sign-in page', () => {
+    story(update, given(awake), message(Message.LostLine({ code: 4401, reason: 'signed out' })), Command.expectHas(SendHome), Command.resolve(SendHome, Message.CompletedSignOut()));
   });
 });

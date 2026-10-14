@@ -77,13 +77,15 @@ const TICK = Duration.seconds(1);
 
 const isTyping = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
-  (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(target.tagName));
+  (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+
+const isButton = (target: EventTarget | null) => target instanceof HTMLElement && target.tagName === 'BUTTON';
 
 const keys: Stream.Stream<Message> = Stream.fromEventListener<KeyboardEvent>(document, 'keydown').pipe(
   Stream.filter((event) => !event.repeat && !isTyping(event.target)),
-  Stream.filter((event) => event.code === 'Space' || event.key === 'Escape'),
+  Stream.filter((event) => event.key === 'Escape' || (event.code === 'Space' && !isButton(event.target))),
   Stream.map((event): Message => {
-    if (event.code !== 'Space') return Message.PressedEscape();
+    if (event.key === 'Escape') return Message.PressedEscape();
 
     event.preventDefault();
 

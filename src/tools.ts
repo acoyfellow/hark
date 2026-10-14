@@ -1,4 +1,4 @@
-import { VOICES, type Visual, type Voice, type WeatherDay } from '../shared/protocol';
+import { FAST_VOICES, RICH_VOICES, VOICES, type Visual, type Voice, type WeatherDay } from '../shared/protocol';
 
 export type ToolOutcome = {
   readonly content: string;
@@ -14,6 +14,7 @@ export type ToolHost = {
   readonly setTimer: (seconds: number, label: string) => number;
   readonly cancelTimer: (label: string) => number;
   readonly look: () => Promise<string | null>;
+  readonly see: (image: string, question: string) => Promise<string>;
   readonly imagine: (prompt: string) => Promise<string>;
   readonly setVoice: (voice: Voice) => void;
   readonly fetch: typeof fetch;
@@ -255,20 +256,21 @@ const look: Definition = {
   label: () => 'Looking through your camera',
   description:
     'See what the person is showing you through their camera. Use whenever they say look, see, show, "what is this", or ask about something in front of them.',
-  parameters: object({}, []),
-  run: async (_args, host) => {
+  parameters: object({ question: { type: 'string', description: 'What they want to know about what they are showing' } }, []),
+  run: async (args, host) => {
     const frame = await host.look();
 
-    return frame === null
-      ? {
-          content:
-            'The camera is off. Ask them to tap the camera button at the bottom of the screen, then ask again.',
-        }
-      : {
-          content: 'Here is what the camera sees right now. Describe only what is relevant.',
-          image: frame,
-          visual: { _tag: 'Glimpse', id: host.id(), src: frame },
-        };
+    if (frame === null)
+      return {
+        content: 'The camera is off. Ask them to tap the camera button at the bottom of the screen, then ask again.',
+      };
+
+    const seen = await host.see(frame, str(args.question));
+
+    return {
+      content: `The camera shows: ${seen}`,
+      visual: { _tag: 'Glimpse', id: host.id(), src: frame },
+    };
   },
 };
 
@@ -300,7 +302,7 @@ const imagine: Definition = {
 const changeVoice: Definition = {
   name: 'change_voice',
   label: (args) => `Becoming ${str(args.voice, 'someone else')}`,
-  description: `Switch your speaking voice. Feminine: luna, asteria, athena, aurora, thalia, helena. Masculine: orion, apollo, arcas, zeus, odysseus, draco.`,
+  description: `Switch your speaking voice. Quick voices: ${FAST_VOICES.join(', ')}. Rich voices: ${RICH_VOICES.join(', ')}. Feminine: asteria, luna, athena, hera, stella, aurora, thalia, helena. Masculine: orion, arcas, zeus, orpheus, angus, perseus, helios, apollo, odysseus, draco.`,
   parameters: object({ voice: { type: 'string', enum: [...VOICES] } }, ['voice']),
   run: async (args, host) => {
     const voice = VOICES.find((each) => each === str(args.voice).toLowerCase());

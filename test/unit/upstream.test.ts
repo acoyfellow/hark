@@ -23,11 +23,11 @@ describe('every model call goes to the person’s own account through their AI G
     });
 
     await up.chat({ model: 'm', messages: [] }, new AbortController().signal);
-    await up.speak('Hello there.', 'orion', new AbortController().signal);
+    await up.speak('Hello there.', 'orion', 'aura-1', new AbortController().signal);
 
     expect(seen.map((request) => request.url)).toEqual([
       'https://gw/v1/acc%201/default/workers-ai/v1/chat/completions',
-      'https://gw/v1/acc%201/default/workers-ai/@cf/deepgram/aura-2-en',
+      'https://gw/v1/acc%201/default/workers-ai/@cf/deepgram/aura-1',
     ]);
 
     for (const request of seen) {
@@ -37,6 +37,21 @@ describe('every model call goes to the person’s own account through their AI G
     }
 
     expect(await seen[1]?.json()).toEqual({ text: 'Hello there.', speaker: 'orion', encoding: 'linear16', container: 'none', sample_rate: 24000 });
+  });
+
+  it('retries speech once, and routes the rich voice to Aura 2', async () => {
+    const urls: string[] = [];
+    let calls = 0;
+    const up = upstream(credentials, { api: 'https://api', gateway: 'https://gw/v1' }, async (input, init) => {
+      urls.push(new Request(input, init).url);
+      calls += 1;
+
+      return calls === 1 ? new Response('busy', { status: 503 }) : new Response(new Uint8Array(4));
+    });
+
+    await up.speak('Hi.', 'thalia', 'aura-2', new AbortController().signal);
+
+    expect(urls).toEqual(['https://gw/v1/acc%201/default/workers-ai/@cf/deepgram/aura-2-en', 'https://gw/v1/acc%201/default/workers-ai/@cf/deepgram/aura-2-en']);
   });
 
   it('turns an upstream refusal into a readable error', async () => {

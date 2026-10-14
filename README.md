@@ -40,14 +40,14 @@ mic ─▶ AudioWorklet: 16 kHz PCM, 80 ms frames ─▶ WebSocket ─▶ your D
        TurnResumed    ─▶ throw that away, keep listening
        EndOfTurn      ─▶ same words? open the gate : start over
                      │
-     Workers AI brain (streamed, with tools) ─▶ sentence chunker ─▶ Aura 2, 3 in flight, streamed
+     Workers AI brain (streamed, with tools) ─▶ sentence chunker ─▶ Aura 1 or 2, 3 in flight, streamed
                      │                                                    │
                      └─ tools: weather, look up, timers, memory, camera, paint, voice, sleep
                                                                           ▼
                      speaker ◀─ AudioWorklet ring buffer ◀─ 24 kHz PCM, tagged with its turn
 ```
 
-- **It starts before you finish.** Flux sends `EagerEndOfTurn` when it thinks you are probably done. hark starts the model and the voice right then, but holds every byte of audio behind an [Effect](https://effect.website) `Deferred`. If you keep talking (`TurnResumed`), that work is interrupted and thrown away. If Flux confirms the same words (`EndOfTurn`), the gate opens and the first sentence is often ready already. The corner of the screen shows the real number: milliseconds from the end of your speech to its first word.
+- **It starts before you finish.** Flux sends `EagerEndOfTurn` when it thinks you are probably done. hark starts the model and the voice right then, but holds every byte of audio behind an [Effect](https://effect.website) `Deferred`. If you keep talking (`TurnResumed`), that work is interrupted and thrown away. If Flux confirms the same words (`EndOfTurn`), the gate opens and the first sentence is often ready already. The corner of the screen shows the real number: milliseconds from the moment Flux decided you were done to the first audio hark sent.
 - **You can talk over it.** When you start speaking while it talks, it ducks its own volume at once. If what you say turns out to be words and not a cough, the turn's fiber is interrupted, the model request is aborted (so your account stops paying for tokens nobody will hear), and the browser drops everything already queued. What it had said so far goes into its memory of the conversation, marked as cut off.
 - **It speaks in sentences, in order.** The reply streams from the model into a chunker that cuts the first piece early, at a comma if need be, so the voice starts fast. Later pieces are longer, so they sound natural. Up to three sentences are synthesized at once. Each one streams to your speaker as its audio arrives, and they always play in order.
 - **The browser says when it has finished speaking.** Audio arrives faster than it plays. The playback worklet reports when its buffer runs dry, and only then does hark go back to listening.
@@ -60,9 +60,9 @@ mic ─▶ AudioWorklet: 16 kHz PCM, 80 ms frames ─▶ WebSocket ─▶ your D
 | "Who was Ada Lovelace?" | A card with the article, and a short spoken answer | Wikipedia |
 | "Set a timer for ten minutes for the pasta" | A live countdown. When it ends, hark says so, even mid-silence | Durable Object alarm |
 | "Remember that I take my coffee black" / "Forget that" | Saved to, or deleted from, your own memory | Durable Object SQLite |
-| "What am I holding?" (camera on) | It takes one frame and looks | Gemma 4 or GLM 5.3 Flash vision, your account |
+| "What am I holding?" (camera on) | It takes one frame and a vision model describes it, so any brain can see | Gemma 4 vision, your account |
 | "Paint me a lighthouse in a storm" | The picture appears on your screen | FLUX.2 klein, your account |
-| "Talk like a man" / "Use the Orion voice" | It switches voice mid-conversation | Aura 2, your account |
+| "Talk like a man" / "Use the Orion voice" | It switches voice mid-conversation | Aura, your account |
 | "Thanks, that's all" | It says goodbye and closes the microphone | |
 
 ## Built on Cloudflare
@@ -72,8 +72,8 @@ mic ─▶ AudioWorklet: 16 kHz PCM, 80 ms frames ─▶ WebSocket ─▶ your D
 | [Workers](https://developers.cloudflare.com/workers/) | The whole app: sign-in, the page, the voice socket. Static assets ship with it |
 | [Durable Objects](https://developers.cloudflare.com/durable-objects/) | One per person. It holds the browser socket and the Flux socket, runs each turn as a fiber, keeps memory and history in SQLite, and wakes itself with alarms for timers |
 | [Workers AI](https://developers.cloudflare.com/workers-ai/): [Deepgram Flux](https://developers.cloudflare.com/workers-ai/models/flux/) | Hearing, with turn detection made for voice agents: `StartOfTurn`, `EagerEndOfTurn`, `TurnResumed`, `EndOfTurn` |
-| Workers AI: [Aura 2](https://developers.cloudflare.com/workers-ai/models/aura-2-en/) | The voice. 12 to pick from, raw 24 kHz PCM, so nothing gets decoded in the browser |
-| Workers AI: [Gemma 4](https://developers.cloudflare.com/workers-ai/models/gemma-4-26b-a4b-it/), [GLM 5.3 Flash](https://developers.cloudflare.com/workers-ai/models/glm-5.3-flash/), [Kimi K2.6](https://developers.cloudflare.com/workers-ai/models/kimi-k2.6/) | The brain, streamed with tool calls. Pick one in settings |
+| Workers AI: [Aura 1](https://developers.cloudflare.com/workers-ai/models/aura-1/) and [Aura 2](https://developers.cloudflare.com/workers-ai/models/aura-2-en/) | The voice. Aura 1 by default because it starts talking about 4.7 times sooner; Aura 2 when you want it richer. 18 voices, raw 24 kHz PCM, so nothing gets decoded in the browser |
+| Workers AI: [GPT-OSS 20B](https://developers.cloudflare.com/workers-ai/models/gpt-oss-20b/) and 120B, [Gemma 4](https://developers.cloudflare.com/workers-ai/models/gemma-4-26b-a4b-it/), [Kimi K2.6](https://developers.cloudflare.com/workers-ai/models/kimi-k2.6/) | The brain, streamed with tool calls. GPT-OSS 20B by default: it was the fastest and most reliable in the internal voice benchmark. Gemma 4 also gives hark its eyes |
 | Workers AI: [FLUX.2 klein](https://developers.cloudflare.com/workers-ai/models/flux-2-klein-4b/) | Pictures, with FLUX.1 schnell as a fallback |
 | [AI Gateway](https://developers.cloudflare.com/ai-gateway/) | Every model call, including the Flux WebSocket, goes through the person's own authenticated gateway. Their logs, their limits, their analytics |
 | Sign in with Cloudflare (OAuth) | PKCE, the same scopes and grant shape as coil. The token never reaches the browser |
@@ -118,7 +118,7 @@ To talk to it with your own Workers AI instead, put `LOCAL_CF_TOKEN` (from `npx 
 
 ## Proof
 
-`bun run check` builds the client, typechecks both sides, lints, and runs 36 tests:
+`bun run check` builds the client, typechecks both sides, lints, and runs 42 tests:
 
 | Test | Proves |
 | --- | --- |
@@ -131,6 +131,8 @@ To talk to it with your own Workers AI instead, put `LOCAL_CF_TOKEN` (from `npx 
 | Turn: tools | Tool results are fed back and the next round speaks them |
 | Turn: eager gate | Nothing is heard until the turn is confirmed |
 | Turn: barge-in | Interrupting stops the audio and aborts the model request |
+| Turn: filler and recovery | A slow tool gets "One moment.", a fast one gets nothing; a turn that says nothing or fails says so out loud |
+| Speech prep | Acronyms are spelled, quotes and dashes become speech |
 | Client stories | Wake, sleep, hush, faults, visuals, settings that survive a reconnect |
 
 `bun run e2e` drives the real Worker, Durable Object, worklets, and socket in headless Chromium. A synthesized voice plays into the fake microphone. Result ([`receipts/e2e-local.json`](receipts/e2e-local.json)):
@@ -144,7 +146,9 @@ pass  remember stores a fact and shows it
 pass  paint puts a FLUX picture on the screen
 pass  talking over a long answer interrupts it (barge-in)
 pass  a timer counts down and hark announces it when it ends (Durable Object alarm)
+pass  with the camera on, asking about it takes one frame and looks
 pass  saying goodbye puts hark to sleep and closes the microphone
+pass  one tap wakes it again after it slept, and it listens
 pass  the settings sheet shows the stack, voices, and brains
 pass  every upstream call carried the account token through AI Gateway
 pass  the desktop layout keeps cards off the ear and nothing overflows
@@ -153,7 +157,13 @@ pass  the landing page offers Sign in with Cloudflare on desktop and phone
 pass  no uncaught page errors
 ```
 
+`scripts/bench.mjs` measures latency on a real account the way the internal Voice Agents Showcase benchmark did: speech end → Flux end of turn → first sentence of text → first audio, per brain and voice engine, with completion rates next to p50 and p95. It writes `receipts/bench-live.json`. The internal baseline to beat is 2,416 ms p50 (Flux + GPT-OSS + Aura-1).
+
 `scripts/probe.mjs` checks the real thing without a browser. Aura says a sentence, Flux hears it back over the gateway WebSocket, the brain calls a tool, and FLUX paints, all on a real account through its gateway. It writes `receipts/live-probe.json`.
+
+## What we learned before building it
+
+hark's design follows what My AX's own voice mode, the internal Voice Agents Showcase and its benchmark, and the official voice template already taught us: never stop feeding the recognizer, wait for the browser to finish playing, fill slow tools, default to the pipeline that measured fastest, and log every turn. Each finding, its source, and what hark does about it: [`docs/research/voice-agents.md`](docs/research/voice-agents.md).
 
 ## Limits
 

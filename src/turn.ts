@@ -1,4 +1,4 @@
-import { type Cause, Effect, Queue, Schema, Semaphore, Stream } from 'effect';
+import { type Cause, Duration, Effect, Fiber, Queue, Schema, Semaphore, Stream } from 'effect';
 import type { Visual } from '../shared/protocol';
 import { chunker } from './sentences';
 import { type ToolCall, chatEvents } from './sse';
@@ -97,6 +97,57 @@ const spool = (ports: TurnPorts, permits: Semaphore.Semaphore, sentence: string)
     return { sentence, chunks } satisfies Spool;
   });
 
+const speakAll = (
+  ports: TurnPorts,
+  sentences: Stream.Stream<string, TurnFailed>,
+  released: Effect.Effect<void>,
+  progress: Progress,
+) =>
+  Effect.gen(function* () {
+    const permits = yield* Semaphore.make(SPEAKING_AT_ONCE);
+
+    yield* sentences.pipe(
+      Stream.mapEffect((sentence) => spool(ports, permits, sentence)),
+      Stream.buffer({ capacity: 16 }),
+      Stream.flatMap(({ sentence, chunks }) =>
+        Stream.fromQueue(chunks).pipe(
+          Stream.map((pcm): Uint8Array | null => pcm),
+          Stream.concat(Stream.succeed(null)),
+          Stream.map((pcm) => ({ sentence, pcm })),
+        ),
+      ),
+      Stream.runForEach(({ sentence, pcm }) =>
+        Effect.gen(function* () {
+          if (pcm === null) {
+            progress.spoken.push(sentence);
+            return;
+          }
+
+          yield* released;
+          progress.firstAudioAt ??= Date.now();
+          ports.audio(pcm);
+        }),
+      ),
+    );
+  }).pipe(Effect.scoped);
+
+export const FILLER_DELAY = Duration.millis(500);
+
+const FILLERS = ['One moment.', 'Let me check on that.', 'Give me a second.'] as const;
+
+export const RECOVERY = "Sorry, I lost that. Could you say it again?";
+
+let fillerIndex = -1;
+
+const nextFiller = () => {
+  fillerIndex = (fillerIndex + 1) % FILLERS.length;
+
+  return FILLERS[fillerIndex] ?? FILLERS[0];
+};
+
+const say = (ports: TurnPorts, text: string, released: Effect.Effect<void>, progress: Progress) =>
+  speakAll(ports, Stream.make(text), released, progress);
+
 type Round = { readonly text: string; readonly calls: readonly ToolCall[] };
 
 const sentencesOf = async function* (
@@ -136,31 +187,7 @@ const speakRound = (
     });
     const round = { text: '', calls: [] as readonly ToolCall[] };
 
-    const permits = yield* Semaphore.make(SPEAKING_AT_ONCE);
-
-    yield* Stream.fromAsyncIterable(sentencesOf(body, round, progress), failed).pipe(
-      Stream.mapEffect((sentence) => spool(ports, permits, sentence)),
-      Stream.buffer({ capacity: 16 }),
-      Stream.flatMap(({ sentence, chunks }) =>
-        Stream.fromQueue(chunks).pipe(
-          Stream.map((pcm): Uint8Array | null => pcm),
-          Stream.concat(Stream.succeed(null)),
-          Stream.map((pcm) => ({ sentence, pcm })),
-        ),
-      ),
-      Stream.runForEach(({ sentence, pcm }) =>
-        Effect.gen(function* () {
-          if (pcm === null) {
-            progress.spoken.push(sentence);
-            return;
-          }
-
-          yield* released;
-          progress.firstAudioAt ??= Date.now();
-          ports.audio(pcm);
-        }),
-      ),
-    );
+    yield* speakAll(ports, Stream.fromAsyncIterable(sentencesOf(body, round, progress), failed), released, progress);
 
     return round;
   }).pipe(Effect.scoped);
@@ -216,7 +243,23 @@ export const runTurn = (
         })),
       });
 
+      const silent = progress.spoken.length === 0 && text.trim() === '';
+      const filling = { started: false };
+      const filler = silent
+        ? yield* Effect.forkChild(
+            Effect.sleep(FILLER_DELAY).pipe(
+              Effect.andThen(Effect.sync(() => (filling.started = true))),
+              Effect.andThen(say(ports, nextFiller(), released, progress)),
+              Effect.ignore,
+            ),
+          )
+        : null;
       const outcomes = yield* toolTurn(ports, calls);
+
+      if (filler !== null) {
+        if (filling.started) yield* Fiber.join(filler);
+        else yield* Fiber.interrupt(filler);
+      }
 
       outcomes.forEach((outcome, index) => {
         appended.push({ role: 'tool', tool_call_id: calls[index]?.id ?? '', content: outcome.content });
@@ -234,5 +277,11 @@ export const runTurn = (
           });
     }
 
+    if (progress.spoken.length === 0) yield* say(ports, RECOVERY, released, progress).pipe(Effect.ignore);
+
     return { appended, spoken: progress.spoken.join(' '), sleep };
-  });
+  }).pipe(
+    Effect.tapError(() =>
+      progress.firstAudioAt === null ? say(ports, RECOVERY, released, progress).pipe(Effect.ignore) : Effect.void,
+    ),
+  );

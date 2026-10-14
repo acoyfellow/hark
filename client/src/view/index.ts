@@ -1,6 +1,6 @@
 import { Option } from 'effect';
 import type { Document, Html, HtmlBuilder } from 'foldkit/html';
-import { BRAINS, DEFAULT_BRAIN, DEFAULT_VOICE, VOICES } from '../../../shared/protocol';
+import { BRAINS, DEFAULT_BRAIN, DEFAULT_ENGINE, DEFAULT_VOICE, ENGINES, voicesFor } from '../../../shared/protocol';
 import { Message } from '../message';
 import type { Look, Model } from '../model';
 import { Orb, Preview } from '../orb';
@@ -161,7 +161,7 @@ const row = (h: H, label: string, value: string): Html =>
   );
 
 const sheet = (h: H, model: Model): Html => {
-  const settings = Option.getOrElse(model.settings, () => ({ voice: DEFAULT_VOICE, brain: DEFAULT_BRAIN }));
+  const settings = Option.getOrElse(model.settings, () => ({ voice: DEFAULT_VOICE, brain: DEFAULT_BRAIN, engine: DEFAULT_ENGINE }));
 
   return h.div(
     [h.Class(`fixed inset-0 z-50 ${model.sheet ? '' : 'pointer-events-none'}`), h.AriaHidden(!model.sheet)],
@@ -183,10 +183,23 @@ const sheet = (h: H, model: Model): Html => {
               h.button([h.Type('button'), h.AriaLabel('Close'), h.Class('grid size-9 place-items-center rounded-full text-white/60 hover:bg-white/[0.06] hover:text-white'), h.OnClick(Message.ClosedSheet())], [icon(h, 'close', 'size-4')]),
             ],
           ),
-          h.h3([h.Class('mt-7 mb-3 font-mono text-[10.5px] tracking-[0.14em] text-white/40 uppercase')], ['Voice · Aura 2']),
+          h.h3([h.Class('mt-7 mb-3 font-mono text-[10.5px] tracking-[0.14em] text-white/40 uppercase')], ['Voice · Deepgram Aura']),
+          h.div(
+            [h.Class('mb-2 grid grid-cols-2 gap-2')],
+            ENGINES.map((engine) =>
+              option(
+                h,
+                settings.engine === engine.id,
+                h.span([h.Class('flex flex-col gap-0.5')], [h.span([h.Class('font-medium')], [engine.label]), h.span([h.Class('text-[12px] text-white/45')], [engine.note])]),
+                Message.PickedEngine({ engine: engine.id }),
+              ),
+            ),
+          ),
           h.div(
             [h.Class('grid grid-cols-3 gap-2')],
-            VOICES.map((voice) => option(h, settings.voice === voice, voice, Message.PickedVoice({ voice }), 'capitalize')),
+            voicesFor(settings.engine).map((voice) =>
+              option(h, settings.voice === voice, voice, Message.PickedVoice({ voice: voice as typeof settings.voice }), 'capitalize'),
+            ),
           ),
           h.h3([h.Class('mt-7 mb-3 font-mono text-[10.5px] tracking-[0.14em] text-white/40 uppercase')], ['Brain · Workers AI']),
           h.div(
@@ -207,7 +220,7 @@ const sheet = (h: H, model: Model): Html => {
               row(h, 'Account', Option.getOrElse(model.account, () => 'connects when you wake hark')),
               row(h, 'AI Gateway', Option.getOrElse(model.gateway, () => '·')),
               row(h, 'Ears', 'Deepgram Flux'),
-              row(h, 'Voice', 'Deepgram Aura 2'),
+              row(h, 'Voice', settings.engine === 'aura-1' ? 'Deepgram Aura 1' : 'Deepgram Aura 2'),
               row(h, 'Pictures', 'FLUX.2 klein'),
               row(h, 'Memories', String(model.memories)),
             ],

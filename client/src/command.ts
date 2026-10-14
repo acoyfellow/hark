@@ -36,3 +36,8 @@ export const SignOut = Command.define('SignOut', {
     Effect.as(Message.CompletedSignOut()),
   ),
 });
+
+export const SendHome = Command.define('SendHome', {
+  messages: [Message.CompletedSignOut],
+  execute: Navigation.load('/').pipe(Effect.as(Message.CompletedSignOut())),
+});

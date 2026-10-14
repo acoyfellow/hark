@@ -189,9 +189,26 @@ await scenario('a timer counts down and hark announces it when it ends (Durable 
   return { announcedAfterMs: announced.at - set };
 });
 
+await scenario('with the camera on, asking about it takes one frame and looks', async () => {
+  await page.locator('#camera').click();
+  await page.locator('[data-visual=glimpse] img').waitFor({ timeout: 30000 });
+  await page.screenshot({ path: `${SHOTS}/glimpse-desktop.png` });
+  await page.locator('#camera').click();
+});
+
 await scenario('saying goodbye puts hark to sleep and closes the microphone', async () => {
   await waitFrame((frame) => frame._tag === 'Sleep', 40000);
   await page.waitForFunction(() => document.querySelector('#presence')?.textContent === 'Tap to talk', null, { timeout: 15000 });
+});
+
+await scenario('one tap wakes it again after it slept, and it listens', async () => {
+  const tapped = Date.now();
+
+  await page.locator('#orb').click();
+  await waitFrame((frame) => frame._tag === 'Ready', 15000, tapped);
+  await waitFrame((frame) => frame._tag === 'Presence' && frame.presence === 'listening', 15000, tapped);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.querySelector('#presence')?.textContent === 'Tap to talk', null, { timeout: 10000 });
 });
 
 await scenario('the settings sheet shows the stack, voices, and brains', async () => {
@@ -201,7 +218,7 @@ await scenario('the settings sheet shows the stack, voices, and brains', async (
 
   const text = await page.locator('aside[role=dialog]').innerText();
 
-  for (const needle of ['Deepgram Flux', 'Aura 2', 'Gemma 4', 'Luna']) if (!text.toLowerCase().includes(needle.toLowerCase())) throw new Error(`missing ${needle}`);
+  for (const needle of ['Deepgram Flux', 'Aura 1', 'GPT-OSS 20B', 'Asteria', 'Quick', 'Rich']) if (!text.toLowerCase().includes(needle.toLowerCase())) throw new Error(`missing ${needle}`);
 
   await page.keyboard.press('Escape');
 });
@@ -213,7 +230,7 @@ await scenario('every upstream call carried the account token through AI Gateway
 
   if (unauthorized.length > 0) throw new Error(`${unauthorized.length} calls had no token`);
 
-  for (const kind of ['listen', 'completions', 'aura-2-en']) if (!kinds.has(kind)) throw new Error(`no ${kind} call`);
+  for (const kind of ['listen', 'completions', 'aura-1']) if (!kinds.has(kind)) throw new Error(`no ${kind} call`);
 
   return { calls: log.length, kinds: [...kinds] };
 });

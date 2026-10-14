@@ -1,4 +1,4 @@
-import { MIC_SAMPLE_RATE, SPEECH_SAMPLE_RATE, type Voice } from '../shared/protocol';
+import { EYES_MODEL, MIC_SAMPLE_RATE, SPEECH_SAMPLE_RATE, type SpeechEngine, type Voice } from '../shared/protocol';
 
 export type Credentials = {
   readonly accountId: string;
@@ -15,7 +15,10 @@ export const CLOUDFLARE_ORIGINS: Origins = {
 
 export const LISTEN_MODEL = '@cf/deepgram/flux';
 
-export const SPEAK_MODEL = '@cf/deepgram/aura-2-en';
+export const SPEAK_MODELS: Record<SpeechEngine, string> = {
+  'aura-1': '@cf/deepgram/aura-1',
+  'aura-2': '@cf/deepgram/aura-2-en',
+};
 
 export const IMAGINE_MODEL = '@cf/black-forest-labs/flux-2-klein-4b';
 
@@ -53,7 +56,13 @@ const failure = async (step: string, response: Response) =>
 export type Upstream = {
   readonly listen: (options: ListenOptions) => Promise<WebSocket>;
   readonly chat: (body: Record<string, unknown>, signal: AbortSignal) => Promise<ReadableStream<Uint8Array>>;
-  readonly speak: (text: string, voice: Voice, signal: AbortSignal) => Promise<ReadableStream<Uint8Array>>;
+  readonly speak: (
+    text: string,
+    voice: Voice,
+    engine: SpeechEngine,
+    signal: AbortSignal,
+  ) => Promise<ReadableStream<Uint8Array>>;
+  readonly see: (image: string, question: string, signal: AbortSignal) => Promise<string>;
   readonly imagine: (prompt: string, signal: AbortSignal) => Promise<string>;
 };
 
@@ -106,23 +115,61 @@ export const upstream = (
     return response.body;
   },
 
-  speak: async (text, voice, signal) => {
-    const response = await send(`${gatewayBase(origins, credentials)}/${SPEAK_MODEL}`, {
+  speak: async (text, voice, engine, signal) => {
+    const attempt = async () =>
+      send(`${gatewayBase(origins, credentials)}/${SPEAK_MODELS[engine]}`, {
+        method: 'POST',
+        headers: await headersFor(credentials, 'speak', { 'content-type': 'application/json' }),
+        body: JSON.stringify({
+          text,
+          speaker: voice,
+          encoding: 'linear16',
+          container: 'none',
+          sample_rate: SPEECH_SAMPLE_RATE,
+        }),
+        signal,
+      });
+    const first = await attempt().catch((cause: unknown) => {
+      if (signal.aborted) throw cause;
+
+      return null;
+    });
+    const response = first !== null && first.ok && first.body !== null ? first : await attempt();
+
+    if (!response.ok || response.body === null) throw await failure(`Speaking (${engine === 'aura-1' ? 'Aura 1' : 'Aura 2'})`, response);
+
+    return response.body;
+  },
+
+  see: async (image, question, signal) => {
+    const response = await send(`${gatewayBase(origins, credentials)}/v1/chat/completions`, {
       method: 'POST',
-      headers: await headersFor(credentials, 'speak', { 'content-type': 'application/json' }),
+      headers: await headersFor(credentials, 'see', { 'content-type': 'application/json' }),
       body: JSON.stringify({
-        text,
-        speaker: voice,
-        encoding: 'linear16',
-        container: 'none',
-        sample_rate: SPEECH_SAMPLE_RATE,
+        model: EYES_MODEL,
+        max_tokens: 300,
+        chat_template_kwargs: { enable_thinking: false },
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: `Describe what is in this camera frame in two or three plain sentences, focusing on: ${question || 'what the person is showing'}.` },
+              { type: 'image_url', image_url: { url: image } },
+            ],
+          },
+        ],
       }),
       signal,
     });
 
-    if (!response.ok || response.body === null) throw await failure('Speaking (Aura 2)', response);
+    if (!response.ok) throw await failure('Looking', response);
 
-    return response.body;
+    const parsed: unknown = await response.json().catch(() => null);
+    const body = typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : {};
+    const choice = Array.isArray(body.choices) ? (body.choices[0] as Record<string, unknown> | undefined) : undefined;
+    const message = choice?.message as Record<string, unknown> | undefined;
+
+    return typeof message?.content === 'string' ? message.content : 'I could not make out the picture.';
   },
 
   imagine: async (prompt, signal) => {

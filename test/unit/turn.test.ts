@@ -1,7 +1,7 @@
 import { Deferred, Effect, Exit, Fiber } from 'effect';
 import { describe, expect, it } from 'vitest';
 import type { ToolCall } from '../../src/sse';
-import { type ChatMessage, type Progress, runTurn, type TurnPorts } from '../../src/turn';
+import { type ChatMessage, type Progress, RECOVERY, runTurn, type TurnPorts } from '../../src/turn';
 
 const sse = (deltas: readonly string[], calls: readonly ToolCall[] = []) =>
   new ReadableStream<Uint8Array>({
@@ -153,5 +153,41 @@ describe('one spoken turn', () => {
     expect(timeline.slice(0, 2)).toEqual(['chunk', 'heard']);
     expect(h.audio.every((bytes) => bytes % 2 === 0)).toBe(true);
     expect(h.audio.reduce((sum, bytes) => sum + bytes, 0)).toBe(p.spoken.length * 302);
+  });
+
+  it('fills a slow tool call with a short phrase, and stays quiet for a fast one', async () => {
+    const slow = harness([{ deltas: [], calls: [{ id: 'c1', name: 'imagine', arguments: '{}' }] }, { deltas: ['There it is, on your screen now.'] }]);
+    const p = progress();
+
+    await Effect.runPromise(
+      runTurn({ ...slow.ports, tool: async (call) => (await new Promise((r) => setTimeout(r, 700)), { content: `did ${call.name}` }) }, [], Effect.void, p),
+    );
+
+    expect(['One moment.', 'Let me check on that.', 'Give me a second.']).toContain(p.spoken[0]);
+    expect(p.spoken.at(-1)).toBe('There it is, on your screen now.');
+
+    const fast = harness([{ deltas: [], calls: [{ id: 'c1', name: 'remember', arguments: '{}' }] }, { deltas: ['Saved, I will remember that for you.'] }]);
+    const q = progress();
+
+    await Effect.runPromise(runTurn(fast.ports, [], Effect.void, q));
+
+    expect(q.spoken).toEqual(['Saved, I will remember that for you.']);
+  });
+
+  it('says something instead of going silent when the brain returns nothing or fails', async () => {
+    const empty = harness([{ deltas: [] }]);
+    const p = progress();
+
+    await Effect.runPromise(runTurn(empty.ports, [], Effect.void, p));
+    expect(p.spoken).toEqual([RECOVERY]);
+
+    const broken = harness([]);
+    const q = progress();
+    const exit = await Effect.runPromiseExit(
+      runTurn({ ...broken.ports, chat: async () => { throw new Error('Thinking failed (502)'); } }, [], Effect.void, q),
+    );
+
+    expect(Exit.isFailure(exit)).toBe(true);
+    expect(q.spoken).toEqual([RECOVERY]);
   });
 });
