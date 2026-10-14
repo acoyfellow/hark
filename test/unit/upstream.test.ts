@@ -59,4 +59,27 @@ describe('every model call goes to the person’s own account through their AI G
 
     await expect(up.chat({}, new AbortController().signal)).rejects.toThrow(/Thinking failed \(401\).*Gateway authentication/);
   });
+
+  it('falls back to Workers AI REST through the same gateway when the gateway model route refuses the token, then remembers it', async () => {
+    const seen: Request[] = [];
+    const up = upstream(credentials, { api: 'https://api', gateway: 'https://gw/v1' }, async (input, init) => {
+      const request = new Request(input, init);
+
+      seen.push(request);
+
+      return request.url.startsWith('https://gw/') ? new Response('{"errors":[{"code":10000}]}', { status: 401 }) : new Response(new Uint8Array(4));
+    });
+
+    await up.speak('Hi.', 'asteria', 'aura-1', new AbortController().signal);
+    await up.speak('Again.', 'asteria', 'aura-1', new AbortController().signal);
+
+    expect(seen.map((request) => request.url)).toEqual([
+      'https://gw/v1/acc%201/default/workers-ai/@cf/deepgram/aura-1',
+      'https://api/accounts/acc%201/ai/run/@cf/deepgram/aura-1',
+      'https://api/accounts/acc%201/ai/run/@cf/deepgram/aura-1',
+    ]);
+    expect(seen[1]?.headers.get('cf-aig-gateway-id')).toBe('default');
+    expect(seen[1]?.headers.get('authorization')).toBe('Bearer tok');
+    expect(up.routes()).toEqual({ speak: 'rest' });
+  });
 });

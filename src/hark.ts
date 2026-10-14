@@ -867,6 +867,7 @@ export class Hark extends DurableObject<Env> {
         lastAudioMs: since(running.lastAudioAt),
         endedMs: since(Date.now()),
         sentences: running.progress.spoken.length,
+        routes: this.session?.upstream?.routes() ?? {},
         error,
       }),
     );

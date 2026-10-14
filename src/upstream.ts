@@ -64,6 +64,7 @@ export type Upstream = {
   ) => Promise<ReadableStream<Uint8Array>>;
   readonly see: (image: string, question: string, signal: AbortSignal) => Promise<string>;
   readonly imagine: (prompt: string, signal: AbortSignal) => Promise<string>;
+  readonly routes: () => Readonly<Record<string, string>>;
 };
 
 export type ListenOptions = { readonly keyterms: readonly string[] };
@@ -87,7 +88,53 @@ export const upstream = (
   credentials: Credentials,
   origins: Origins = CLOUDFLARE_ORIGINS,
   send: typeof fetch = (input, init) => fetch(input, init),
-): Upstream => ({
+): Upstream => {
+  type Route = 'gateway' | 'rest';
+
+  let preferred: Route = 'gateway';
+  const used: Record<string, string> = {};
+
+  const runModel = async (
+    step: string,
+    model: string,
+    body: () => BodyInit,
+    contentType: string | null,
+    signal: AbortSignal,
+  ): Promise<Response> => {
+    const order: Route[] = preferred === 'gateway' ? ['gateway', 'rest'] : ['rest', 'gateway'];
+    let refused: Response | null = null;
+
+    for (const route of order) {
+      const url =
+        route === 'gateway'
+          ? `${gatewayBase(origins, credentials)}/${model}`
+          : `${origins.api}/accounts/${enc(credentials.accountId)}/ai/run/${model}`;
+      const extra: Record<string, string> = route === 'rest' ? { 'cf-aig-gateway-id': credentials.gateway } : {};
+
+      if (contentType !== null) extra['content-type'] = contentType;
+
+      const response = await send(url, { method: 'POST', headers: await headersFor(credentials, step, extra), body: body(), signal });
+
+      if (response.status === 401 || response.status === 403) {
+        await response.body?.cancel().catch(() => undefined);
+        refused = response;
+        continue;
+      }
+
+      if (response.ok) {
+        preferred = route;
+        used[step] = route;
+      }
+
+      return response;
+    }
+
+    return refused ?? new Response('no route', { status: 502 });
+  };
+
+  return {
+  routes: () => ({ ...used }),
+
   listen: async (options) => {
     const response = await send(listenUrl(origins, credentials, options), {
       headers: await headersFor(credentials, 'listen', { upgrade: 'websocket' }),
@@ -116,19 +163,9 @@ export const upstream = (
   },
 
   speak: async (text, voice, engine, signal) => {
-    const attempt = async () =>
-      send(`${gatewayBase(origins, credentials)}/${SPEAK_MODELS[engine]}`, {
-        method: 'POST',
-        headers: await headersFor(credentials, 'speak', { 'content-type': 'application/json' }),
-        body: JSON.stringify({
-          text,
-          speaker: voice,
-          encoding: 'linear16',
-          container: 'none',
-          sample_rate: SPEECH_SAMPLE_RATE,
-        }),
-        signal,
-      });
+    const body = () =>
+      JSON.stringify({ text, speaker: voice, encoding: 'linear16', container: 'none', sample_rate: SPEECH_SAMPLE_RATE });
+    const attempt = () => runModel('speak', SPEAK_MODELS[engine], body, 'application/json', signal);
     const first = await attempt().catch((cause: unknown) => {
       if (signal.aborted) throw cause;
 
@@ -173,29 +210,21 @@ export const upstream = (
   },
 
   imagine: async (prompt, signal) => {
-    const form = new FormData();
+    const form = () => {
+      const data = new FormData();
 
-    form.set('prompt', prompt);
-    form.set('width', '1024');
-    form.set('height', '1024');
+      data.set('prompt', prompt);
+      data.set('width', '1024');
+      data.set('height', '1024');
 
-    const klein = await send(`${gatewayBase(origins, credentials)}/${IMAGINE_MODEL}`, {
-      method: 'POST',
-      headers: await headersFor(credentials, 'paint'),
-      body: form,
-      signal,
-    });
-
+      return data;
+    };
+    const klein = await runModel('paint', IMAGINE_MODEL, form, null, signal);
     const image = klein.ok ? await imageOf(klein) : null;
 
     if (image !== null) return image;
 
-    const schnell = await send(`${gatewayBase(origins, credentials)}/${IMAGINE_FALLBACK}`, {
-      method: 'POST',
-      headers: await headersFor(credentials, 'paint', { 'content-type': 'application/json' }),
-      body: JSON.stringify({ prompt, steps: 6 }),
-      signal,
-    });
+    const schnell = await runModel('paint', IMAGINE_FALLBACK, () => JSON.stringify({ prompt, steps: 6 }), 'application/json', signal);
 
     if (!schnell.ok) throw await failure('Imagining (FLUX)', schnell);
 
@@ -205,7 +234,8 @@ export const upstream = (
 
     return fallback;
   },
-});
+  };
+};
 
 const imageOf = async (response: Response): Promise<string | null> => {
   const type = response.headers.get('content-type') ?? '';
