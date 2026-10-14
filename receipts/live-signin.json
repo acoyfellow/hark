@@ -76,5 +76,190 @@
     },
     "fault": null,
     "meaning": "Ready then Presence listening: the Durable Object opened Deepgram Flux through the user gateway with the real OAuth token"
+  },
+  "spokenTurn": {
+    "at": "2026-10-14T21:57:43.080Z",
+    "commit": "08c2acd",
+    "origin": "https://hark.coey.dev",
+    "gateway": "ax",
+    "measuredAgainst": "production: real OAuth token, the user AI Gateway, real Workers AI (Flux, gpt-oss-20b, Aura 1)",
+    "input": "macOS say -v Samantha \"What is the weather like in Lisbon right now?\" + 8 s silence, Chromium fake mic; the fake device loops the file, so turns 2-5 are the same question again",
+    "windowSeconds": 45,
+    "edgeCheck": "edge ok: https://hark.coey.dev (landing, OAuth redirect with AI scopes, socket refuses strangers)",
+    "tagsInOrder": [
+      "Presence:waking",
+      "Ready",
+      "Presence:listening",
+      "Presence:hearing",
+      "Presence:thinking",
+      "Doing:Checking the sky over Lisbon",
+      "Presence:speaking",
+      "Measured",
+      "Show:Weather",
+      "SpeechEnd",
+      "Duck",
+      "Interrupt",
+      "Presence:hearing",
+      "Presence:thinking",
+      "Presence:speaking",
+      "Measured",
+      "SpeechEnd",
+      "Presence:listening",
+      "Presence:hearing",
+      "Presence:thinking",
+      "Presence:speaking",
+      "Measured",
+      "SpeechEnd",
+      "Presence:listening",
+      "Presence:hearing",
+      "Presence:thinking",
+      "Presence:speaking",
+      "Measured",
+      "SpeechEnd",
+      "Presence:listening",
+      "Presence:hearing",
+      "Presence:thinking",
+      "Presence:speaking",
+      "Measured",
+      "SpeechEnd"
+    ],
+    "binary": {
+      "frames": 2243,
+      "bytes": 1316334,
+      "firstAtMs": 4971
+    },
+    "measured": [
+      {
+        "total": 188,
+        "model": 1233,
+        "speech": 0,
+        "eager": true
+      },
+      {
+        "total": 251,
+        "model": 279,
+        "speech": 433,
+        "eager": true
+      },
+      {
+        "total": 319,
+        "model": 349,
+        "speech": 441,
+        "eager": true
+      },
+      {
+        "total": 489,
+        "model": 296,
+        "speech": 344,
+        "eager": true
+      },
+      {
+        "total": 408,
+        "model": 314,
+        "speech": 481,
+        "eager": true
+      }
+    ],
+    "fault": null,
+    "harkTurn": [
+      {
+        "event": "hark.turn",
+        "turn": 1,
+        "outcome": "spoke",
+        "eager": true,
+        "confirmed": true,
+        "brain": "@cf/openai/gpt-oss-20b",
+        "engine": "aura-1",
+        "tools": [
+          "Checking the sky over Lisbon"
+        ],
+        "thinkMs": 1733,
+        "firstAudioMs": 188,
+        "lastAudioMs": 1256,
+        "endedMs": 1256,
+        "sentences": 3,
+        "routes": {
+          "speak": "rest"
+        },
+        "error": null
+      },
+      {
+        "event": "hark.turn",
+        "turn": 2,
+        "outcome": "spoke",
+        "eager": true,
+        "confirmed": true,
+        "brain": "@cf/openai/gpt-oss-20b",
+        "engine": "aura-1",
+        "tools": [],
+        "thinkMs": 279,
+        "firstAudioMs": 251,
+        "lastAudioMs": 465,
+        "endedMs": 465,
+        "sentences": 2,
+        "routes": {
+          "speak": "rest"
+        },
+        "error": null
+      },
+      {
+        "event": "hark.turn",
+        "turn": 3,
+        "outcome": "spoke",
+        "eager": true,
+        "confirmed": true,
+        "brain": "@cf/openai/gpt-oss-20b",
+        "engine": "aura-1",
+        "tools": [],
+        "thinkMs": 349,
+        "firstAudioMs": 319,
+        "lastAudioMs": 795,
+        "endedMs": 795,
+        "sentences": 2,
+        "routes": {
+          "speak": "rest"
+        },
+        "error": null
+      },
+      {
+        "event": "hark.turn",
+        "turn": 4,
+        "outcome": "spoke",
+        "eager": true,
+        "confirmed": true,
+        "brain": "@cf/openai/gpt-oss-20b",
+        "engine": "aura-1",
+        "tools": [],
+        "thinkMs": 296,
+        "firstAudioMs": 489,
+        "lastAudioMs": 910,
+        "endedMs": 910,
+        "sentences": 2,
+        "routes": {
+          "speak": "rest"
+        },
+        "error": null
+      },
+      {
+        "event": "hark.turn",
+        "turn": 5,
+        "outcome": "spoke",
+        "eager": true,
+        "confirmed": true,
+        "brain": "@cf/openai/gpt-oss-20b",
+        "engine": "aura-1",
+        "tools": [],
+        "thinkMs": 314,
+        "firstAudioMs": 408,
+        "lastAudioMs": 741,
+        "endedMs": 741,
+        "sentences": 2,
+        "routes": {
+          "speak": "rest"
+        },
+        "error": null
+      }
+    ],
+    "screenshot": "receipts/shots/prod-turn.png (account name blanked)"
   }
 }
