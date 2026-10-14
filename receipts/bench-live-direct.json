@@ -1,0 +1,552 @@
+{
+  "kind": "hark.bench",
+  "at": "2026-10-14T19:50:57.686Z",
+  "route": "workers-ai direct",
+  "gateway": "default",
+  "runs": 5,
+  "method": "speech end -> Flux EndOfTurn -> first sentence of streamed text -> first Aura audio byte, measured from this machine; compare with the internal showcase baseline Flux + GPT-OSS + Aura-1 at 2,416 ms p50 (browser receipt)",
+  "internalBaselineMs": {
+    "p50": 2416,
+    "p95": 5975
+  },
+  "summary": [
+    {
+      "pipeline": "Flux + gpt-oss-20b + aura-1",
+      "completed": "5/5",
+      "finalTranscript": {
+        "p50": 377,
+        "p95": 585
+      },
+      "firstText": {
+        "p50": 478,
+        "p95": 792
+      },
+      "firstAudioByte": {
+        "p50": 499,
+        "p95": 523
+      },
+      "ttfa": {
+        "p50": 1642,
+        "p95": 1789
+      },
+      "ttfaWithEagerTurn": {
+        "p50": 1395,
+        "p95": 1728
+      }
+    },
+    {
+      "pipeline": "Flux + gpt-oss-20b + aura-2",
+      "completed": "4/5",
+      "finalTranscript": {
+        "p50": 736,
+        "p95": 778
+      },
+      "firstText": {
+        "p50": 483,
+        "p95": 724
+      },
+      "firstAudioByte": {
+        "p50": 475,
+        "p95": 526
+      },
+      "ttfa": {
+        "p50": 1871,
+        "p95": 1992
+      },
+      "ttfaWithEagerTurn": {
+        "p50": 1778,
+        "p95": 1798
+      }
+    },
+    {
+      "pipeline": "Flux + gpt-oss-120b + aura-1",
+      "completed": "5/5",
+      "finalTranscript": {
+        "p50": 311,
+        "p95": 690
+      },
+      "firstText": {
+        "p50": 664,
+        "p95": 931
+      },
+      "firstAudioByte": {
+        "p50": 483,
+        "p95": 516
+      },
+      "ttfa": {
+        "p50": 1720,
+        "p95": 2367
+      },
+      "ttfaWithEagerTurn": {
+        "p50": 1568,
+        "p95": 2174
+      }
+    },
+    {
+      "pipeline": "Flux + gpt-oss-120b + aura-2",
+      "completed": "4/5",
+      "finalTranscript": {
+        "p50": 720,
+        "p95": 768
+      },
+      "firstText": {
+        "p50": 606,
+        "p95": 795
+      },
+      "firstAudioByte": {
+        "p50": 515,
+        "p95": 536
+      },
+      "ttfa": {
+        "p50": 1746,
+        "p95": 2145
+      },
+      "ttfaWithEagerTurn": {
+        "p50": 1263,
+        "p95": 1955
+      }
+    },
+    {
+      "pipeline": "Flux + gemma-4-26b-a4b-it + aura-1",
+      "completed": "4/5",
+      "finalTranscript": {
+        "p50": 716,
+        "p95": 932
+      },
+      "firstText": {
+        "p50": 441,
+        "p95": 459
+      },
+      "firstAudioByte": {
+        "p50": 655,
+        "p95": 689
+      },
+      "ttfa": {
+        "p50": 2388,
+        "p95": 2462
+      },
+      "ttfaWithEagerTurn": {
+        "p50": 1731,
+        "p95": 1903
+      }
+    },
+    {
+      "pipeline": "Flux + gemma-4-26b-a4b-it + aura-2",
+      "completed": "4/5",
+      "finalTranscript": {
+        "p50": 661,
+        "p95": 771
+      },
+      "firstText": {
+        "p50": 522,
+        "p95": 653
+      },
+      "firstAudioByte": {
+        "p50": 529,
+        "p95": 549
+      },
+      "ttfa": {
+        "p50": 2103,
+        "p95": 2113
+      },
+      "ttfaWithEagerTurn": {
+        "p50": 1704,
+        "p95": 1704
+      }
+    }
+  ],
+  "results": [
+    {
+      "brain": "@cf/openai/gpt-oss-20b",
+      "engine": "aura-1",
+      "run": 0,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 377,
+      "eagerMs": null,
+      "firstTextMs": 436,
+      "firstSentenceMs": 458,
+      "firstAudioByteMs": 434,
+      "ttfaMs": 1269,
+      "ttfaEagerMs": null
+    },
+    {
+      "brain": "@cf/openai/gpt-oss-20b",
+      "engine": "aura-1",
+      "run": 1,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 287,
+      "eagerMs": 277,
+      "firstTextMs": 756,
+      "firstSentenceMs": 932,
+      "firstAudioByteMs": 519,
+      "ttfaMs": 1738,
+      "ttfaEagerMs": 1728
+    },
+    {
+      "brain": "@cf/openai/gpt-oss-20b",
+      "engine": "aura-1",
+      "run": 2,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 215,
+      "eagerMs": null,
+      "firstTextMs": 343,
+      "firstSentenceMs": 414,
+      "firstAudioByteMs": 499,
+      "ttfaMs": 1128,
+      "ttfaEagerMs": null
+    },
+    {
+      "brain": "@cf/openai/gpt-oss-20b",
+      "engine": "aura-1",
+      "run": 3,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 383,
+      "eagerMs": 96,
+      "firstTextMs": 792,
+      "firstSentenceMs": 811,
+      "firstAudioByteMs": 448,
+      "ttfaMs": 1642,
+      "ttfaEagerMs": 1355
+    },
+    {
+      "brain": "@cf/openai/gpt-oss-20b",
+      "engine": "aura-1",
+      "run": 4,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 585,
+      "eagerMs": 191,
+      "firstTextMs": 478,
+      "firstSentenceMs": 681,
+      "firstAudioByteMs": 523,
+      "ttfaMs": 1789,
+      "ttfaEagerMs": 1395
+    },
+    {
+      "brain": "@cf/openai/gpt-oss-20b",
+      "engine": "aura-2",
+      "run": 0,
+      "ok": false,
+      "error": "no EndOfTurn in 20 s"
+    },
+    {
+      "brain": "@cf/openai/gpt-oss-20b",
+      "engine": "aura-2",
+      "run": 1,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 778,
+      "eagerMs": 584,
+      "firstTextMs": 724,
+      "firstSentenceMs": 755,
+      "firstAudioByteMs": 459,
+      "ttfaMs": 1992,
+      "ttfaEagerMs": 1798
+    },
+    {
+      "brain": "@cf/openai/gpt-oss-20b",
+      "engine": "aura-2",
+      "run": 2,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 123,
+      "eagerMs": null,
+      "firstTextMs": 483,
+      "firstSentenceMs": 572,
+      "firstAudioByteMs": 334,
+      "ttfaMs": 1029,
+      "ttfaEagerMs": null
+    },
+    {
+      "brain": "@cf/openai/gpt-oss-20b",
+      "engine": "aura-2",
+      "run": 3,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 339,
+      "eagerMs": 155,
+      "firstTextMs": 427,
+      "firstSentenceMs": 511,
+      "firstAudioByteMs": 475,
+      "ttfaMs": 1325,
+      "ttfaEagerMs": 1141
+    },
+    {
+      "brain": "@cf/openai/gpt-oss-20b",
+      "engine": "aura-2",
+      "run": 4,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 736,
+      "eagerMs": 643,
+      "firstTextMs": 456,
+      "firstSentenceMs": 609,
+      "firstAudioByteMs": 526,
+      "ttfaMs": 1871,
+      "ttfaEagerMs": 1778
+    },
+    {
+      "brain": "@cf/openai/gpt-oss-120b",
+      "engine": "aura-1",
+      "run": 0,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 336,
+      "eagerMs": 184,
+      "firstTextMs": 714,
+      "firstSentenceMs": 897,
+      "firstAudioByteMs": 487,
+      "ttfaMs": 1720,
+      "ttfaEagerMs": 1568
+    },
+    {
+      "brain": "@cf/openai/gpt-oss-120b",
+      "engine": "aura-1",
+      "run": 1,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 125,
+      "eagerMs": 125,
+      "firstTextMs": 664,
+      "firstSentenceMs": 664,
+      "firstAudioByteMs": 323,
+      "ttfaMs": 1112,
+      "ttfaEagerMs": 1112
+    },
+    {
+      "brain": "@cf/openai/gpt-oss-120b",
+      "engine": "aura-1",
+      "run": 2,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 92,
+      "eagerMs": null,
+      "firstTextMs": 404,
+      "firstSentenceMs": 619,
+      "firstAudioByteMs": 447,
+      "ttfaMs": 1158,
+      "ttfaEagerMs": null
+    },
+    {
+      "brain": "@cf/openai/gpt-oss-120b",
+      "engine": "aura-1",
+      "run": 3,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 311,
+      "eagerMs": 118,
+      "firstTextMs": 931,
+      "firstSentenceMs": 1573,
+      "firstAudioByteMs": 483,
+      "ttfaMs": 2367,
+      "ttfaEagerMs": 2174
+    },
+    {
+      "brain": "@cf/openai/gpt-oss-120b",
+      "engine": "aura-1",
+      "run": 4,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 690,
+      "eagerMs": 198,
+      "firstTextMs": 481,
+      "firstSentenceMs": 713,
+      "firstAudioByteMs": 516,
+      "ttfaMs": 1919,
+      "ttfaEagerMs": 1427
+    },
+    {
+      "brain": "@cf/openai/gpt-oss-120b",
+      "engine": "aura-2",
+      "run": 0,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 359,
+      "eagerMs": 121,
+      "firstTextMs": 606,
+      "firstSentenceMs": 755,
+      "firstAudioByteMs": 387,
+      "ttfaMs": 1501,
+      "ttfaEagerMs": 1263
+    },
+    {
+      "brain": "@cf/openai/gpt-oss-120b",
+      "engine": "aura-2",
+      "run": 1,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 768,
+      "eagerMs": 578,
+      "firstTextMs": 795,
+      "firstSentenceMs": 841,
+      "firstAudioByteMs": 536,
+      "ttfaMs": 2145,
+      "ttfaEagerMs": 1955
+    },
+    {
+      "brain": "@cf/openai/gpt-oss-120b",
+      "engine": "aura-2",
+      "run": 2,
+      "ok": false,
+      "error": "no EndOfTurn in 20 s"
+    },
+    {
+      "brain": "@cf/openai/gpt-oss-120b",
+      "engine": "aura-2",
+      "run": 3,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 389,
+      "eagerMs": 110,
+      "firstTextMs": 502,
+      "firstSentenceMs": 670,
+      "firstAudioByteMs": 367,
+      "ttfaMs": 1426,
+      "ttfaEagerMs": 1147
+    },
+    {
+      "brain": "@cf/openai/gpt-oss-120b",
+      "engine": "aura-2",
+      "run": 4,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 720,
+      "eagerMs": 189,
+      "firstTextMs": 475,
+      "firstSentenceMs": 511,
+      "firstAudioByteMs": 515,
+      "ttfaMs": 1746,
+      "ttfaEagerMs": 1215
+    },
+    {
+      "brain": "@cf/google/gemma-4-26b-a4b-it",
+      "engine": "aura-1",
+      "run": 0,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 353,
+      "eagerMs": 133,
+      "firstTextMs": 459,
+      "firstSentenceMs": 492,
+      "firstAudioByteMs": 655,
+      "ttfaMs": 1500,
+      "ttfaEagerMs": 1280
+    },
+    {
+      "brain": "@cf/google/gemma-4-26b-a4b-it",
+      "engine": "aura-1",
+      "run": 1,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 932,
+      "eagerMs": 201,
+      "firstTextMs": 441,
+      "firstSentenceMs": 977,
+      "firstAudioByteMs": 553,
+      "ttfaMs": 2462,
+      "ttfaEagerMs": 1731
+    },
+    {
+      "brain": "@cf/google/gemma-4-26b-a4b-it",
+      "engine": "aura-1",
+      "run": 2,
+      "ok": false,
+      "error": "no EndOfTurn in 20 s"
+    },
+    {
+      "brain": "@cf/google/gemma-4-26b-a4b-it",
+      "engine": "aura-1",
+      "run": 3,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 362,
+      "eagerMs": 165,
+      "firstTextMs": 402,
+      "firstSentenceMs": 465,
+      "firstAudioByteMs": 636,
+      "ttfaMs": 1463,
+      "ttfaEagerMs": 1266
+    },
+    {
+      "brain": "@cf/google/gemma-4-26b-a4b-it",
+      "engine": "aura-1",
+      "run": 4,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 716,
+      "eagerMs": 231,
+      "firstTextMs": 410,
+      "firstSentenceMs": 983,
+      "firstAudioByteMs": 689,
+      "ttfaMs": 2388,
+      "ttfaEagerMs": 1903
+    },
+    {
+      "brain": "@cf/google/gemma-4-26b-a4b-it",
+      "engine": "aura-2",
+      "run": 0,
+      "ok": false,
+      "error": "no EndOfTurn in 20 s"
+    },
+    {
+      "brain": "@cf/google/gemma-4-26b-a4b-it",
+      "engine": "aura-2",
+      "run": 1,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 661,
+      "eagerMs": 262,
+      "firstTextMs": 653,
+      "firstSentenceMs": 1045,
+      "firstAudioByteMs": 397,
+      "ttfaMs": 2103,
+      "ttfaEagerMs": 1704
+    },
+    {
+      "brain": "@cf/google/gemma-4-26b-a4b-it",
+      "engine": "aura-2",
+      "run": 2,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 125,
+      "eagerMs": null,
+      "firstTextMs": 466,
+      "firstSentenceMs": 789,
+      "firstAudioByteMs": 549,
+      "ttfaMs": 1463,
+      "ttfaEagerMs": null
+    },
+    {
+      "brain": "@cf/google/gemma-4-26b-a4b-it",
+      "engine": "aura-2",
+      "run": 3,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 110,
+      "eagerMs": null,
+      "firstTextMs": 460,
+      "firstSentenceMs": 724,
+      "firstAudioByteMs": 394,
+      "ttfaMs": 1228,
+      "ttfaEagerMs": null
+    },
+    {
+      "brain": "@cf/google/gemma-4-26b-a4b-it",
+      "engine": "aura-2",
+      "run": 4,
+      "ok": true,
+      "transcriptOk": true,
+      "finalTranscriptMs": 771,
+      "eagerMs": 245,
+      "firstTextMs": 522,
+      "firstSentenceMs": 813,
+      "firstAudioByteMs": 529,
+      "ttfaMs": 2113,
+      "ttfaEagerMs": 1587
+    }
+  ]
+}

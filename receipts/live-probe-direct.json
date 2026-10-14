@@ -1,0 +1,77 @@
+{
+  "kind": "hark.live-probe",
+  "at": "2026-10-14T19:46:43.601Z",
+  "route": "workers-ai direct",
+  "gateway": "default",
+  "brain": "@cf/google/gemma-4-26b-a4b-it",
+  "passed": 5,
+  "total": 5,
+  "steps": [
+    {
+      "name": "Aura 2 speaks (24 kHz linear16, the format hark plays)",
+      "ok": true,
+      "ms": 1555,
+      "detail": {
+        "bytes": 105600,
+        "seconds": 2.2,
+        "contentType": "audio/mpeg"
+      }
+    },
+    {
+      "name": "Aura 2 speaks at 16 kHz for the round trip",
+      "ok": true,
+      "ms": 1246,
+      "detail": {
+        "bytes": 75520
+      }
+    },
+    {
+      "name": "Flux hears it back through the gateway WebSocket, with turn events",
+      "ok": true,
+      "ms": 4181,
+      "detail": {
+        "transcript": "What is the weather like in Lisbon right now?",
+        "events": [
+          {
+            "event": "Connected",
+            "at": 1970
+          },
+          {
+            "event": "StartOfTurn",
+            "at": 2565,
+            "transcript": "What is"
+          },
+          {
+            "event": "EagerEndOfTurn",
+            "at": 4181,
+            "transcript": "What is the weather like in Lisbon right now?"
+          },
+          {
+            "event": "EndOfTurn",
+            "at": 4181,
+            "transcript": "What is the weather like in Lisbon right now?"
+          }
+        ]
+      }
+    },
+    {
+      "name": "@cf/google/gemma-4-26b-a4b-it streams and calls a tool through the gateway",
+      "ok": true,
+      "ms": 862,
+      "detail": {
+        "firstByteMs": 862,
+        "toolCalled": true,
+        "lisbon": true
+      }
+    },
+    {
+      "name": "FLUX.2 klein paints through the gateway",
+      "ok": true,
+      "ms": 28139,
+      "detail": {
+        "contentType": "application/json",
+        "size": 277028
+      }
+    }
+  ]
+}
