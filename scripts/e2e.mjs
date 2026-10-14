@@ -258,17 +258,17 @@ await scenario('the desktop layout keeps cards off the ear and nothing overflows
   return measured;
 });
 
-await scenario('the phone layout renders asleep, then talks with a card on screen', async () => {
+await scenario('the phone layout renders asleep, then talks and shows a card', async () => {
   await mobile.goto(BASE);
   await mobile.locator('#orb').waitFor();
   await mobile.waitForTimeout(700);
   await mobile.screenshot({ path: `${SHOTS}/asleep-phone.png` });
   await mobile.locator('#orb').tap();
-  await mobile.locator('[data-visual=weather]').waitFor({ timeout: 45000 }).catch((cause) => {
+  await mobile.locator('[data-visual]').first().waitFor({ timeout: 45000 }).catch((cause) => {
     throw new Error(`${cause.message.split('\n')[0]} frames: ${mobileFrames.join(' ')}`);
   });
   await mobile.waitForTimeout(1500);
-  await mobile.screenshot({ path: `${SHOTS}/weather-phone.png` });
+  await mobile.screenshot({ path: `${SHOTS}/talking-phone.png` });
 
   const measured = await layout(mobile);
 

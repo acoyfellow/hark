@@ -36,12 +36,13 @@ const enc = encodeURIComponent;
 const gatewayBase = (origins: Origins, credentials: Credentials) =>
   `${origins.gateway}/${enc(credentials.accountId)}/${enc(credentials.gateway)}/workers-ai`;
 
-const headersFor = async (credentials: Credentials, extra: Record<string, string> = {}) => {
+const headersFor = async (credentials: Credentials, step: string, extra: Record<string, string> = {}) => {
   const token = await credentials.token();
 
   return {
     authorization: `Bearer ${token}`,
     'cf-aig-authorization': `Bearer ${token}`,
+    'cf-aig-metadata': JSON.stringify({ app: 'hark', step }),
     ...extra,
   };
 };
@@ -80,7 +81,7 @@ export const upstream = (
 ): Upstream => ({
   listen: async (options) => {
     const response = await send(listenUrl(origins, credentials, options), {
-      headers: await headersFor(credentials, { upgrade: 'websocket' }),
+      headers: await headersFor(credentials, 'listen', { upgrade: 'websocket' }),
     });
     const socket = response.webSocket;
 
@@ -95,7 +96,7 @@ export const upstream = (
   chat: async (body, signal) => {
     const response = await send(`${gatewayBase(origins, credentials)}/v1/chat/completions`, {
       method: 'POST',
-      headers: await headersFor(credentials, { 'content-type': 'application/json' }),
+      headers: await headersFor(credentials, 'think', { 'content-type': 'application/json' }),
       body: JSON.stringify(body),
       signal,
     });
@@ -108,7 +109,7 @@ export const upstream = (
   speak: async (text, voice, signal) => {
     const response = await send(`${gatewayBase(origins, credentials)}/${SPEAK_MODEL}`, {
       method: 'POST',
-      headers: await headersFor(credentials, { 'content-type': 'application/json' }),
+      headers: await headersFor(credentials, 'speak', { 'content-type': 'application/json' }),
       body: JSON.stringify({
         text,
         speaker: voice,
@@ -133,7 +134,7 @@ export const upstream = (
 
     const klein = await send(`${gatewayBase(origins, credentials)}/${IMAGINE_MODEL}`, {
       method: 'POST',
-      headers: await headersFor(credentials),
+      headers: await headersFor(credentials, 'paint'),
       body: form,
       signal,
     });
@@ -144,7 +145,7 @@ export const upstream = (
 
     const schnell = await send(`${gatewayBase(origins, credentials)}/${IMAGINE_FALLBACK}`, {
       method: 'POST',
-      headers: await headersFor(credentials, { 'content-type': 'application/json' }),
+      headers: await headersFor(credentials, 'paint', { 'content-type': 'application/json' }),
       body: JSON.stringify({ prompt, steps: 6 }),
       signal,
     });

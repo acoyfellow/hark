@@ -148,7 +148,7 @@ pass  saying goodbye puts hark to sleep and closes the microphone
 pass  the settings sheet shows the stack, voices, and brains
 pass  every upstream call carried the account token through AI Gateway
 pass  the desktop layout keeps cards off the ear and nothing overflows
-pass  the phone layout renders asleep, then talks with a card on screen
+pass  the phone layout renders asleep, then talks and shows a card
 pass  the landing page offers Sign in with Cloudflare on desktop and phone
 pass  no uncaught page errors
 ```

@@ -35,6 +35,7 @@ const BARGE_MIN_CHARS = 6;
 type FluxEvent = {
   readonly event: string;
   readonly transcript: string;
+  readonly description: string;
 };
 
 type Running = {
@@ -80,9 +81,15 @@ const fluxEventOf = (data: unknown): FluxEvent | null => {
     const record = parsed as Record<string, unknown>;
     const event = typeof record.event === 'string' ? record.event : typeof record.type === 'string' ? record.type : '';
 
+    const description = [record.description, record.message, record.code].find((value) => typeof value === 'string');
+
     return event === ''
       ? null
-      : { event, transcript: typeof record.transcript === 'string' ? record.transcript.trim() : '' };
+      : {
+          event: record.type === 'Error' || record.type === 'FatalError' ? record.type : event,
+          transcript: typeof record.transcript === 'string' ? record.transcript.trim() : '',
+          description: typeof description === 'string' ? description : '',
+        };
   } catch {
     return null;
   }
@@ -462,9 +469,16 @@ export class Hark extends DurableObject<Env> {
   }
 
   private onFlux(session: Session, flux: FluxEvent) {
-    session.lastHeardAt = Date.now();
+    if (flux.event !== 'Update' || flux.transcript !== '') session.lastHeardAt = Date.now();
 
     switch (flux.event) {
+      case 'Error':
+      case 'FatalError':
+        this.send(session, { _tag: 'Fault', reason: `Listening failed: ${flux.description || flux.event}`, fatal: flux.event === 'FatalError' });
+
+        if (flux.event === 'FatalError') this.close(session, 1011, 'flux fatal');
+
+        return;
       case 'StartOfTurn':
         if (this.speaking(session) && session.running?.confirmed !== false) {
           session.bargeIn = true;

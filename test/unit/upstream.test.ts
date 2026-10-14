@@ -33,6 +33,7 @@ describe('every model call goes to the person’s own account through their AI G
     for (const request of seen) {
       expect(request.headers.get('authorization')).toBe('Bearer tok');
       expect(request.headers.get('cf-aig-authorization')).toBe('Bearer tok');
+      expect(JSON.parse(request.headers.get('cf-aig-metadata') ?? '{}').app).toBe('hark');
     }
 
     expect(await seen[1]?.json()).toEqual({ text: 'Hello there.', speaker: 'orion', encoding: 'linear16', container: 'none', sample_rate: 24000 });
