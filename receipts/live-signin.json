@@ -1,0 +1,80 @@
+{
+  "kind": "live-signin",
+  "origin": "https://hark.coey.dev",
+  "measuredAgainst": "production Cloudflare (real OAuth, real AI Gateway, real Workers AI)",
+  "oauthClient": {
+    "name": "hark",
+    "visibility": "public",
+    "publisherVerification": "verified",
+    "scopes": [
+      "offline_access",
+      "user-details.read",
+      "account-settings.read",
+      "ai.read",
+      "ai.write",
+      "aig.read",
+      "aig.run"
+    ]
+  },
+  "edgeCheck": {
+    "command": "scripts/check-edge.sh hark.coey.dev",
+    "exit": 0,
+    "output": "edge ok: https://hark.coey.dev (landing, OAuth redirect with AI scopes, socket refuses strangers)"
+  },
+  "signIn": {
+    "startedAt": "2026-10-14T21:23:52Z",
+    "landedAt": "2026-10-14T21:24:50Z",
+    "steps": [
+      "landing 200, Sign in with Cloudflare",
+      "dash.cloudflare.com consent: verified ownership of hark.coey.dev, 7 permissions",
+      "account chosen",
+      "gateway picker /oauth/gateway: chose ax",
+      "redirected to https://hark.coey.dev/"
+    ]
+  },
+  "oauthMe": {
+    "status": 200,
+    "signedIn": true,
+    "account": "A…",
+    "gateway": "ax"
+  },
+  "voiceSocket": {
+    "at": "2026-10-14T21:25:00Z",
+    "url": "wss://hark.coey.dev/api/voice",
+    "sent": {
+      "_tag": "Hello",
+      "timeZone": "UTC",
+      "locale": "en-US",
+      "camera": false
+    },
+    "openedAtMs": 646,
+    "frames": [
+      {
+        "atMs": 682,
+        "tag": "Presence",
+        "presence": "waking"
+      },
+      {
+        "atMs": 1221,
+        "tag": "Ready"
+      },
+      {
+        "atMs": 1221,
+        "tag": "Presence",
+        "presence": "listening"
+      }
+    ],
+    "tagsInOrder": [
+      "Presence:waking",
+      "Ready",
+      "Presence:listening"
+    ],
+    "closed": {
+      "byClient": true,
+      "afterMs": 5000,
+      "code": 1000
+    },
+    "fault": null,
+    "meaning": "Ready then Presence listening: the Durable Object opened Deepgram Flux through the user gateway with the real OAuth token"
+  }
+}
