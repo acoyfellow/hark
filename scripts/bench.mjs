@@ -19,7 +19,17 @@ if (!account || !token) {
   process.exit(2);
 }
 
-const base = `https://gateway.ai.cloudflare.com/v1/${account}/${gateway}/workers-ai`;
+const direct = process.env.HARK_ROUTE === 'direct';
+const base = direct
+  ? `https://api.cloudflare.com/client/v4/accounts/${account}/ai/run`
+  : `https://gateway.ai.cloudflare.com/v1/${account}/${gateway}/workers-ai`;
+const chatUrl = direct
+  ? `https://api.cloudflare.com/client/v4/accounts/${account}/ai/v1/chat/completions`
+  : chatUrl;
+const fluxUrl = (query) =>
+  direct
+    ? `wss://api.cloudflare.com/client/v4/accounts/${account}/ai/run/@cf/deepgram/flux?${query}`
+    : `${base.replace('https://', 'wss://')}?model=@cf/deepgram/flux&${query}`;
 const headers = {
   authorization: `Bearer ${token}`,
   'cf-aig-authorization': `Bearer ${token}`,
@@ -68,7 +78,7 @@ const speak = async (text, engine, sampleRate) => {
 
 const hear = (pcm) =>
   new Promise((resolve, reject) => {
-    const ws = new WebSocket(`${base.replace('https://', 'wss://')}?model=@cf/deepgram/flux&encoding=linear16&sample_rate=16000&eot_threshold=0.75&eager_eot_threshold=0.5&eot_timeout_ms=3500`, { headers });
+    const ws = new WebSocket(fluxUrl('encoding=linear16&sample_rate=16000&eot_threshold=0.75&eager_eot_threshold=0.5&eot_timeout_ms=3500'), { headers });
     const timer = setTimeout(() => {
       ws.close();
       reject(new Error('no EndOfTurn in 20 s'));
@@ -109,7 +119,7 @@ const hear = (pcm) =>
 
 const think = async (brain, question) => {
   const started = Date.now();
-  const response = await fetch(`${base}/v1/chat/completions`, {
+  const response = await fetch(chatUrl, {
     method: 'POST',
     headers: { ...headers, 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -220,6 +230,6 @@ for (const brain of brains)
 
 console.table(summary.map((row) => ({ pipeline: row.pipeline, completed: row.completed, 'TTFA p50': row.ttfa.p50, 'TTFA p95': row.ttfa.p95, 'eager p50': row.ttfaWithEagerTurn.p50 })));
 writeFileSync(
-  'receipts/bench-live.json',
-  `${JSON.stringify({ kind: 'hark.bench', at: new Date().toISOString(), gateway, runs, method: 'speech end -> Flux EndOfTurn -> first sentence of streamed text -> first Aura audio byte, measured from this machine; compare with the internal showcase baseline Flux + GPT-OSS + Aura-1 at 2,416 ms p50 (browser receipt)', internalBaselineMs: { p50: 2416, p95: 5975 }, summary, results }, null, 2)}\n`,
+  direct ? 'receipts/bench-live-direct.json' : 'receipts/bench-live.json',
+  `${JSON.stringify({ kind: 'hark.bench', at: new Date().toISOString(), route: direct ? 'workers-ai direct' : 'ai-gateway', gateway, runs, method: 'speech end -> Flux EndOfTurn -> first sentence of streamed text -> first Aura audio byte, measured from this machine; compare with the internal showcase baseline Flux + GPT-OSS + Aura-1 at 2,416 ms p50 (browser receipt)', internalBaselineMs: { p50: 2416, p95: 5975 }, summary, results }, null, 2)}\n`,
 );

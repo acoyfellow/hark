@@ -15,7 +15,17 @@ if (!account || !token) {
   process.exit(2);
 }
 
-const base = `https://gateway.ai.cloudflare.com/v1/${account}/${gateway}/workers-ai`;
+const direct = process.env.HARK_ROUTE === 'direct';
+const base = direct
+  ? `https://api.cloudflare.com/client/v4/accounts/${account}/ai/run`
+  : `https://gateway.ai.cloudflare.com/v1/${account}/${gateway}/workers-ai`;
+const chatUrl = direct
+  ? `https://api.cloudflare.com/client/v4/accounts/${account}/ai/v1/chat/completions`
+  : chatUrl;
+const fluxUrl = (query) =>
+  direct
+    ? `wss://api.cloudflare.com/client/v4/accounts/${account}/ai/run/@cf/deepgram/flux?${query}`
+    : `${base.replace('https://', 'wss://')}?model=@cf/deepgram/flux&${query}`;
 const headers = { authorization: `Bearer ${token}`, 'cf-aig-authorization': `Bearer ${token}` };
 const steps = [];
 const SENTENCE = 'What is the weather like in Lisbon right now?';
@@ -71,7 +81,7 @@ await step('Aura 2 speaks at 16 kHz for the round trip', async () => {
 await step('Flux hears it back through the gateway WebSocket, with turn events', async () => {
   if (!pcm16k) throw new Error('no audio to send');
 
-  const url = `${base.replace('https://', 'wss://')}?model=@cf/deepgram/flux&encoding=linear16&sample_rate=16000&eot_threshold=0.75&eager_eot_threshold=0.5`;
+  const url = fluxUrl('encoding=linear16&sample_rate=16000&eot_threshold=0.75&eager_eot_threshold=0.5');
   const events = [];
   const opened = Date.now();
 
@@ -120,7 +130,7 @@ await step('Flux hears it back through the gateway WebSocket, with turn events',
 
 await step(`${brain} streams and calls a tool through the gateway`, async () => {
   const started = Date.now();
-  const response = await fetch(`${base}/v1/chat/completions`, {
+  const response = await fetch(chatUrl, {
     method: 'POST',
     headers: { ...headers, 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -172,8 +182,8 @@ await step('FLUX.2 klein paints through the gateway', async () => {
 const passed = steps.filter((each) => each.ok).length;
 
 writeFileSync(
-  'receipts/live-probe.json',
-  `${JSON.stringify({ kind: 'hark.live-probe', at: new Date().toISOString(), gateway, brain, passed, total: steps.length, steps }, null, 2)}\n`,
+  direct ? 'receipts/live-probe-direct.json' : 'receipts/live-probe.json',
+  `${JSON.stringify({ kind: 'hark.live-probe', at: new Date().toISOString(), route: direct ? 'workers-ai direct' : 'ai-gateway', gateway, brain, passed, total: steps.length, steps }, null, 2)}\n`,
 );
 console.log(`\n${passed}/${steps.length} live steps passed`);
 process.exit(passed === steps.length ? 0 : 1);
