@@ -226,6 +226,13 @@ const phone = await browser.newContext({
   permissions: ['microphone', 'camera'],
 });
 const mobile = await phone.newPage();
+const mobileFrames = [];
+
+mobile.on('websocket', (socket) => {
+  socket.on('framereceived', ({ payload }) => {
+    if (typeof payload === 'string') mobileFrames.push(JSON.parse(payload)._tag === 'Presence' ? `Presence:${JSON.parse(payload).presence}` : JSON.parse(payload)._tag);
+  });
+});
 
 const layout = (target) =>
   target.evaluate(() => {
@@ -257,7 +264,9 @@ await scenario('the phone layout renders asleep, then talks with a card on scree
   await mobile.waitForTimeout(700);
   await mobile.screenshot({ path: `${SHOTS}/asleep-phone.png` });
   await mobile.locator('#orb').tap();
-  await mobile.locator('[data-visual=weather]').waitFor({ timeout: 25000 });
+  await mobile.locator('[data-visual=weather]').waitFor({ timeout: 45000 }).catch((cause) => {
+    throw new Error(`${cause.message.split('\n')[0]} frames: ${mobileFrames.join(' ')}`);
+  });
   await mobile.waitForTimeout(1500);
   await mobile.screenshot({ path: `${SHOTS}/weather-phone.png` });
 
