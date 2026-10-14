@@ -37,7 +37,14 @@ sed "s/\"name\": \"hark\"/\"name\": \"hark-$instance\"/" wrangler.jsonc > "$conf
 vars=(--var "OAUTH_CLIENT_ID:$HARK_OAUTH_CLIENT_ID")
 [ -z "${HARK_USER_GATEWAY:-}" ] || vars+=(--var "HARK_USER_GATEWAY:$HARK_USER_GATEWAY")
 
-deploy() { npx wrangler deploy -c "$config" --domain "$HARK_DOMAIN" "${vars[@]}"; }
+if [ "${HARK_DEPLOY_AS:-domain}" = route ]; then
+  # A route on a proxied DNS record does not count toward the zone's Workers custom domain limit.
+  target=(--route "$HARK_DOMAIN/*")
+else
+  target=(--domain "$HARK_DOMAIN")
+fi
+
+deploy() { npx wrangler deploy -c "$config" "${target[@]}" "${vars[@]}"; }
 deploy || deploy
 
 secrets=$(npx wrangler secret list -c "$config" 2>/dev/null || true)
