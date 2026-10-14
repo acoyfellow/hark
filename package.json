@@ -1,0 +1,44 @@
+{
+  "name": "hark",
+  "version": "0.0.1",
+  "description": "A voice you talk to. No chat box. It listens, thinks, and answers on your own Cloudflare account.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/acoyfellow/hark.git"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "scripts": {
+    "build": "node scripts/build-client.mjs",
+    "dev": "node scripts/build-client.mjs && wrangler dev",
+    "typecheck": "tsc -p . && tsc -p tsconfig.client.json",
+    "lint": "oxlint",
+    "test": "vitest run",
+    "check": "bash scripts/check.sh",
+    "e2e": "node scripts/e2e.mjs",
+    "ship": "bash scripts/ship.sh"
+  },
+  "dependencies": {
+    "@effect/platform-browser": "4.0.0",
+    "effect": "4.0.0",
+    "foldkit": "0.168.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261012.1",
+    "@foldkit/vite-plugin": "0.26.1",
+    "@tailwindcss/vite": "4.3.3",
+    "happy-dom": "20.14.6",
+    "oxlint": "1.78.0",
+    "playwright": "1.64.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "vite": "8.3.3",
+    "vitest": "5.0.3",
+    "wrangler": "4.149.0",
+    "ws": "8.18.3"
+  }
+}

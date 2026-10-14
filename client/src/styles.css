@@ -1,0 +1,162 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #09090b;
+  --color-ember: #f6913e;
+  --color-amber: #fbad41;
+  --color-flare: #f38020;
+  --font-sans: "Google Sans Flex", "Google Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Google Sans Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+    background: var(--color-ink);
+    color: #fafafa;
+    font-family: var(--font-sans);
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+
+  body {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.55;
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ember);
+    outline-offset: 3px;
+  }
+
+  button {
+    cursor: pointer;
+  }
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 50% at 50% 45%, color-mix(in srgb, var(--color-flare) 9%, transparent), transparent 70%),
+    url("/brand/hark-field.jpg") center / cover no-repeat;
+  opacity: 0.55;
+  transition: opacity 1.2s ease, filter 1.2s ease;
+  filter: saturate(0.6) brightness(0.55);
+}
+
+.backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(70% 60% at 50% 45%, transparent 0%, var(--color-ink) 85%),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-ink) 60%, transparent), transparent 25%, transparent 75%, var(--color-ink));
+}
+
+.look-asleep .backdrop {
+  opacity: 0.35;
+  filter: saturate(0.2) brightness(0.4);
+}
+
+.look-hearing .backdrop,
+.look-speaking .backdrop {
+  opacity: 0.75;
+  filter: saturate(0.9) brightness(0.65);
+}
+
+.orb:focus-visible {
+  outline: none;
+}
+
+.orb:focus-visible canvas {
+  filter: drop-shadow(0 0 18px color-mix(in srgb, var(--color-ember) 70%, transparent));
+}
+
+.orb:active {
+  transform: scale(0.985);
+}
+
+.orb {
+  transition: transform 0.2s ease;
+}
+
+.presence {
+  transition: color 0.4s ease;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes drop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes ring {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-ember) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-ember) 35%, transparent);
+  }
+}
+
+.visual-in {
+  animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.preview-in {
+  animation: rise 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.fault-in {
+  animation: drop 0.3s ease both;
+}
+
+.timer-done {
+  animation: ring 1.2s ease-in-out infinite;
+  border-color: color-mix(in srgb, var(--color-ember) 50%, transparent);
+}
+
+@media (max-width: 767px) {
+  main > section[aria-label] {
+    max-height: 34dvh;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

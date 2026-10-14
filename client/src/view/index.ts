@@ -1,0 +1,236 @@
+import { Option } from 'effect';
+import type { Document, Html, HtmlBuilder } from 'foldkit/html';
+import { BRAINS, DEFAULT_BRAIN, DEFAULT_VOICE, VOICES } from '../../../shared/protocol';
+import { Message } from '../message';
+import type { Look, Model } from '../model';
+import { Orb, Preview } from '../orb';
+import { icon } from './icons';
+import { visuals } from './visuals';
+
+type H = HtmlBuilder<Message>;
+
+const LABELS: Record<Look, string> = {
+  asleep: 'Tap to talk',
+  waking: 'Waking up',
+  listening: 'Listening',
+  hearing: 'Go on',
+  thinking: 'Thinking',
+  speaking: 'Speaking',
+};
+
+const HINTS: Record<Look, string> = {
+  asleep: 'or press space',
+  waking: 'opening the line to your account',
+  listening: 'just talk. tap to sleep',
+  hearing: 'I hear you',
+  thinking: 'tap to stop',
+  speaking: 'talk over me any time',
+};
+
+const labelOf = (model: Model) =>
+  model.look === 'thinking' ? Option.getOrElse(model.doing, () => LABELS.thinking) : LABELS[model.look];
+
+const ROUND =
+  'grid size-12 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-white/70 backdrop-blur transition hover:bg-white/[0.08] hover:text-white active:scale-95';
+
+const header = (h: H, model: Model): Html =>
+  h.header(
+    [h.Class('relative z-20 flex items-center justify-between px-5 pt-[max(1.25rem,env(safe-area-inset-top))] md:px-8')],
+    [
+      h.a(
+        [h.Href('/'), h.Class('flex items-center gap-2.5'), h.AriaLabel('hark')],
+        [h.img([h.Src('/brand/hark-wordmark.svg'), h.Alt('hark'), h.Height('22'), h.Class('h-[22px] w-auto')])],
+      ),
+      h.div(
+        [h.Class('flex items-center gap-2')],
+        [
+          ...Option.match(model.account, {
+            onNone: () => [],
+            onSome: (account) => [
+              h.span(
+                [h.Class('hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 font-mono text-[11px] text-white/55 sm:flex')],
+                [h.i([h.Class('size-1.5 rounded-full bg-ember'), h.AriaHidden(true)], []), account],
+              ),
+            ],
+          }),
+          h.button(
+            [h.Type('button'), h.Id('settings'), h.AriaLabel('Settings'), h.AriaExpanded(model.sheet), h.Class('grid size-10 place-items-center rounded-full text-white/60 transition hover:bg-white/[0.06] hover:text-white'), h.OnClick(Message.ClickedSheet())],
+            [icon(h, 'sliders')],
+          ),
+        ],
+      ),
+    ],
+  );
+
+const latency = (h: H, model: Model): Html =>
+  Option.match(model.latency, {
+    onNone: () => h.span([h.Class('h-4')], []),
+    onSome: (measured) =>
+      h.p(
+        [h.Id('latency'), h.Class('flex items-center gap-2 font-mono text-[11px] text-white/40'), h.Title(`model ${measured.model} ms · voice ${measured.speech} ms`)],
+        [
+          icon(h, 'bolt', 'size-3.5 text-ember'),
+          h.span([], [`${measured.total} ms`]),
+          h.span([h.Class('text-white/25')], [measured.eager ? 'answered early' : 'you stopped → it spoke']),
+        ],
+      ),
+  });
+
+const stage = (h: H, model: Model): Html =>
+  h.main(
+    [h.Class('relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center gap-6 px-5 md:flex-row md:px-8')],
+    [
+      h.div(
+        [h.Class('flex flex-col items-center')],
+        [
+          h.button(
+            [
+              h.Type('button'),
+              h.Id('orb'),
+              h.AriaLabel(model.awake ? (model.look === 'speaking' || model.look === 'thinking' ? 'Stop' : 'Sleep') : 'Wake hark'),
+              h.DataAttribute('look', model.look),
+              h.Class('orb group relative grid aspect-square w-[min(78vw,46vh,440px)] place-items-center rounded-full outline-none'),
+              h.OnClick(Message.ClickedOrb()),
+            ],
+            [
+              h.canvas([h.Class('absolute inset-0 size-full'), h.DataAttribute('look', model.look), h.OnMount(Orb()), h.AriaHidden(true)], []),
+            ],
+          ),
+          h.div(
+            [h.Class('mt-2 flex min-h-[64px] flex-col items-center gap-1.5 text-center'), h.AriaLive('polite')],
+            [
+              h.p([h.Id('presence'), h.Class(`presence text-[22px] font-light tracking-tight ${model.look === 'asleep' ? 'text-white/80' : 'text-white'}`)], [labelOf(model)]),
+              h.p([h.Class('text-[13px] text-white/35')], [Option.getOrElse(model.note, () => HINTS[model.look])]),
+            ],
+          ),
+        ],
+      ),
+      visuals(h, model),
+    ],
+  );
+
+const preview = (h: H, model: Model): Html =>
+  model.cameraLive
+    ? h.div(
+        [h.Class('preview-in absolute top-[max(5rem,calc(env(safe-area-inset-top)+4rem))] left-5 z-20 w-28 overflow-hidden rounded-2xl border border-white/15 shadow-2xl md:left-8 md:w-44')],
+        [h.video([h.Muted(true), h.Autoplay(true), h.Playsinline(true), h.Class('aspect-[3/4] w-full object-cover md:aspect-video'), h.OnMount(Preview())], [])],
+      )
+    : h.empty;
+
+const dock = (h: H, model: Model): Html =>
+  h.footer(
+    [h.Class('relative z-20 flex items-center justify-between gap-4 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:px-8')],
+    [
+      h.button(
+        [h.Type('button'), h.Id('camera'), h.AriaLabel(model.camera ? 'Turn camera off' : 'Turn camera on'), h.AriaPressed(String(model.camera)), h.Class(`${ROUND} ${model.camera ? 'border-ember/40 text-ember' : ''}`), h.OnClick(Message.ClickedCamera())],
+        [icon(h, model.camera ? 'camera' : 'cameraOff')],
+      ),
+      latency(h, model),
+      model.awake
+        ? h.button(
+            [h.Type('button'), h.Id('sleep'), h.AriaLabel('Sleep'), h.Class(ROUND), h.OnClick(Message.PressedEscape())],
+            [icon(h, 'stop', 'size-4')],
+          )
+        : h.span([h.Class('size-12')], []),
+    ],
+  );
+
+const fault = (h: H, model: Model): Html =>
+  Option.match(model.fault, {
+    onNone: () => h.empty,
+    onSome: (reason) =>
+      h.div(
+        [h.Role('alert'), h.Id('fault'), h.Class('fault-in absolute top-[max(4.5rem,calc(env(safe-area-inset-top)+3.5rem))] left-1/2 z-40 flex w-[min(92vw,520px)] -translate-x-1/2 items-start gap-3 rounded-2xl border border-red-400/25 bg-red-950/70 px-4 py-3 text-[13px] text-red-100 backdrop-blur-xl')],
+        [
+          h.p([h.Class('flex-1 leading-relaxed')], [reason]),
+          h.button([h.Type('button'), h.AriaLabel('Dismiss'), h.Class('text-red-200/60 hover:text-white'), h.OnClick(Message.DismissedFault())], [icon(h, 'close', 'size-4')]),
+        ],
+      ),
+  });
+
+const option = (h: H, selected: boolean, label: Html | string, message: Message, extra = ''): Html =>
+  h.button(
+    [h.Type('button'), h.AriaPressed(String(selected)), h.Class(`rounded-xl border px-3 py-2.5 text-left text-[13px] transition ${selected ? 'border-ember/60 bg-ember/10 text-white' : 'border-white/10 bg-white/[0.02] text-white/65 hover:border-white/20 hover:text-white'} ${extra}`), h.OnClick(message)],
+    [label],
+  );
+
+const row = (h: H, label: string, value: string): Html =>
+  h.div(
+    [h.Class('flex items-center justify-between gap-4 py-2 text-[13px]')],
+    [h.span([h.Class('text-white/45')], [label]), h.span([h.Class('truncate font-mono text-[12px] text-white/80')], [value])],
+  );
+
+const sheet = (h: H, model: Model): Html => {
+  const settings = Option.getOrElse(model.settings, () => ({ voice: DEFAULT_VOICE, brain: DEFAULT_BRAIN }));
+
+  return h.div(
+    [h.Class(`fixed inset-0 z-50 ${model.sheet ? '' : 'pointer-events-none'}`), h.AriaHidden(!model.sheet)],
+    [
+      h.div([h.Class(`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity ${model.sheet ? 'opacity-100' : 'opacity-0'}`), h.OnClick(Message.ClosedSheet())], []),
+      h.aside(
+        [
+          h.Role('dialog'),
+          h.AriaModal(true),
+          h.AriaLabel('Settings'),
+          h.Inert(!model.sheet),
+          h.Class(`absolute right-0 bottom-0 left-0 max-h-[88dvh] overflow-y-auto rounded-t-3xl border-t border-white/10 bg-zinc-950/95 p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-xl transition-transform duration-300 md:top-0 md:left-auto md:max-h-none md:w-[400px] md:rounded-none md:border-t-0 md:border-l ${model.sheet ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-x-full md:translate-y-0'}`),
+        ],
+        [
+          h.div(
+            [h.Class('flex items-center justify-between')],
+            [
+              h.h2([h.Class('text-[17px] font-medium tracking-tight')], ['Settings']),
+              h.button([h.Type('button'), h.AriaLabel('Close'), h.Class('grid size-9 place-items-center rounded-full text-white/60 hover:bg-white/[0.06] hover:text-white'), h.OnClick(Message.ClosedSheet())], [icon(h, 'close', 'size-4')]),
+            ],
+          ),
+          h.h3([h.Class('mt-7 mb-3 font-mono text-[10.5px] tracking-[0.14em] text-white/40 uppercase')], ['Voice · Aura 2']),
+          h.div(
+            [h.Class('grid grid-cols-3 gap-2')],
+            VOICES.map((voice) => option(h, settings.voice === voice, voice, Message.PickedVoice({ voice }), 'capitalize')),
+          ),
+          h.h3([h.Class('mt-7 mb-3 font-mono text-[10.5px] tracking-[0.14em] text-white/40 uppercase')], ['Brain · Workers AI']),
+          h.div(
+            [h.Class('grid gap-2')],
+            BRAINS.map((brain) =>
+              option(
+                h,
+                settings.brain === brain.id,
+                h.span([h.Class('flex flex-col gap-0.5')], [h.span([h.Class('font-medium')], [brain.label]), h.span([h.Class('text-[12px] text-white/45')], [brain.note])]),
+                Message.PickedBrain({ brain: brain.id }),
+              ),
+            ),
+          ),
+          h.h3([h.Class('mt-7 mb-1 font-mono text-[10.5px] tracking-[0.14em] text-white/40 uppercase')], ['Running on your Cloudflare']),
+          h.div(
+            [h.Class('divide-y divide-white/[0.06]')],
+            [
+              row(h, 'Account', Option.getOrElse(model.account, () => 'connects when you wake hark')),
+              row(h, 'AI Gateway', Option.getOrElse(model.gateway, () => '·')),
+              row(h, 'Ears', 'Deepgram Flux'),
+              row(h, 'Voice', 'Deepgram Aura 2'),
+              row(h, 'Pictures', 'FLUX.2 klein'),
+              row(h, 'Memories', String(model.memories)),
+            ],
+          ),
+          h.p([h.Class('mt-4 text-[12px] leading-relaxed text-white/40')], ['Every word is heard, thought, and spoken by models on your own account, through your AI Gateway. Ask hark to forget something and it will.']),
+          ...(model.local
+            ? []
+            : [
+                h.button(
+                  [h.Type('button'), h.Id('sign-out'), h.Class('mt-6 flex items-center gap-2 text-[13px] text-white/50 hover:text-white'), h.OnClick(Message.ClickedSignOut())],
+                  [icon(h, 'logout', 'size-4'), 'Sign out'],
+                ),
+              ]),
+        ],
+      ),
+    ],
+  );
+};
+
+export const view = (model: Model, h: H): Document => ({
+  title: model.look === 'asleep' ? 'hark' : `hark · ${LABELS[model.look].toLowerCase()}`,
+  body: h.div(
+    [h.Class(`app look-${model.look} relative flex h-dvh flex-col overflow-hidden`)],
+    [h.div([h.Class('backdrop'), h.AriaHidden(true)], []), header(h, model), preview(h, model), fault(h, model), stage(h, model), dock(h, model), sheet(h, model)],
+  ),
+});

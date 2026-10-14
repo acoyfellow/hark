@@ -1,0 +1,112 @@
+{
+  "kind": "hark.e2e",
+  "target": "local",
+  "base": "http://127.0.0.1:8790",
+  "at": "2026-10-14T15:25:59.368Z",
+  "passed": 13,
+  "total": 13,
+  "speech": {
+    "count": 18,
+    "bytes": 2157672
+  },
+  "results": [
+    {
+      "name": "the page renders asleep with the ear and no chat box",
+      "ok": true,
+      "ms": 1493
+    },
+    {
+      "name": "tapping the ear opens the line to the account and starts listening",
+      "ok": true,
+      "ms": 194,
+      "detail": {
+        "account": "Local account",
+        "settings": {
+          "voice": "luna",
+          "brain": "@cf/google/gemma-4-26b-a4b-it"
+        }
+      }
+    },
+    {
+      "name": "a spoken question gets a tool call, a weather card, and a spoken answer",
+      "ok": true,
+      "ms": 4772,
+      "detail": {
+        "latency": {
+          "total": 1,
+          "model": 125,
+          "speech": 195,
+          "eager": true
+        },
+        "firstSpeechMs": 2042,
+        "packets": 3
+      }
+    },
+    {
+      "name": "the browser plays the whole answer and reports it, then hark listens again",
+      "ok": true,
+      "ms": 2827
+    },
+    {
+      "name": "remember stores a fact and shows it",
+      "ok": true,
+      "ms": 2813
+    },
+    {
+      "name": "paint puts a FLUX picture on the screen",
+      "ok": true,
+      "ms": 10943
+    },
+    {
+      "name": "talking over a long answer interrupts it (barge-in)",
+      "ok": true,
+      "ms": 13331,
+      "detail": {
+        "duckedAfterMs": 6413,
+        "interruptedAfterMs": 7053
+      }
+    },
+    {
+      "name": "a timer counts down and hark announces it when it ends (Durable Object alarm)",
+      "ok": true,
+      "ms": 5365,
+      "detail": {
+        "announcedAfterMs": 4008
+      }
+    },
+    {
+      "name": "saying goodbye puts hark to sleep and closes the microphone",
+      "ok": true,
+      "ms": 4379
+    },
+    {
+      "name": "the settings sheet shows the stack, voices, and brains",
+      "ok": true,
+      "ms": 1997
+    },
+    {
+      "name": "every upstream call carried the account token through AI Gateway",
+      "ok": true,
+      "ms": 16,
+      "detail": {
+        "calls": 33,
+        "kinds": [
+          "listen",
+          "completions",
+          "aura-2-en",
+          "flux-2-klein-4b"
+        ]
+      }
+    },
+    {
+      "name": "the phone layout renders",
+      "ok": true,
+      "ms": 1809
+    },
+    {
+      "name": "no uncaught page errors",
+      "ok": true,
+      "ms": 0
+    }
+  ]
+}

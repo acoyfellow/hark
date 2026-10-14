@@ -1,0 +1,12 @@
+node_modules/
+.wrangler/
+*.log
+.dev.vars
+.pi/
+public/app/
+src/ui/app.generated.ts
+deploy/*.conf
+!deploy/example.conf
+wrangler.*.local.jsonc
+test-results/
+.scratch/
