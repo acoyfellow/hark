@@ -149,4 +149,46 @@ describe('the full sign-in round trip', () => {
 
     expect(callback.status).toBe(400);
   });
+
+  it('asks which gateway to use when the account has more than one with authentication on, and saves the choice', async () => {
+    const directory = memoryDirectory();
+    const many = async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new Request(input, init).url;
+
+      if (url.includes('/ai-gateway/gateways'))
+        return Response.json({ result: [{ id: 'default', authentication: true }, { id: 'ax', authentication: true }, { id: 'open', authentication: false }] });
+
+      return cloudflare(true)(input, init);
+    };
+    const auth = cloudflareAuth(env(directory), many);
+    const origin = 'https://hark.example';
+    const login = (await auth.routes(new Request(`${origin}/oauth/login`))) as Response;
+    const state = new URL(login.headers.get('location') ?? '').searchParams.get('state');
+    const callback = (await auth.routes(new Request(`${origin}/oauth/callback?code=c&state=${state}`, { headers: { cookie: cookiesOf(login) } }))) as Response;
+
+    expect(callback.headers.get('location')).toBe('/oauth/gateway');
+
+    const session = cookiesOf(callback);
+    const page = (await auth.routes(new Request(`${origin}/oauth/gateway`, { headers: { cookie: session } }))) as Response;
+    const html = await page.text();
+
+    expect(html).toContain('value="ax"');
+    expect(html).toContain('auth off');
+
+    const refused = (await auth.routes(
+      new Request(`${origin}/oauth/gateway`, { method: 'POST', headers: { cookie: session, origin: 'https://evil.example' }, body: new URLSearchParams({ gateway: 'ax' }) }),
+    )) as Response;
+
+    expect(refused.status).toBe(403);
+
+    const unusable = (await auth.routes(
+      new Request(`${origin}/oauth/gateway`, { method: 'POST', headers: { cookie: session, origin }, body: new URLSearchParams({ gateway: 'open' }) }),
+    )) as Response;
+
+    expect(unusable.status).toBe(400);
+
+    await auth.routes(new Request(`${origin}/oauth/gateway`, { method: 'POST', headers: { cookie: session, origin }, body: new URLSearchParams({ gateway: 'ax' }) }));
+
+    expect(directory.grants.get('cf:u-1')?.gateway).toBe('ax');
+  });
 });
