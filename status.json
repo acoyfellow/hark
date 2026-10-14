@@ -1,34 +1,66 @@
 {
-  "state": "built",
+  "state": "live",
   "northStar": "A voice-only assistant anyone with a Cloudflare account can use, where every word is heard, thought, and spoken on their own Workers AI through their own AI Gateway.",
   "falsifiable": "A person signs in with Cloudflare at hark.coey.dev, taps once, asks a question out loud, hears an answer, interrupts it, and never sees or types text.",
   "steps": [
-    { "id": "coil-auth-port", "done": true },
-    { "id": "voice-pipeline-flux-brain-aura", "done": true },
-    { "id": "eager-end-of-turn-gate", "done": true },
-    { "id": "barge-in-with-abort", "done": true },
-    { "id": "tools-weather-wiki-timers-memory-camera-paint-voice-sleep", "done": true },
-    { "id": "foldkit-client-ear-cards-dock", "done": true },
-    { "id": "local-e2e-real-browser-fake-cloudflare", "done": true },
-    { "id": "img-gen-brand-assets", "done": false },
-    { "id": "oauth-client-for-hark-coey-dev", "done": false },
-    { "id": "deploy-hark-coey-dev", "done": false },
-    { "id": "live-probe-receipt", "done": false },
-    { "id": "owner-review", "done": false }
+    {
+      "id": "coil-auth-port",
+      "done": true
+    },
+    {
+      "id": "voice-pipeline-flux-brain-aura",
+      "done": true
+    },
+    {
+      "id": "eager-end-of-turn-gate",
+      "done": true
+    },
+    {
+      "id": "barge-in-with-abort",
+      "done": true
+    },
+    {
+      "id": "tools-weather-wiki-timers-memory-camera-paint-voice-sleep",
+      "done": true
+    },
+    {
+      "id": "foldkit-client-ear-cards-dock",
+      "done": true
+    },
+    {
+      "id": "local-e2e-real-browser-fake-cloudflare",
+      "done": true
+    },
+    {
+      "id": "img-gen-brand-assets",
+      "done": true
+    },
+    {
+      "id": "oauth-client-for-hark-coey-dev",
+      "done": true
+    },
+    {
+      "id": "deploy-hark-coey-dev",
+      "done": true
+    },
+    {
+      "id": "live-probe-receipt",
+      "done": true
+    },
+    {
+      "id": "owner-review",
+      "done": false
+    }
   ],
   "proven": [
     "42 offline tests: sign-in round trip, gateway refusal, upstream routing, turn order, streaming, eager gate, barge-in abort, filler and recovery speech, speech prep, client stories",
-    "17/17 e2e in headless Chromium against a fake Cloudflare: weather card, memory, painting, barge-in, DO alarm timer, camera look, goodbye, one-tap re-wake, layout on desktop and phone"
+    "17/17 e2e in headless Chromium against a fake Cloudflare: weather card, memory, painting, barge-in, DO alarm timer, camera look, goodbye, one-tap re-wake, layout on desktop and phone",
+    "hark.coey.dev live: OAuth client public and verified, edge check passes, real sign-in, 5 spoken turns through the user gateway with their OAuth token (receipts/live-signin.json)",
+    "Live Workers AI bench: Flux + GPT-OSS 20B + Aura 1 at 1,642 ms p50 speech end to first audio byte (receipts/bench-live-direct.json)"
   ],
   "unproven": [
-    "Flux over the AI Gateway WebSocket with an OAuth token (scripts/probe.mjs checks it)",
-    "Aura 2 linear16 container none through the gateway",
-    "GPT-OSS 20B streamed tool calls through the gateway's OpenAI-compatible route",
-    "Live latency against the internal 2,416 ms p50 baseline (scripts/bench.mjs)",
-    "Echo cancellation on real hardware"
+    "Echo cancellation on real hardware with a real human voice",
+    "Phone browsers (iOS Safari audio routing)"
   ],
-  "blocked": [
-    "img-gen runs on Jordan's Mac (not connected)",
-    "OAuth client for hark.coey.dev and the deploy need Jordan's Cloudflare credentials"
-  ]
+  "blocked": []
 }

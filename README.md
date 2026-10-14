@@ -118,7 +118,7 @@ To talk to it with your own Workers AI instead, put `LOCAL_CF_TOKEN` (from `npx 
 
 ## Proof
 
-`bun run check` builds the client, typechecks both sides, lints, and runs 42 tests:
+`bun run check` builds the client, typechecks both sides, lints, and runs 46 tests:
 
 | Test | Proves |
 | --- | --- |
@@ -169,6 +169,11 @@ First live run, from a laptop straight to Workers AI on a real account (`HARK_RO
 | Flux + Gemma 4 (thinking off) + Aura 1 | 4/5 | 2,388 / 2,462 ms | 1,731 ms |
 
 These stop at the first audio byte on the laptop, not at playback in a browser, and they skip the gateway because the laptop's wrangler token cannot run an authenticated AI Gateway. The four incomplete runs never got an `EndOfTurn` because the benchmark stopped sending audio too early; the benchmark now keeps sending silence the way hark's microphone does.
+
+**In production** ([`receipts/live-signin.json`](receipts/live-signin.json), [`receipts/shots/prod-turn.png`](receipts/shots/prod-turn.png)): a real Sign in with Cloudflare on hark.coey.dev, then a spoken question in Chromium, with the voice coming from macOS `say` through the fake microphone. Five turns went through the signed-in person's own AI Gateway with their OAuth token. All five spoke. The first called the weather tool and showed the card. From Flux's confirmed end of turn to the first audio sent took 188 to 489 ms, because each answer had already started on the eager end of turn. Two problems only production could show were fixed on the way:
+
+- Workers AI's `gpt-oss-20b` rejected `role: tool` messages, so tool results now go to the brain as plain text.
+- The gateway's per-model route refused the OAuth token for Aura, so speech and pictures fall back to Workers AI REST with `cf-aig-gateway-id`. That still goes through the person's gateway. The `hark.turn` log records the route each turn used.
 
 `scripts/probe.mjs` checks the real thing without a browser. Aura says a sentence, Flux hears it back over the gateway WebSocket, the brain calls a tool, and FLUX paints, all on a real account through its gateway. It writes `receipts/live-probe.json`.
 
