@@ -1,76 +1,90 @@
 {
   "kind": "hark.live-probe",
-  "at": "2026-10-14T19:46:43.601Z",
+  "at": "2026-10-14T21:48:58.451Z",
   "route": "workers-ai direct",
   "gateway": "default",
-  "brain": "@cf/google/gemma-4-26b-a4b-it",
-  "passed": 5,
-  "total": 5,
+  "brain": "@cf/openai/gpt-oss-20b",
+  "passed": 6,
+  "total": 7,
   "steps": [
     {
       "name": "Aura 2 speaks (24 kHz linear16, the format hark plays)",
       "ok": true,
-      "ms": 1555,
+      "ms": 1323,
       "detail": {
-        "bytes": 105600,
-        "seconds": 2.2,
+        "bytes": 113280,
+        "seconds": 2.36,
         "contentType": "audio/mpeg"
       }
     },
     {
       "name": "Aura 2 speaks at 16 kHz for the round trip",
       "ok": true,
-      "ms": 1246,
+      "ms": 1271,
       "detail": {
-        "bytes": 75520
+        "bytes": 72960
       }
     },
     {
       "name": "Flux hears it back through the gateway WebSocket, with turn events",
       "ok": true,
-      "ms": 4181,
+      "ms": 4416,
       "detail": {
         "transcript": "What is the weather like in Lisbon right now?",
         "events": [
           {
             "event": "Connected",
-            "at": 1970
+            "at": 2188
           },
           {
             "event": "StartOfTurn",
-            "at": 2565,
+            "at": 2601,
             "transcript": "What is"
           },
           {
             "event": "EagerEndOfTurn",
-            "at": 4181,
+            "at": 4413,
             "transcript": "What is the weather like in Lisbon right now?"
           },
           {
             "event": "EndOfTurn",
-            "at": 4181,
+            "at": 4415,
             "transcript": "What is the weather like in Lisbon right now?"
           }
         ]
       }
     },
     {
-      "name": "@cf/google/gemma-4-26b-a4b-it streams and calls a tool through the gateway",
+      "name": "@cf/openai/gpt-oss-20b streams and calls a tool through the gateway",
       "ok": true,
-      "ms": 862,
+      "ms": 784,
       "detail": {
-        "firstByteMs": 862,
+        "firstByteMs": 784,
         "toolCalled": true,
         "lisbon": true
       }
     },
     {
+      "name": "@cf/openai/gpt-oss-20b answers from a tool result sent as role:tool messages (OpenAI shape)",
+      "ok": false,
+      "ms": 290,
+      "error": "400: {\"errors\":[{\"message\":\"AiError: Bad input: Error: oneOf at '/' not met, 0 matches: required properties at '/' are 'prompt', Type mismatch of '/messages/0/content', 'array' not in 'string', Type mismatch of '/messages/1/content', 'array' not in 'string', Type mismatch of '/messages/2/content', 'strin"
+    },
+    {
+      "name": "@cf/openai/gpt-oss-20b answers from a tool result sent as plain text (what hark sends)",
+      "ok": true,
+      "ms": 646,
+      "detail": {
+        "said": "It’s a warm 21 °C with clear skies over Lisbon."
+      }
+    },
+    {
       "name": "FLUX.2 klein paints through the gateway",
       "ok": true,
-      "ms": 28139,
+      "ms": 15137,
       "detail": {
         "contentType": "application/json",
-        "size": 277028
+        "size": 287292
       }
     }
   ]
