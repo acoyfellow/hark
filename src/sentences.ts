@@ -94,14 +94,12 @@ export const chunker = (): Chunker => {
   };
 };
 
-export const sameWords = (a: string, b: string): boolean => {
-  const words = (text: string) =>
-    text
-      .toLowerCase()
-      .replace(/[^\p{L}\p{N}\s]/gu, '')
-      .split(/\s+/u)
-      .filter((word) => word !== '')
-      .join(' ');
+const words = (text: string) =>
+  text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
+    .split(/\s+/u)
+    .filter((word) => word !== '')
+    .join(' ');
 
-  return words(a) === words(b);
-};
+export const sameWords = (a: string, b: string): boolean => words(a) === words(b);

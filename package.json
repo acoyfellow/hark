@@ -14,12 +14,14 @@
   },
   "scripts": {
     "build": "node scripts/build-client.mjs",
-    "dev": "node scripts/build-client.mjs && wrangler dev",
+    "dev": "bash scripts/local.sh",
+    "dev:stop": "bash scripts/stop.sh",
     "typecheck": "tsc -p . && tsc -p tsconfig.client.json",
-    "lint": "oxlint",
+    "lint": "oxlint --deny-warnings",
     "test": "vitest run",
     "check": "bash scripts/check.sh",
     "e2e": "node scripts/e2e.mjs",
+    "icons": "node scripts/build-icons.mjs",
     "ship": "bash scripts/ship.sh"
   },
   "dependencies": {

@@ -94,7 +94,7 @@ export const chatEvents = async function* (
     yield {
       kind: 'tools',
       calls: [...calls.entries()]
-        .sort(([a], [b]) => a - b)
+        .toSorted(([a], [b]) => a - b)
         .map(([index, call]) => ({
           id: call.id || `call_${index}`,
           name: call.name,

@@ -1,6 +1,7 @@
 import { SOCKET_PATH } from '../shared/protocol';
 import { gate } from './auth/gate';
 import { type Env, LOCAL_HEADER, LOCAL_OWNER, OWNER_HEADER } from './env';
+import { signInPage } from './auth/sign-in-page';
 import { appPage } from './ui/page';
 
 export { Directory } from './directory';
@@ -55,6 +56,11 @@ const route = async (request: Request, env: Env, owner: string, local: boolean):
   if (pathname === SOCKET_PATH) return voiceSocket(request, env, owner, local);
 
   if (pathname === '/' && request.method === 'GET') return appPage(new URL(request.url).origin, local);
+
+  if (local && pathname === '/welcome')
+    return new Response(signInPage({ origin: new URL(request.url).origin }), {
+      headers: { 'content-type': 'text/html; charset=utf-8' },
+    });
 
   return env.ASSETS.fetch(request);
 };

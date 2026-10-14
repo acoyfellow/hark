@@ -1,0 +1,43 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: hark-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: bun install --frozen-lockfile
+      - run: npx playwright install --with-deps chromium
+      - name: Gate (build, typecheck, lint, 35 tests, config and secret checks)
+        run: bash scripts/check.sh
+      - name: End to end in Chromium against a fake Cloudflare
+        run: |
+          bash scripts/local.sh
+          node scripts/e2e.mjs
+      - if: failure()
+        run: tail -80 .wrangler/logs/dev.log .wrangler/logs/fake.log || true
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e
+          path: |
+            receipts/e2e-local.json
+            receipts/shots/
+          if-no-files-found: ignore

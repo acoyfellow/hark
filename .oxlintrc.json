@@ -1,0 +1,45 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": [
+    ".wrangler/**",
+    "public/app/**",
+    "node_modules/**",
+    ".scratch/**",
+    "src/ui/app.generated.ts"
+  ],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "rules": {
+    "no-unused-vars": "error",
+    "eqeqeq": [
+      "error",
+      "smart"
+    ],
+    "no-console": [
+      "error",
+      {
+        "allow": [
+          "warn",
+          "error"
+        ]
+      }
+    ],
+    "no-underscore-dangle": "off",
+    "unicorn/require-post-message-target-origin": "off",
+    "unicorn/prefer-add-event-listener": "off"
+  },
+  "overrides": [
+    {
+      "files": [
+        "scripts/**",
+        "test/**"
+      ],
+      "rules": {
+        "no-console": "off",
+        "unicorn/consistent-function-scoping": "off"
+      }
+    }
+  ]
+}

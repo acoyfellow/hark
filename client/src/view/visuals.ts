@@ -66,12 +66,13 @@ const day = (h: H, entry: WeatherDay): Html =>
     ],
   );
 
+const pad = (value: number) => String(value).padStart(2, '0');
+
 const countdown = (endsAt: number, now: number) => {
   const left = Math.max(0, Math.round((endsAt - now) / 1000));
   const hours = Math.floor(left / 3600);
   const minutes = Math.floor((left % 3600) / 60);
   const seconds = left % 60;
-  const pad = (value: number) => String(value).padStart(2, '0');
 
   return hours > 0 ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${minutes}:${pad(seconds)}`;
 };

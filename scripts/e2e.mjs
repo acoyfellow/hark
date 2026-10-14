@@ -227,13 +227,63 @@ const phone = await browser.newContext({
 });
 const mobile = await phone.newPage();
 
-await scenario('the phone layout renders', async () => {
+const layout = (target) =>
+  target.evaluate(() => {
+    const box = (selector) => document.querySelector(selector)?.getBoundingClientRect().toJSON() ?? null;
+    const overlap = (a, b) => a && b && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+    const orb = box('#orb');
+    const cards = [...document.querySelectorAll('[data-visual]')].map((node) => node.getBoundingClientRect().toJSON());
+    const dock = ['#camera', '#settings'].map(box);
+
+    return {
+      overflowX: document.documentElement.scrollWidth > innerWidth + 1,
+      cardsOverOrb: cards.filter((card) => overlap(card, orb)).length,
+      dockInside: dock.every((rect) => rect && rect.top >= 0 && rect.bottom <= innerHeight && rect.left >= 0 && rect.right <= innerWidth),
+      orb,
+    };
+  });
+
+await scenario('the desktop layout keeps cards off the ear and nothing overflows', async () => {
+  const measured = await layout(page);
+
+  if (measured.overflowX || measured.cardsOverOrb > 0 || !measured.dockInside) throw new Error(JSON.stringify(measured));
+
+  return measured;
+});
+
+await scenario('the phone layout renders asleep, then talks with a card on screen', async () => {
   await mobile.goto(BASE);
   await mobile.locator('#orb').waitFor();
   await mobile.waitForTimeout(700);
   await mobile.screenshot({ path: `${SHOTS}/asleep-phone.png` });
+  await mobile.locator('#orb').tap();
+  await mobile.locator('[data-visual=weather]').waitFor({ timeout: 25000 });
+  await mobile.waitForTimeout(1500);
+  await mobile.screenshot({ path: `${SHOTS}/weather-phone.png` });
+
+  const measured = await layout(mobile);
+
+  if (measured.overflowX || !measured.dockInside) throw new Error(JSON.stringify(measured));
+
+  return measured;
 });
 
+await scenario('the landing page offers Sign in with Cloudflare on desktop and phone', async () => {
+  const landing = await context.newPage();
+
+  await landing.goto(`${BASE}/welcome`);
+  await landing.locator('#sign-in').waitFor();
+  await landing.waitForTimeout(800);
+  await landing.screenshot({ path: `${SHOTS}/landing-desktop.png` });
+  await mobile.goto(`${BASE}/welcome`);
+  await mobile.locator('#sign-in').waitFor();
+  await mobile.waitForTimeout(800);
+  await mobile.screenshot({ path: `${SHOTS}/landing-phone.png`, fullPage: true });
+
+  if ((await landing.locator('#sign-in').getAttribute('href')) !== '/oauth/login') throw new Error('sign-in does not start OAuth');
+});
+
+await mobile.close();
 await browser.close();
 
 if (errors.length > 0) results.push({ name: 'no uncaught page errors', ok: false, error: errors.join(' | ') });

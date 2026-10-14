@@ -5,7 +5,7 @@ import { Message } from './message';
 
 type Palette = { readonly core: string; readonly mid: string; readonly ring: string };
 
-const ASLEEP: Palette = { core: '#3f3f46', mid: '#27272a', ring: '#52525b' };
+const ASLEEP: Palette = { core: '#e08a45', mid: '#8a4518', ring: '#b4642c' };
 
 const PALETTES: Record<string, Palette> = {
   asleep: ASLEEP,
@@ -67,7 +67,7 @@ const frame = (context: CanvasRenderingContext2D, size: number, state: State, re
 
   const glow = context.createRadialGradient(0, 0, base * 0.2, 0, 0, half);
 
-  glow.addColorStop(0, `${palette.mid}${state.look === 'asleep' ? '22' : '55'}`);
+  glow.addColorStop(0, `${palette.mid}${state.look === 'asleep' ? '40' : '55'}`);
   glow.addColorStop(0.45, `${palette.mid}14`);
   glow.addColorStop(1, `${palette.mid}00`);
   context.fillStyle = glow;
@@ -84,7 +84,7 @@ const frame = (context: CanvasRenderingContext2D, size: number, state: State, re
 
     drawRing(context, radius, wobble, state.breathe * 2 + index * 1.7, 3 + (index % 3));
     context.strokeStyle = palette.ring;
-    context.globalAlpha = (state.look === 'asleep' ? 0.18 : 0.22 + state.energy * 0.5) * fade;
+    context.globalAlpha = (state.look === 'asleep' ? 0.26 : 0.22 + state.energy * 0.5) * fade;
     context.lineWidth = Math.max(1, size * 0.003) * (1 + level * 1.5);
     context.stroke();
   }

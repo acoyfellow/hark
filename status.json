@@ -1,0 +1,33 @@
+{
+  "state": "built",
+  "northStar": "A voice-only assistant anyone with a Cloudflare account can use, where every word is heard, thought, and spoken on their own Workers AI through their own AI Gateway.",
+  "falsifiable": "A person signs in with Cloudflare at hark.coey.dev, taps once, asks a question out loud, hears an answer, interrupts it, and never sees or types text.",
+  "steps": [
+    { "id": "coil-auth-port", "done": true },
+    { "id": "voice-pipeline-flux-brain-aura", "done": true },
+    { "id": "eager-end-of-turn-gate", "done": true },
+    { "id": "barge-in-with-abort", "done": true },
+    { "id": "tools-weather-wiki-timers-memory-camera-paint-voice-sleep", "done": true },
+    { "id": "foldkit-client-ear-cards-dock", "done": true },
+    { "id": "local-e2e-real-browser-fake-cloudflare", "done": true },
+    { "id": "img-gen-brand-assets", "done": false },
+    { "id": "oauth-client-for-hark-coey-dev", "done": false },
+    { "id": "deploy-hark-coey-dev", "done": false },
+    { "id": "live-probe-receipt", "done": false },
+    { "id": "owner-review", "done": false }
+  ],
+  "proven": [
+    "35 offline tests: sign-in round trip, gateway refusal, upstream routing, turn order, eager gate, barge-in abort, client stories",
+    "15/15 e2e in headless Chromium against a fake Cloudflare: weather card, memory, painting, barge-in, DO alarm timer, goodbye, layout on desktop and phone"
+  ],
+  "unproven": [
+    "Flux over the AI Gateway WebSocket with an OAuth token (scripts/probe.mjs checks it)",
+    "Aura 2 linear16 container none through the gateway",
+    "Gemma 4 streamed tool calls through the gateway's OpenAI-compatible route",
+    "Echo cancellation on real hardware"
+  ],
+  "blocked": [
+    "img-gen runs on Jordan's Mac (not connected)",
+    "OAuth client for hark.coey.dev and the deploy need Jordan's Cloudflare credentials"
+  ]
+}
