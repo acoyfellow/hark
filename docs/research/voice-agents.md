@@ -33,6 +33,15 @@ Three internal sources, read on 2026-10-14:
 - **Conversation timing lab.** hark already exposes the knobs (`eot_threshold`, `eager_eot_threshold`, `eot_timeout_ms` in `src/upstream.ts`), and its e2e harness drives turns with a synthesized voice. A "tune my timing" settings page would be small.
 - **Programmable voice sessions** (Workers for Platforms). hark's tools live in one table (`src/tools.ts`). Putting them behind a per-tenant Worker is the same seam.
 
+## First live numbers (2026-10-14)
+
+From a laptop straight to Workers AI on the AX account, 5 runs per pipeline (`receipts/bench-live-direct.json`). Speech end → Flux `EndOfTurn` → first sentence of streamed text → first Aura audio byte:
+
+- **Flux + GPT-OSS 20B + Aura 1: 1,642 ms p50, 1,789 ms p95, 5/5 completed.** Starting on `EagerEndOfTurn` brings p50 to 1,395 ms. The showcase baseline for the same models was 2,416 / 5,975 ms, but it was measured in a browser through `@cloudflare/voice`, so the comparison is not exact.
+- **Gemma 4 with thinking off reached first text in 441 ms p50**, not the showcase's 6.0 s. That suggests the showcase's Gemma result came from leaving reasoning on, not from the model or Workers AI.
+- **Aura 2's first audio byte arrived in about 500 ms, the same as Aura 1**, not 3.5 s. hark streams each sentence's response body as it arrives. If `@cloudflare/voice` waits for the whole sentence to finish synthesizing before sending it, that would explain the showcase's gap. Worth checking in the SDK.
+- Flux took 311 to 736 ms p50 from speech end to `EndOfTurn` across pipelines. Opening its WebSocket took about 2 s, which hark pays once at wake, not per turn.
+
 ## What is still unmeasured
 
-hark's numbers so far come from a fake Cloudflare (`receipts/e2e-local.json`). Run `node scripts/probe.mjs` and `RUNS=10 node scripts/bench.mjs` against a real account before quoting latency.
+The same path through an authenticated AI Gateway with a real user's OAuth token, and time to first audio played in a real browser. Both need hark.coey.dev live with its OAuth client.

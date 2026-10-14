@@ -159,6 +159,17 @@ pass  no uncaught page errors
 
 `scripts/bench.mjs` measures latency on a real account the way the internal Voice Agents Showcase benchmark did: speech end → Flux end of turn → first sentence of text → first audio, per brain and voice engine, with completion rates next to p50 and p95. It writes `receipts/bench-live.json`. The internal baseline to beat is 2,416 ms p50 (Flux + GPT-OSS + Aura-1).
 
+First live run, from a laptop straight to Workers AI on a real account (`HARK_ROUTE=direct`, 5 runs per pipeline, [`receipts/bench-live-direct.json`](receipts/bench-live-direct.json)):
+
+| Pipeline | Completed | Speech end → first audio, p50 / p95 | Starting on the eager end of turn, p50 |
+| --- | --- | --- | --- |
+| **Flux + GPT-OSS 20B + Aura 1** (default) | 5/5 | 1,642 / 1,789 ms | 1,395 ms |
+| Flux + GPT-OSS 120B + Aura 1 | 5/5 | 1,720 / 2,367 ms | 1,568 ms |
+| Flux + GPT-OSS 20B + Aura 2 | 4/5 | 1,871 / 1,992 ms | 1,778 ms |
+| Flux + Gemma 4 (thinking off) + Aura 1 | 4/5 | 2,388 / 2,462 ms | 1,731 ms |
+
+These stop at the first audio byte on the laptop, not at playback in a browser, and they skip the gateway because the laptop's wrangler token cannot run an authenticated AI Gateway. The four incomplete runs never got an `EndOfTurn` because the benchmark stopped sending audio too early; the benchmark now keeps sending silence the way hark's microphone does.
+
 `scripts/probe.mjs` checks the real thing without a browser. Aura says a sentence, Flux hears it back over the gateway WebSocket, the brain calls a tool, and FLUX paints, all on a real account through its gateway. It writes `receipts/live-probe.json`.
 
 ## What we learned before building it

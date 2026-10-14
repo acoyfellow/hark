@@ -81,8 +81,8 @@ const hear = (pcm) =>
     const ws = new WebSocket(fluxUrl('encoding=linear16&sample_rate=16000&eot_threshold=0.75&eager_eot_threshold=0.5&eot_timeout_ms=3500'), { headers });
     const timer = setTimeout(() => {
       ws.close();
-      reject(new Error('no EndOfTurn in 20 s'));
-    }, 20000);
+      reject(new Error('no EndOfTurn in 25 s'));
+    }, 25000);
     let speechEndAt = 0;
     let eagerAt = null;
 
@@ -98,7 +98,7 @@ const hear = (pcm) =>
 
       speechEndAt = Date.now();
 
-      for (let i = 0; i < 60 && ws.readyState === WebSocket.OPEN; i += 1) {
+      for (let i = 0; i < 160 && ws.readyState === WebSocket.OPEN; i += 1) {
         ws.send(Buffer.alloc(frame));
         await new Promise((done) => setTimeout(done, 80));
       }
