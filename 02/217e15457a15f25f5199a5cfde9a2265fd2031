@@ -1,0 +1,19 @@
+receipts/live-probe-direct.json
+  s_ca5a6532cca4b3::t_dad6c6624f3ee2 3,6-8,13,15-16,23,25,31,37,41,46,51,58,60,62,67-80,84,87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "02217e15457a15f25f5199a5cfde9a2265fd2031",
+  "prompts": {},
+  "sessions": {
+    "s_ca5a6532cca4b3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a13c32-5367-7000-8a26-f0799dfcdedc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
