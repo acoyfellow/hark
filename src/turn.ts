@@ -137,6 +137,9 @@ const FILLERS = ['One moment.', 'Let me check on that.', 'Give me a second.'] as
 
 export const RECOVERY = "Sorry, I lost that. Could you say it again?";
 
+const noteRecoveryFailure = (error: TurnFailed) =>
+  Effect.sync(() => console.error(JSON.stringify({ event: 'hark.recovery_failed', reason: error.reason.slice(0, 500) })));
+
 let fillerIndex = -1;
 
 const nextFiller = () => {
@@ -277,11 +280,11 @@ export const runTurn = (
           });
     }
 
-    if (progress.spoken.length === 0) yield* say(ports, RECOVERY, released, progress).pipe(Effect.ignore);
+    if (progress.spoken.length === 0) yield* say(ports, RECOVERY, released, progress).pipe(Effect.catch(noteRecoveryFailure));
 
     return { appended, spoken: progress.spoken.join(' '), sleep };
   }).pipe(
     Effect.tapError(() =>
-      progress.firstAudioAt === null ? say(ports, RECOVERY, released, progress).pipe(Effect.ignore) : Effect.void,
+      progress.firstAudioAt === null ? say(ports, RECOVERY, released, progress).pipe(Effect.catch(noteRecoveryFailure)) : Effect.void,
     ),
   );

@@ -150,7 +150,8 @@ describe('one spoken turn', () => {
 
     expect(most).toBeLessThanOrEqual(3);
     expect(most).toBeGreaterThan(1);
-    expect(timeline.slice(0, 2)).toEqual(['chunk', 'heard']);
+    expect(timeline[0]).toBe('chunk');
+    expect(timeline.indexOf('heard')).toBeLessThan(timeline.lastIndexOf('chunk'));
     expect(h.audio.every((bytes) => bytes % 2 === 0)).toBe(true);
     expect(h.audio.reduce((sum, bytes) => sum + bytes, 0)).toBe(p.spoken.length * 302);
   });

@@ -8,7 +8,7 @@ import WebSocket from 'ws';
 const account = process.env.CLOUDFLARE_ACCOUNT_ID;
 const token = process.env.CLOUDFLARE_API_TOKEN;
 const gateway = process.env.HARK_GATEWAY ?? 'default';
-const brain = process.env.HARK_BRAIN ?? '@cf/google/gemma-4-26b-a4b-it';
+const brain = process.env.HARK_BRAIN ?? '@cf/openai/gpt-oss-20b';
 
 if (!account || !token) {
   console.error('set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN (npx wrangler auth token)');
@@ -161,6 +161,44 @@ await step(`${brain} streams and calls a tool through the gateway`, async () => 
 
   return { firstByteMs: firstByte, toolCalled: called, lisbon: /lisbon/i.test(text) };
 });
+
+const roundTwo = async (messages) => {
+  const response = await fetch(chatUrl, {
+    method: 'POST',
+    headers: { ...headers, 'content-type': 'application/json' },
+    body: JSON.stringify({ model: brain, stream: true, max_tokens: 200, ...(brain.startsWith('@cf/openai/gpt-oss') ? { reasoning_effort: 'low' } : { chat_template_kwargs: { enable_thinking: false } }), messages }),
+  });
+  const text = await response.text();
+
+  if (!response.ok) throw new Error(`${response.status}: ${text.slice(0, 300)}`);
+
+  const said = [...text.matchAll(/"content":"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]).join('');
+
+  if (said.trim() === '') throw new Error(`no text: ${text.slice(0, 200)}`);
+
+  return { said: said.slice(0, 160) };
+};
+
+const asked = [
+  { role: 'system', content: 'You are a voice. Answer in one short spoken sentence.' },
+  { role: 'user', content: SENTENCE },
+];
+
+await step(`${brain} answers from a tool result sent as role:tool messages (OpenAI shape)`, () =>
+  roundTwo([
+    ...asked,
+    { role: 'assistant', content: null, tool_calls: [{ id: 'c1', type: 'function', function: { name: 'get_weather', arguments: '{"place":"Lisbon"}' } }] },
+    { role: 'tool', tool_call_id: 'c1', content: '{"now_celsius":21,"conditions":"clear"}' },
+  ]),
+);
+
+await step(`${brain} answers from a tool result sent as plain text (what hark sends)`, () =>
+  roundTwo([
+    ...asked,
+    { role: 'assistant', content: '[I called get_weather({"place":"Lisbon"})]' },
+    { role: 'user', content: '[Result of get_weather, not said by the person] {"now_celsius":21,"conditions":"clear"}' },
+  ]),
+);
 
 await step('FLUX.2 klein paints through the gateway', async () => {
   const form = new FormData();

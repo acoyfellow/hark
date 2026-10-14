@@ -23,6 +23,7 @@ import { DIRECTORY_NAME, type Grant } from './directory';
 import { type Env, LOCAL_HEADER, LOCAL_OWNER, OWNER_HEADER } from './env';
 import { systemPrompt } from './prompt';
 import { sameWords } from './sentences';
+import { flattenForBrain } from './flatten';
 import { parseArguments, runTool, type ToolHost, toolLabel, toolSchemas } from './tools';
 import { type ChatMessage, type Progress, runTurn } from './turn';
 import { CLOUDFLARE_ORIGINS, type Credentials, type Origins, type Upstream, upstream } from './upstream';
@@ -35,7 +36,7 @@ const SNAP_TIMEOUT_MS = 6_000;
 
 const BARGE_MIN_CHARS = 6;
 
-const SIGNED_OUT = /sign-in expired|failed \(401\)/u;
+const SIGNED_OUT = /sign-in expired/u;
 
 type FluxEvent = {
   readonly event: string;
@@ -731,7 +732,7 @@ export class Hark extends DurableObject<Env> {
           return live.chat(
             {
               model: brain,
-              messages,
+              messages: flattenForBrain(messages),
               tools: toolSchemas(),
               stream: true,
               max_tokens: 600,
@@ -802,7 +803,11 @@ export class Hark extends DurableObject<Env> {
     if (!eager) this.presence(session, 'thinking');
 
     fiber.addObserver((exit) => {
-      this.trace(running, Exit.isSuccess(exit) ? 'spoke' : Cause.hasInterrupts(exit.cause) ? 'interrupted' : 'failed');
+      this.trace(
+        running,
+        Exit.isSuccess(exit) ? 'spoke' : Cause.hasInterrupts(exit.cause) ? 'interrupted' : 'failed',
+        Exit.isFailure(exit) && !Cause.hasInterrupts(exit.cause) ? String(Cause.squash(exit.cause) instanceof Error ? (Cause.squash(exit.cause) as Error).message : JSON.stringify(Cause.squash(exit.cause))).slice(0, 500) : null,
+      );
 
       if (session.running !== running) return;
 
@@ -843,7 +848,7 @@ export class Hark extends DurableObject<Env> {
     });
   }
 
-  private trace(running: Running, outcome: 'spoke' | 'interrupted' | 'failed') {
+  private trace(running: Running, outcome: 'spoke' | 'interrupted' | 'failed', error: string | null) {
     const since = (at: number | null) => (at === null ? null : at - running.endOfSpeechAt);
     const { brain, engine } = this.settings();
 
@@ -862,6 +867,7 @@ export class Hark extends DurableObject<Env> {
         lastAudioMs: since(running.lastAudioAt),
         endedMs: since(Date.now()),
         sentences: running.progress.spoken.length,
+        error,
       }),
     );
   }
