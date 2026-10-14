@@ -17,7 +17,7 @@
     { "id": "owner-review", "done": false }
   ],
   "proven": [
-    "35 offline tests: sign-in round trip, gateway refusal, upstream routing, turn order, eager gate, barge-in abort, client stories",
+    "36 offline tests: sign-in round trip, gateway refusal, upstream routing, turn order, eager gate, barge-in abort, client stories",
     "15/15 e2e in headless Chromium against a fake Cloudflare: weather card, memory, painting, barge-in, DO alarm timer, goodbye, layout on desktop and phone"
   ],
   "unproven": [

@@ -2,23 +2,23 @@
   "kind": "hark.e2e",
   "target": "local",
   "base": "http://127.0.0.1:8790",
-  "at": "2026-10-14T15:33:31.408Z",
+  "at": "2026-10-14T15:42:20.195Z",
   "passed": 15,
   "total": 15,
   "speech": {
-    "count": 18,
-    "bytes": 2157672
+    "count": 1337,
+    "bytes": 2162948
   },
   "results": [
     {
       "name": "the page renders asleep with the ear and no chat box",
       "ok": true,
-      "ms": 1540
+      "ms": 1565
     },
     {
       "name": "tapping the ear opens the line to the account and starts listening",
       "ok": true,
-      "ms": 187,
+      "ms": 201,
       "detail": {
         "account": "Local account",
         "settings": {
@@ -34,62 +34,62 @@
       "detail": {
         "latency": {
           "total": 0,
-          "model": 127,
-          "speech": 181,
+          "model": 124,
+          "speech": 185,
           "eager": true
         },
-        "firstSpeechMs": 2030,
-        "packets": 3
+        "firstSpeechMs": 2039,
+        "packets": 136
       }
     },
     {
       "name": "the browser plays the whole answer and reports it, then hark listens again",
       "ok": true,
-      "ms": 2713
+      "ms": 2422
     },
     {
       "name": "remember stores a fact and shows it",
       "ok": true,
-      "ms": 2805
+      "ms": 3310
     },
     {
       "name": "paint puts a FLUX picture on the screen",
       "ok": true,
-      "ms": 10908
+      "ms": 10948
     },
     {
       "name": "talking over a long answer interrupts it (barge-in)",
       "ok": true,
-      "ms": 13497,
+      "ms": 13217,
       "detail": {
-        "duckedAfterMs": 6372,
-        "interruptedAfterMs": 7028
+        "duckedAfterMs": 6583,
+        "interruptedAfterMs": 7234
       }
     },
     {
       "name": "a timer counts down and hark announces it when it ends (Durable Object alarm)",
       "ok": true,
-      "ms": 5292,
+      "ms": 5277,
       "detail": {
-        "announcedAfterMs": 3986
+        "announcedAfterMs": 3972
       }
     },
     {
       "name": "saying goodbye puts hark to sleep and closes the microphone",
       "ok": true,
-      "ms": 4453
+      "ms": 4478
     },
     {
       "name": "the settings sheet shows the stack, voices, and brains",
       "ok": true,
-      "ms": 1913
+      "ms": 1642
     },
     {
       "name": "every upstream call carried the account token through AI Gateway",
       "ok": true,
       "ms": 12,
       "detail": {
-        "calls": 33,
+        "calls": 71,
         "kinds": [
           "listen",
           "completions",
@@ -101,7 +101,7 @@
     {
       "name": "the desktop layout keeps cards off the ear and nothing overflows",
       "ok": true,
-      "ms": 3,
+      "ms": 2,
       "detail": {
         "overflowX": false,
         "cardsOverOrb": 0,
@@ -121,7 +121,7 @@
     {
       "name": "the phone layout renders asleep, then talks with a card on screen",
       "ok": true,
-      "ms": 7856,
+      "ms": 8250,
       "detail": {
         "overflowX": false,
         "cardsOverOrb": 0,
@@ -141,7 +141,7 @@
     {
       "name": "the landing page offers Sign in with Cloudflare on desktop and phone",
       "ok": true,
-      "ms": 4239
+      "ms": 3830
     },
     {
       "name": "no uncaught page errors",

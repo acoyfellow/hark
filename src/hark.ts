@@ -523,7 +523,7 @@ export class Hark extends DurableObject<Env> {
       running.endOfSpeechAt = Date.now();
       Effect.runFork(Deferred.succeed(running.release, undefined));
 
-      if (running.progress.spoken.length === 0) {
+      if (running.progress.firstAudioAt === null) {
         this.presence(session, 'thinking');
 
         if (running.doing !== null) this.send(session, { _tag: 'Doing', label: running.doing });
@@ -554,7 +554,7 @@ export class Hark extends DurableObject<Env> {
     const running = session.running;
     const turn = running?.turn ?? session.playing;
 
-    if (running !== null && running.confirmed && running.progress.spoken.length > 0) {
+    if (running !== null && running.confirmed && running.progress.firstAudioAt !== null) {
       this.record([
         { role: 'user', content: running.transcript },
         { role: 'assistant', content: `${running.progress.spoken.join(' ')} [interrupted]` },
@@ -664,6 +664,7 @@ export class Hark extends DurableObject<Env> {
     const release = Effect.runSync(Deferred.make<void>());
     const progress: Progress = { spoken: [], firstAudioAt: null, firstTokenAt: null };
     const host = this.toolHost(session);
+    let heard = false;
     const prompt = systemPrompt({
       now: new Date(),
       timeZone: session.timeZone,
@@ -709,7 +710,8 @@ export class Hark extends DurableObject<Env> {
         audio: (pcm) => {
           if (session.running?.turn !== turn) return;
 
-          if (progress.spoken.length === 0) {
+          if (!heard) {
+            heard = true;
             this.presence(session, 'speaking');
             this.measure(session, session.running);
           }
@@ -753,7 +755,7 @@ export class Hark extends DurableObject<Env> {
       if (Exit.isSuccess(exit)) {
         this.record(system ? exit.value.appended : [userMessage, ...exit.value.appended]);
 
-        if (progress.spoken.length > 0) this.send(session, { _tag: 'SpeechEnd', turn });
+        if (heard) this.send(session, { _tag: 'SpeechEnd', turn });
         else {
           session.playing = null;
           this.presence(session, 'listening');

@@ -40,7 +40,7 @@ mic ─▶ AudioWorklet: 16 kHz PCM, 80 ms frames ─▶ WebSocket ─▶ your D
        TurnResumed    ─▶ throw that away, keep listening
        EndOfTurn      ─▶ same words? open the gate : start over
                      │
-     Workers AI brain (streamed, with tools) ─▶ sentence chunker ─▶ Aura 2, 3 sentences in flight
+     Workers AI brain (streamed, with tools) ─▶ sentence chunker ─▶ Aura 2, 3 in flight, streamed
                      │                                                    │
                      └─ tools: weather, look up, timers, memory, camera, paint, voice, sleep
                                                                           ▼
@@ -49,7 +49,7 @@ mic ─▶ AudioWorklet: 16 kHz PCM, 80 ms frames ─▶ WebSocket ─▶ your D
 
 - **It starts before you finish.** Flux sends `EagerEndOfTurn` when it thinks you are probably done. hark starts the model and the voice right then, but holds every byte of audio behind an [Effect](https://effect.website) `Deferred`. If you keep talking (`TurnResumed`), that work is interrupted and thrown away. If Flux confirms the same words (`EndOfTurn`), the gate opens and the first sentence is often ready already. The corner of the screen shows the real number: milliseconds from the end of your speech to its first word.
 - **You can talk over it.** When you start speaking while it talks, it ducks its own volume at once. If what you say turns out to be words and not a cough, the turn's fiber is interrupted, the model request is aborted (so your account stops paying for tokens nobody will hear), and the browser drops everything already queued. What it had said so far goes into its memory of the conversation, marked as cut off.
-- **It speaks in sentences, in order.** The reply streams from the model into a chunker that cuts the first piece early, at a comma if need be, so the voice starts fast. Later pieces are longer, so they sound natural. Up to three sentences are synthesized at once, and they always play in order.
+- **It speaks in sentences, in order.** The reply streams from the model into a chunker that cuts the first piece early, at a comma if need be, so the voice starts fast. Later pieces are longer, so they sound natural. Up to three sentences are synthesized at once. Each one streams to your speaker as its audio arrives, and they always play in order.
 - **The browser says when it has finished speaking.** Audio arrives faster than it plays. The playback worklet reports when its buffer runs dry, and only then does hark go back to listening.
 
 ## What it can do
@@ -118,7 +118,7 @@ To talk to it with your own Workers AI instead, put `LOCAL_CF_TOKEN` (from `npx 
 
 ## Proof
 
-`bun run check` builds the client, typechecks both sides, lints, and runs 35 tests:
+`bun run check` builds the client, typechecks both sides, lints, and runs 36 tests:
 
 | Test | Proves |
 | --- | --- |
@@ -127,6 +127,7 @@ To talk to it with your own Workers AI instead, put `LOCAL_CF_TOKEN` (from `npx 
 | Forged state | A callback that did not start here is refused |
 | Upstream | Flux, the brain, and Aura all go to `gateway.ai.cloudflare.com/v1/<account>/<gateway>/workers-ai` with the person's token |
 | Turn: order | Sentences play in order even when later ones synthesize faster |
+| Turn: streaming | Audio reaches the speaker chunk by chunk, with at most three speech requests in flight |
 | Turn: tools | Tool results are fed back and the next round speaks them |
 | Turn: eager gate | Nothing is heard until the turn is confirmed |
 | Turn: barge-in | Interrupting stops the audio and aborts the model request |

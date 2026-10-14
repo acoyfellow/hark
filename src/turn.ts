@@ -1,4 +1,4 @@
-import { Effect, Schema, Stream } from 'effect';
+import { type Cause, Effect, Queue, Schema, Semaphore, Stream } from 'effect';
 import type { Visual } from '../shared/protocol';
 import { chunker } from './sentences';
 import { type ToolCall, chatEvents } from './sse';
@@ -52,29 +52,50 @@ const reasonOf = (cause: unknown) => (cause instanceof Error ? cause.message : S
 
 const failed = (cause: unknown) => new TurnFailed({ reason: reasonOf(cause) });
 
-const evenBytes = async (body: ReadableStream<Uint8Array>): Promise<Uint8Array> => {
-  const parts: Uint8Array[] = [];
-  let size = 0;
+const SPEAKING_AT_ONCE = 3;
 
-  for await (const part of body) {
-    parts.push(part);
-    size += part.byteLength;
-  }
+const aligner = () => {
+  let carry: number | null = null;
 
-  const all = new Uint8Array(size - (size % 2));
-  let at = 0;
+  return (part: Uint8Array): Uint8Array => {
+    const joined = carry === null ? part : new Uint8Array([carry, ...part]);
+    const even = joined.byteLength - (joined.byteLength % 2);
 
-  for (const part of parts) {
-    const room = all.byteLength - at;
+    carry = even < joined.byteLength ? (joined[even] ?? null) : null;
 
-    if (room <= 0) break;
-
-    all.set(room >= part.byteLength ? part : part.subarray(0, room), at);
-    at += Math.min(room, part.byteLength);
-  }
-
-  return all;
+    return joined.subarray(0, even);
+  };
 };
+
+type Spool = { readonly sentence: string; readonly chunks: Queue.Queue<Uint8Array, TurnFailed | Cause.Done> };
+
+const fill = (ports: TurnPorts, sentence: string, chunks: Spool['chunks']) =>
+  Effect.tryPromise({
+    try: async (signal) => {
+      const align = aligner();
+
+      for await (const part of await ports.speak(sentence, signal)) {
+        const even = align(part);
+
+        if (even.byteLength > 0) Queue.offerUnsafe(chunks, even);
+      }
+    },
+    catch: failed,
+  }).pipe(
+    Effect.matchEffect({
+      onFailure: (error) => Queue.fail(chunks, error),
+      onSuccess: () => Queue.end(chunks),
+    }),
+  );
+
+const spool = (ports: TurnPorts, permits: Semaphore.Semaphore, sentence: string) =>
+  Effect.gen(function* () {
+    const chunks = yield* Queue.unbounded<Uint8Array, TurnFailed | Cause.Done>();
+
+    yield* Effect.forkScoped(Semaphore.withPermit(permits, fill(ports, sentence, chunks)));
+
+    return { sentence, chunks } satisfies Spool;
+  });
 
 type Round = { readonly text: string; readonly calls: readonly ToolCall[] };
 
@@ -115,24 +136,28 @@ const speakRound = (
     });
     const round = { text: '', calls: [] as readonly ToolCall[] };
 
+    const permits = yield* Semaphore.make(SPEAKING_AT_ONCE);
+
     yield* Stream.fromAsyncIterable(sentencesOf(body, round, progress), failed).pipe(
-      Stream.mapEffect(
-        (sentence) =>
-          Effect.tryPromise({
-            try: async (signal) => ({
-              sentence,
-              pcm: await evenBytes(await ports.speak(sentence, signal)),
-            }),
-            catch: failed,
-          }),
-        { concurrency: 3 },
+      Stream.mapEffect((sentence) => spool(ports, permits, sentence)),
+      Stream.buffer({ capacity: 16 }),
+      Stream.flatMap(({ sentence, chunks }) =>
+        Stream.fromQueue(chunks).pipe(
+          Stream.map((pcm): Uint8Array | null => pcm),
+          Stream.concat(Stream.succeed(null)),
+          Stream.map((pcm) => ({ sentence, pcm })),
+        ),
       ),
       Stream.runForEach(({ sentence, pcm }) =>
         Effect.gen(function* () {
+          if (pcm === null) {
+            progress.spoken.push(sentence);
+            return;
+          }
+
           yield* released;
           progress.firstAudioAt ??= Date.now();
           ports.audio(pcm);
-          progress.spoken.push(sentence);
         }),
       ),
     );

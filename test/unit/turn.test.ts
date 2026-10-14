@@ -113,4 +113,45 @@ describe('one spoken turn', () => {
     expect(h.audio.length).toBeLessThan(30);
     expect(h.aborted.length).toBeGreaterThan(0);
   });
+
+  it('streams each sentence to the speaker as its audio arrives, with at most three voices in flight', async () => {
+    const h = harness([{ deltas: Array.from({ length: 8 }, (_, i) => `This is sentence ${i}, long enough to stand on its own as a chunk here. `) }]);
+    let inFlight = 0;
+    let most = 0;
+    const timeline: string[] = [];
+
+    const ports: TurnPorts = {
+      ...h.ports,
+      speak: async () => {
+        inFlight += 1;
+        most = Math.max(most, inFlight);
+
+        return new ReadableStream<Uint8Array>({
+          async start(controller) {
+            for (let part = 0; part < 3; part += 1) {
+              await new Promise((resolve) => setTimeout(resolve, 8));
+              controller.enqueue(new Uint8Array(101));
+              timeline.push('chunk');
+            }
+
+            inFlight -= 1;
+            controller.close();
+          },
+        });
+      },
+      audio: (pcm) => {
+        h.audio.push(pcm.byteLength);
+        timeline.push('heard');
+      },
+    };
+    const p = progress();
+
+    await Effect.runPromise(runTurn(ports, [], Effect.void, p));
+
+    expect(most).toBeLessThanOrEqual(3);
+    expect(most).toBeGreaterThan(1);
+    expect(timeline.slice(0, 2)).toEqual(['chunk', 'heard']);
+    expect(h.audio.every((bytes) => bytes % 2 === 0)).toBe(true);
+    expect(h.audio.reduce((sum, bytes) => sum + bytes, 0)).toBe(p.spoken.length * 302);
+  });
 });
