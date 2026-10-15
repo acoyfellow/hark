@@ -1,4 +1,4 @@
-import { SOCKET_PATH } from '../shared/protocol';
+import { getAgentByName } from 'agents';
 import { gate } from './auth/gate';
 import { type Env, LOCAL_HEADER, LOCAL_OWNER, OWNER_HEADER } from './env';
 import { signInPage } from './auth/sign-in-page';
@@ -36,7 +36,9 @@ const secured = (response: Response) => {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 };
 
-const voiceSocket = (request: Request, env: Env, owner: string, local: boolean) => {
+export const AGENT_PATH = /^\/agents\/hark(\/|$)/u;
+
+const voiceSocket = async (request: Request, env: Env, owner: string, local: boolean) => {
   if (request.headers.get('upgrade')?.toLowerCase() !== 'websocket')
     return new Response('Expected a WebSocket upgrade', { status: 426 });
 
@@ -47,13 +49,15 @@ const voiceSocket = (request: Request, env: Env, owner: string, local: boolean) 
   headers.set(OWNER_HEADER, owner);
   headers.set(LOCAL_HEADER, local ? '1' : '0');
 
-  return env.HARK.getByName(owner).fetch(new Request(request.url, { headers }));
+  const agent = await getAgentByName(env.HARK, owner);
+
+  return agent.fetch(new Request(request.url, { headers }));
 };
 
 const route = async (request: Request, env: Env, owner: string, local: boolean): Promise<Response> => {
   const { pathname } = new URL(request.url);
 
-  if (pathname === SOCKET_PATH) return voiceSocket(request, env, owner, local);
+  if (AGENT_PATH.test(pathname)) return voiceSocket(request, env, owner, local);
 
   if (pathname === '/' && request.method === 'GET') return appPage(new URL(request.url).origin, local);
 

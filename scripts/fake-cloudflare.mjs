@@ -131,8 +131,10 @@ const reply = (messages) => {
   const last = messages.at(-1) ?? { role: 'user', content: '' };
   const text = typeof last.content === 'string' ? last.content.toLowerCase() : '';
 
-  if (last.role === 'tool') {
-    const asked = messages.findLast((message) => message.role === 'assistant' && message.tool_calls)?.tool_calls?.[0]?.function?.name;
+  const flattened = last.role === 'user' && typeof last.content === 'string' ? /^\[Result of ([a-z_]+)/.exec(last.content) : null;
+
+  if (last.role === 'tool' || flattened) {
+    const asked = flattened?.[1] ?? messages.findLast((message) => message.role === 'assistant' && message.tool_calls)?.tool_calls?.[0]?.function?.name;
     const answers = {
       get_weather: "It's about twenty-one degrees and clear in Lisbon. A perfect evening for a walk.",
       remember: "Got it. Orange it is, and I'll keep that in mind.",
@@ -279,6 +281,9 @@ const listen = (ws) => {
         eager = false;
         updates = 0;
         send('StartOfTurn');
+      } else if (eager) {
+        eager = false;
+        send('TurnResumed', words(transcript).slice(0, Math.ceil(updates / 3)).join('').trim());
       }
 
       updates += 1;

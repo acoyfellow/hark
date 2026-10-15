@@ -1,11 +1,6 @@
-import {
-  type ClientFrame,
-  decodeServerFrame,
-  encodeClientFrame,
-  readSpeechPacket,
-  SOCKET_PATH,
-  type ServerFrame,
-} from '../../shared/protocol';
+import { VoiceClient } from 'agents/voice/client';
+import { type ClientFrame, encodeClientFrame, ServerFrame, type ServerFrame as Frame } from '../../shared/protocol';
+import { Schema } from 'effect';
 
 export const meter = { mic: 0, speech: 0 };
 
@@ -17,183 +12,124 @@ export type Engine = {
 };
 
 export type EngineHooks = {
-  readonly frame: (frame: ServerFrame) => void;
+  readonly frame: (frame: Frame) => void;
   readonly closed: (code: number, reason: string) => void;
 };
 
-let shared: AudioContext | null = null;
+const decodeFrame = Schema.decodeUnknownOption(ServerFrame);
 
-let modulesFor: AudioContext | null = null;
+export const primeAudio = () => undefined;
 
-export const primeAudio = () => {
-  shared ??= new AudioContext({ latencyHint: 'interactive' });
+const plain = (frame: ClientFrame): Record<string, unknown> => JSON.parse(encodeClientFrame(frame)) as Record<string, unknown>;
 
-  if (shared.state === 'suspended') void shared.resume();
-};
+const opened = (client: VoiceClient) =>
+  new Promise<void>((resolve, reject) => {
+    if (client.connected) {
+      resolve();
+      return;
+    }
 
-const audioContext = async () => {
-  primeAudio();
+    const timer = setTimeout(() => reject(new Error('The voice line timed out.')), 8000);
+    const onChange = (connected: boolean) => {
+      if (!connected) return;
 
-  const context = shared ?? new AudioContext();
+      clearTimeout(timer);
+      client.removeEventListener('connectionchange', onChange);
+      resolve();
+    };
 
-  if (context.state === 'suspended') await context.resume();
+    client.addEventListener('connectionchange', onChange);
+  });
 
-  if (modulesFor !== context) {
-    await context.audioWorklet.addModule('/audio/capture.js');
-    await context.audioWorklet.addModule('/audio/playback.js');
-    modulesFor = context;
-  }
+export const startEngine = async (hooks: EngineHooks, camera: boolean): Promise<Engine> => {
+  const client = new VoiceClient({ agent: 'Hark', name: 'me', preferredFormat: 'pcm16', interruptMode: 'duck' });
+  let stopped = false;
+  let status: string = 'idle';
 
-  return context;
-};
+  const send = (frame: ClientFrame) => client.sendJSON(plain(frame));
 
-const microphone = async () => {
-  try {
-    return await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-        channelCount: 1,
+  client.addEventListener('statuschange', (next) => {
+    status = next;
+
+    if (next === 'listening' || next === 'thinking' || next === 'speaking') hooks.frame({ _tag: 'Presence', presence: next });
+  });
+  client.addEventListener('interimtranscript', (text) => {
+    if (text !== null && text.trim() !== '' && status === 'listening') hooks.frame({ _tag: 'Presence', presence: 'hearing' });
+  });
+  client.addEventListener('audiolevelchange', (level) => {
+    meter.mic = level;
+  });
+  client.addEventListener('playbacklevelchange', (level) => {
+    meter.speech = level;
+  });
+  client.addEventListener('custommessage', (message) => {
+    const decoded = decodeFrame(message);
+
+    if (decoded._tag === 'Some') hooks.frame(decoded.value);
+  });
+  client.addEventListener('turnmetrics', (metrics) => {
+    if (metrics.finalInputToFirstAudioMs === undefined) return;
+
+    hooks.frame({
+      _tag: 'Measured',
+      latency: {
+        total: metrics.finalInputToFirstAudioMs,
+        model: metrics.modelToFirstTextMs ?? 0,
+        speech: metrics.ttsToFirstAudioMs ?? 0,
+        eager: metrics.speculativeLeadMs !== undefined,
       },
     });
+  });
+  client.addEventListener('voiceerror', (error) => {
+    hooks.frame({ _tag: 'Fault', reason: error.message, fatal: false });
+  });
+  client.addEventListener('connectionchange', (connected) => {
+    if (!connected && !stopped) hooks.closed(1006, 'The voice line dropped.');
+  });
+
+  client.connect();
+
+  try {
+    await opened(client);
   } catch (cause) {
+    client.disconnect();
+    throw cause;
+  }
+
+  send({ _tag: 'Hello', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, locale: navigator.language, camera });
+
+  try {
+    await client.startCall();
+  } catch (cause) {
+    client.disconnect();
     throw new MicrophoneRefused(
       cause instanceof DOMException && cause.name === 'NotAllowedError'
         ? 'hark needs your microphone. Allow it in the address bar, then tap again.'
         : `The microphone did not start: ${cause instanceof Error ? cause.message : String(cause)}`,
     );
   }
-};
-
-const socketUrl = () =>
-  `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}${SOCKET_PATH}`;
-
-const opened = (socket: WebSocket) =>
-  new Promise<void>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('The voice line timed out.')), 8000);
-
-    socket.addEventListener(
-      'open',
-      () => {
-        clearTimeout(timer);
-        resolve();
-      },
-      { once: true },
-    );
-    socket.addEventListener(
-      'close',
-      (event) => {
-        clearTimeout(timer);
-        reject(new Error(event.reason || 'Could not open the voice line.'));
-      },
-      { once: true },
-    );
-  });
-
-export const startEngine = async (hooks: EngineHooks, camera: boolean): Promise<Engine> => {
-  const stream = await microphone();
-  const context = await audioContext();
-  const source = context.createMediaStreamSource(stream);
-  const capture = new AudioWorkletNode(context, 'hark-capture');
-  const playback = new AudioWorkletNode(context, 'hark-playback', { outputChannelCount: [2] });
-  const sink = context.createGain();
-  const socket = new WebSocket(socketUrl());
-  let cleared = 0;
-  let stopped = false;
-
-  sink.gain.value = 0;
-  source.connect(capture);
-  capture.connect(sink);
-  sink.connect(context.destination);
-  playback.connect(context.destination);
-  socket.binaryType = 'arraybuffer';
-
-  const send = (frame: ClientFrame) => {
-    if (socket.readyState === WebSocket.OPEN) socket.send(encodeClientFrame(frame));
-  };
-
-  capture.port.onmessage = (event: MessageEvent<{ type: string; buffer?: ArrayBuffer; value?: number }>) => {
-    if (event.data.type === 'pcm' && event.data.buffer !== undefined && socket.readyState === WebSocket.OPEN)
-      socket.send(event.data.buffer);
-    else if (event.data.type === 'level') meter.mic = event.data.value ?? 0;
-  };
-
-  playback.port.onmessage = (event: MessageEvent<{ type: string; turn?: number; value?: number }>) => {
-    if (event.data.type === 'level') meter.speech = event.data.value ?? 0;
-    else if (event.data.type === 'drained') send({ _tag: 'Played', turn: event.data.turn ?? 0 });
-  };
-
-  socket.addEventListener('message', (event: MessageEvent<ArrayBuffer | string>) => {
-    if (event.data instanceof ArrayBuffer) {
-      const { turn, pcm } = readSpeechPacket(event.data);
-
-      if (turn > cleared)
-        playback.port.postMessage({ type: 'push', turn, buffer: pcm.buffer }, [pcm.buffer]);
-
-      return;
-    }
-
-    const decoded = decodeServerFrame(event.data);
-
-    if (decoded._tag === 'None') return;
-
-    const frame = decoded.value;
-
-    if (frame._tag === 'Interrupt') {
-      cleared = Math.max(cleared, frame.turn);
-      playback.port.postMessage({ type: 'clear', turn: frame.turn });
-    } else if (frame._tag === 'Duck') playback.port.postMessage({ type: 'duck', on: frame.ducked });
-    else if (frame._tag === 'SpeechEnd') playback.port.postMessage({ type: 'end', turn: frame.turn });
-
-    hooks.frame(frame);
-  });
-
-  socket.addEventListener('close', (event) => {
-    if (!stopped) hooks.closed(event.code, event.reason);
-  });
-
-  try {
-    await opened(socket);
-  } catch (cause) {
-    for (const track of stream.getTracks()) track.stop();
-    source.disconnect();
-    throw cause;
-  }
-
-  send({
-    _tag: 'Hello',
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    locale: navigator.language,
-    camera,
-  });
-
-  const quiet = () =>
-    new Promise<void>((resolve) => {
-      const started = Date.now();
-      const check = () => {
-        if (meter.speech < 0.002 || Date.now() - started > 5000) resolve();
-        else setTimeout(check, 120);
-      };
-
-      check();
-    });
 
   return {
     send,
     stop: async () => {
       stopped = true;
-      capture.port.postMessage({ type: 'mute', on: true });
 
-      for (const track of stream.getTracks()) track.stop();
+      if (status === 'speaking' || status === 'thinking')
+        await new Promise<void>((resolve) => {
+          const timer = setTimeout(resolve, 6000);
+          const onChange = (next: string) => {
+            if (next !== 'listening' && next !== 'idle') return;
 
-      if (socket.readyState <= WebSocket.OPEN) socket.close(1000, 'sleep');
+            clearTimeout(timer);
+            client.removeEventListener('statuschange', onChange);
+            resolve();
+          };
 
-      await quiet();
-      source.disconnect();
-      capture.disconnect();
-      playback.disconnect();
-      sink.disconnect();
+          client.addEventListener('statuschange', onChange);
+        });
+
+      client.endCall();
+      client.disconnect();
       meter.mic = 0;
       meter.speech = 0;
     },

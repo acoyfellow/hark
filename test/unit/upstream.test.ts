@@ -4,15 +4,22 @@ import { listenUrl, upstream } from '../../src/upstream';
 const credentials = { accountId: 'acc 1', gateway: 'default', token: async () => 'tok' };
 
 describe('every model call goes to the person’s own account through their AI Gateway', () => {
-  it('opens Deepgram Flux on the gateway with eager end-of-turn on', () => {
-    const url = new URL(listenUrl({ api: 'https://api', gateway: 'https://gw/v1' }, credentials, { keyterms: ['hark'] }));
+  it('opens Deepgram Flux on the gateway with whatever the Agents SDK Flux provider asks for', () => {
+    const url = new URL(
+      listenUrl({ api: 'https://api', gateway: 'https://gw/v1' }, credentials, {
+        encoding: 'linear16',
+        sample_rate: '16000',
+        eager_eot_threshold: '0.5',
+        keyterm: ['hark', 'Cloudflare'],
+      }),
+    );
 
     expect(url.origin + url.pathname).toBe('https://gw/v1/acc%201/default/workers-ai');
     expect(url.searchParams.get('model')).toBe('@cf/deepgram/flux');
     expect(url.searchParams.get('encoding')).toBe('linear16');
     expect(url.searchParams.get('sample_rate')).toBe('16000');
     expect(url.searchParams.get('eager_eot_threshold')).toBe('0.5');
-    expect(url.searchParams.getAll('keyterm')).toEqual(['hark']);
+    expect(url.searchParams.getAll('keyterm')).toEqual(['hark', 'Cloudflare']);
   });
 
   it('streams chat and speech with the user token in both auth headers', async () => {

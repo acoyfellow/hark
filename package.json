@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@effect/platform-browser": "4.0.0",
+    "agents": "file:./vendor/agents-0.28.1-voice-93aa507.tgz",
     "effect": "4.0.0",
     "foldkit": "0.168.0"
   },

@@ -58,7 +58,7 @@ const redirect = (location: string, cookies: string[] = []) => {
 const wantsJson = (request: Request) => {
   const path = new URL(request.url).pathname;
 
-  return path.startsWith('/api/');
+  return path.startsWith('/api/') || path.startsWith('/agents/');
 };
 
 type Flow = { readonly state: string; readonly verifier: string; readonly expires: number };

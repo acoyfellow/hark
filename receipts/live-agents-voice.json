@@ -1,0 +1,376 @@
+{
+  "kind": "live-agents-voice",
+  "origin": "https://hark.coey.dev",
+  "branch": "agents-voice",
+  "commit": "5892253",
+  "deployedVersion": "3b94c448-fa60-4e70-af3a-8cea8bbf45a6",
+  "previousVersion": "7ff8efd7-1eb3-4689-83cc-ef4b18233022",
+  "sdk": "agents 0.28.1 fork voice/eager-turns-and-playback @93aa507 (vendor tarball)",
+  "measuredAgainst": "production: real Flux, gpt-oss-20b, Aura 1 through the signed-in user AI Gateway with the user OAuth token",
+  "gates": {
+    "check": "all checks passed",
+    "e2e": "17/17 scenarios passed (fake Cloudflare)",
+    "edge": "edge ok: https://hark.coey.dev (landing, OAuth redirect with AI scopes, socket refuses strangers)"
+  },
+  "signedIn": {
+    "signedIn": true,
+    "account": "A\u2026",
+    "gateway": "my-ax"
+  },
+  "input": "macOS say -v Samantha, 4 questions each followed by 7 s silence, Chromium fake mic looping the file: Lisbon weather; tomorrow there; jacket tonight; capital of Portugal",
+  "socket": "/agents/hark/<name> (VoiceClient)",
+  "runs": [
+    {
+      "at": "2026-10-15T12:43:18Z",
+      "windowSeconds": 48,
+      "binary": {
+        "frames": 2784,
+        "bytes": 1680186,
+        "firstAtMs": 5910
+      },
+      "tagsInOrder": [
+        "(socket /agents/hark/<name>)",
+        "sdk:welcome",
+        "sdk:status:idle",
+        "sdk:cf_agent_identity",
+        "sdk:cf_agent_mcp_servers",
+        "Ready",
+        "sdk:audio_config",
+        "sdk:status:listening",
+        "sdk:transcript",
+        "sdk:status:thinking",
+        "Doing:Checking the sky over Lisbon",
+        "sdk:transcript_start",
+        "Show:Weather",
+        "sdk:status:speaking",
+        "sdk:transcript_end",
+        "sdk:metrics",
+        "sdk:status:listening",
+        "sdk:turn_metrics",
+        "sdk:turn_metrics",
+        "sdk:status:listening",
+        "sdk:transcript",
+        "sdk:status:thinking",
+        "Doing:Checking the sky over Lisbon",
+        "Show:Weather",
+        "sdk:playback_interrupt",
+        "sdk:status:listening",
+        "sdk:turn_metrics",
+        "sdk:transcript",
+        "sdk:status:thinking",
+        "Doing:Checking the sky over there",
+        "Doing:Checking the sky over Lisbon",
+        "sdk:transcript_start",
+        "Show:Weather",
+        "sdk:status:speaking",
+        "sdk:transcript_end",
+        "sdk:metrics",
+        "sdk:status:listening",
+        "sdk:turn_metrics",
+        "sdk:turn_metrics",
+        "sdk:status:listening",
+        "sdk:transcript",
+        "sdk:status:thinking",
+        "Doing:Looking up capital of Portugal",
+        "Show:Article",
+        "sdk:transcript_start",
+        "sdk:transcript_end",
+        "sdk:status:speaking",
+        "sdk:metrics",
+        "sdk:status:listening",
+        "sdk:turn_metrics",
+        "sdk:turn_metrics",
+        "sdk:transcript",
+        "sdk:status:thinking",
+        "Doing:Checking the sky over Lisbon",
+        "sdk:transcript_start",
+        "Show:Weather",
+        "sdk:status:speaking",
+        "sdk:transcript_end",
+        "sdk:metrics",
+        "sdk:status:listening",
+        "sdk:turn_metrics",
+        "sdk:turn_metrics",
+        "sdk:status:listening",
+        "sdk:transcript",
+        "sdk:status:thinking"
+      ],
+      "sdkMetrics": [
+        {
+          "llm_ms": 2256,
+          "tts_ms": 4558,
+          "first_audio_ms": 1347,
+          "total_ms": 3959
+        },
+        {
+          "llm_ms": 2640,
+          "tts_ms": 1798,
+          "first_audio_ms": 2316,
+          "total_ms": 3096
+        },
+        {
+          "llm_ms": 1398,
+          "tts_ms": 490,
+          "first_audio_ms": 1788,
+          "total_ms": 1888
+        },
+        {
+          "llm_ms": 1801,
+          "tts_ms": 1536,
+          "first_audio_ms": 1301,
+          "total_ms": 2407
+        }
+      ],
+      "faults": []
+    },
+    {
+      "at": "2026-10-15T12:46:07Z",
+      "windowSeconds": 48,
+      "binary": {
+        "frames": 2710,
+        "bytes": 1687428,
+        "firstAtMs": 6872
+      },
+      "tagsInOrder": [
+        "(socket /agents/hark/<name>)",
+        "sdk:welcome",
+        "sdk:status:idle",
+        "sdk:cf_agent_identity",
+        "sdk:cf_agent_mcp_servers",
+        "Ready",
+        "sdk:audio_config",
+        "sdk:status:listening",
+        "sdk:transcript",
+        "sdk:status:thinking",
+        "Doing:Checking the sky over Lisbon",
+        "sdk:transcript_start",
+        "Show:Weather",
+        "sdk:transcript_end",
+        "sdk:status:speaking",
+        "sdk:metrics",
+        "sdk:status:listening",
+        "sdk:turn_metrics",
+        "sdk:turn_metrics",
+        "sdk:status:listening",
+        "sdk:transcript",
+        "sdk:status:thinking",
+        "sdk:transcript_start",
+        "sdk:transcript_end",
+        "sdk:status:speaking",
+        "sdk:metrics",
+        "sdk:status:listening",
+        "sdk:turn_metrics",
+        "sdk:turn_metrics",
+        "sdk:transcript",
+        "sdk:status:thinking",
+        "Doing:Checking the sky over Lisbon",
+        "Show:Weather",
+        "sdk:transcript_start",
+        "sdk:transcript_end",
+        "sdk:status:speaking",
+        "sdk:metrics",
+        "sdk:status:listening",
+        "sdk:turn_metrics",
+        "sdk:turn_metrics",
+        "sdk:status:listening",
+        "sdk:transcript",
+        "sdk:status:thinking",
+        "sdk:transcript_start",
+        "sdk:transcript_end",
+        "sdk:status:speaking",
+        "sdk:metrics",
+        "sdk:status:listening",
+        "sdk:turn_metrics",
+        "sdk:turn_metrics",
+        "sdk:transcript",
+        "sdk:status:thinking",
+        "Doing:Checking the sky over Lisbon",
+        "Show:Weather",
+        "sdk:transcript_start",
+        "sdk:transcript_end",
+        "sdk:status:speaking",
+        "sdk:metrics",
+        "sdk:status:listening",
+        "sdk:turn_metrics",
+        "sdk:turn_metrics",
+        "sdk:turn_metrics",
+        "sdk:status:listening",
+        "sdk:transcript",
+        "sdk:status:thinking",
+        "Doing:Checking the sky over Lisbon",
+        "Show:Weather"
+      ],
+      "turnMetrics": [
+        {
+          "turnId": "turn_1",
+          "source": "speech",
+          "outcome": "completed",
+          "turnTotalMs": 4691,
+          "speechStartToFirstInterimMs": 0,
+          "speechStartToFinalMs": 1547,
+          "afterTranscribeMs": 0,
+          "speculativeLeadMs": 0,
+          "modelToFirstTextMs": 1479,
+          "ttsWorkMs": 2029,
+          "modelStreamConsumptionMs": 2281,
+          "finalInputToFirstAudioMs": 2341,
+          "ttsToFirstAudioMs": 862,
+          "ttsWallMs": 1665
+        },
+        {
+          "turnId": "turn_2",
+          "source": "speech",
+          "outcome": "aborted",
+          "turnTotalMs": 35
+        },
+        {
+          "turnId": "turn_3",
+          "source": "speech",
+          "outcome": "completed",
+          "turnTotalMs": 2680,
+          "speechStartToFirstInterimMs": 0,
+          "speechStartToFinalMs": 1020,
+          "afterTranscribeMs": 0,
+          "speculativeLeadMs": 0,
+          "modelToFirstTextMs": 809,
+          "ttsWorkMs": 907,
+          "modelStreamConsumptionMs": 962,
+          "finalInputToFirstAudioMs": 1088,
+          "ttsToFirstAudioMs": 204,
+          "ttsWallMs": 776
+        },
+        {
+          "turnId": "turn_4",
+          "source": "speech",
+          "outcome": "aborted",
+          "turnTotalMs": 199
+        },
+        {
+          "turnId": "turn_5",
+          "source": "speech",
+          "outcome": "completed",
+          "turnTotalMs": 4169,
+          "speechStartToFirstInterimMs": 0,
+          "speechStartToFinalMs": 1257,
+          "afterTranscribeMs": 0,
+          "speculativeLeadMs": 0,
+          "modelToFirstTextMs": 886,
+          "ttsWorkMs": 3642,
+          "modelStreamConsumptionMs": 1204,
+          "finalInputToFirstAudioMs": 2021,
+          "ttsToFirstAudioMs": 984,
+          "ttsWallMs": 1875
+        },
+        {
+          "turnId": "turn_6",
+          "source": "speech",
+          "outcome": "aborted",
+          "turnTotalMs": 97,
+          "speechStartToFirstInterimMs": 0
+        },
+        {
+          "turnId": "turn_7",
+          "source": "speech",
+          "outcome": "completed",
+          "turnTotalMs": 2614,
+          "afterTranscribeMs": 0,
+          "speculativeLeadMs": 0,
+          "modelToFirstTextMs": 253,
+          "modelStreamConsumptionMs": 279,
+          "ttsWorkMs": 462,
+          "finalInputToFirstAudioMs": 741,
+          "ttsToFirstAudioMs": 462,
+          "ttsWallMs": 462
+        },
+        {
+          "turnId": "turn_8",
+          "source": "speech",
+          "outcome": "aborted",
+          "turnTotalMs": 292
+        },
+        {
+          "turnId": "turn_9",
+          "source": "speech",
+          "outcome": "completed",
+          "turnTotalMs": 3884,
+          "speechStartToFirstInterimMs": 0,
+          "speechStartToFinalMs": 1837,
+          "afterTranscribeMs": 0,
+          "speculativeLeadMs": 519,
+          "modelToFirstTextMs": 1019,
+          "ttsWorkMs": 1373,
+          "modelStreamConsumptionMs": 1402,
+          "finalInputToFirstAudioMs": 1081,
+          "ttsToFirstAudioMs": 417,
+          "ttsWallMs": 864
+        },
+        {
+          "turnId": "turn_a",
+          "source": "speech",
+          "outcome": "aborted",
+          "turnTotalMs": 7059
+        },
+        {
+          "turnId": "turn_b",
+          "source": "speech",
+          "outcome": "aborted",
+          "turnTotalMs": 33,
+          "speechStartToFirstInterimMs": 0
+        }
+      ],
+      "faults": []
+    }
+  ],
+  "latency": {
+    "completedTurns": 5,
+    "finalInputToFirstAudioMs": [
+      2341,
+      1088,
+      2021,
+      741,
+      1081
+    ],
+    "p50": 1088,
+    "max": 2341,
+    "min": 741,
+    "speculativeTurns": [
+      "turn_9"
+    ],
+    "speculativeLeadMs": [
+      519
+    ],
+    "note": "aborted turn_metrics entries are Flux turns that resumed or were superseded; they produced no audio"
+  },
+  "aiGateway": {
+    "gateway": "my-ax",
+    "account": "the signed-in user account (A\u2026), not the Worker owner",
+    "window": [
+      "2026-10-15T12:43:25.486Z",
+      "2026-10-15T12:46:58.762Z"
+    ],
+    "counts": [
+      {
+        "model": "@cf/deepgram/aura-1",
+        "status": 200,
+        "n": 23
+      },
+      {
+        "model": "@cf/deepgram/aura-1",
+        "status": 401,
+        "n": 4
+      },
+      {
+        "model": "@cf/deepgram/flux",
+        "status": 200,
+        "n": 2
+      },
+      {
+        "model": "@cf/openai/gpt-oss-20b",
+        "status": 200,
+        "n": 20
+      }
+    ],
+    "note": "aura-1 401s are the known gateway per-model route rejecting OAuth; each retried via Workers AI REST with cf-aig-gateway-id and succeeded (same gateway)"
+  },
+  "harkTurnLogs": "not captured: wrangler tail delivered no console logs for Durable Object WebSocket events on this account; Workers Observability query API needs a scope the local wrangler token lacks"
+}
