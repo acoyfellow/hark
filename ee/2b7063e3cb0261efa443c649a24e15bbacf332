@@ -1,0 +1,21 @@
+.guardrail/deploys/2026-10-15T23-47-50-741Z.json
+  s_ca5a6532cca4b3::t_9bdc112c15a5b4 1-43
+scripts/local-real.sh
+  s_ca5a6532cca4b3::t_17af878506b29f 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "ee2b7063e3cb0261efa443c649a24e15bbacf332",
+  "prompts": {},
+  "sessions": {
+    "s_ca5a6532cca4b3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a13c32-5367-7000-8a26-f0799dfcdedc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
