@@ -206,7 +206,7 @@ await scenario('a timer counts down and hark announces it when it ends (Durable 
 
 await scenario('with the camera on, asking about it takes one frame and looks', async () => {
   await page.locator('#camera').click();
-  await page.locator('[data-visual=glimpse] img').waitFor({ timeout: 30000 });
+  await page.locator('[data-visual=glimpse] img').first().waitFor({ timeout: 30000 });
   await page.screenshot({ path: `${SHOTS}/glimpse-desktop.png` });
   await page.locator('#camera').click();
 });
