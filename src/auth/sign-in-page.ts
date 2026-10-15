@@ -18,24 +18,24 @@ type Point = { readonly icon: string; readonly title: string; readonly body: str
 
 const POINTS: readonly Point[] = [
   {
-    icon: 'M2 10v3M6 6v11M10 3v18M14 8v7M18 5v13M22 10v3',
-    title: 'Knows when you are done talking',
-    body: 'Deepgram Flux hears the end of your turn, and hark starts thinking before you finish.',
+    icon: 'M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8',
+    title: 'Lives on, durably',
+    body: 'hark is one Durable Object that is yours. Close the tab, lose signal, come back tomorrow: its memory, files, timers and connected tools are still there.',
+  },
+  {
+    icon: 'M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7',
+    title: 'Bring your own MCP servers',
+    body: 'Say &ldquo;connect my server&rdquo; and give it a URL. hark keeps it and calls its tools by voice. Judges like odds, docs, code runners, your own services.',
+  },
+  {
+    icon: 'M16 18l6-6-6-6M8 6l-6 6 6 6',
+    title: 'Makes anything',
+    body: 'Ask for a rocket, a skyline, a solar system. It writes the code that moves thousands of embers, runs it in a sandbox, and keeps it on its own workbench.',
   },
   {
     icon: 'M18 6 6 18M6 6l12 12',
-    title: 'Cut it short',
-    body: 'Tap at any point and it stops, listens, and drops the rest of what it was saying.',
-  },
-  {
-    icon: 'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
-    title: 'Sees, and paints',
-    body: 'Show it something through your camera. Ask for a picture and FLUX puts one on your screen.',
-  },
-  {
-    icon: 'M12 21s-7-4.35-7-10a4 4 0 0 1 7-2.65A4 4 0 0 1 19 11c0 5.65-7 10-7 10z',
-    title: 'Remembers you',
-    body: 'Memories, timers, and your voice choice live in your own Durable Object. Ask it to forget, and it does.',
+    title: 'Talk over it',
+    body: 'Interrupt at any point. It stops, listens, and picks up from what you said.',
   },
 ];
 
@@ -110,9 +110,9 @@ const alert = (error: string) =>
 
 export type SignInPage = { readonly origin: string; readonly error?: string };
 
-const TITLE = 'hark · a voice on your own Cloudflare';
+const TITLE = 'hark · a durable voice agent on your own Cloudflare';
 
-const DESCRIPTION = 'Talk to it. It talks back. A voice assistant with no chat box, heard, thought, and spoken on your own Workers AI.';
+const DESCRIPTION = 'A long-running voice agent that lives in your own Durable Object. Bring your own MCP servers. It remembers, keeps working, and makes anything you ask for.';
 
 export const signInPage = ({ origin, error }: SignInPage) => `<!doctype html>
 <html lang="en">
@@ -154,8 +154,8 @@ export const signInPage = ({ origin, error }: SignInPage) => `<!doctype html>
 <main class="hero">
 <section>
 <p class="eyebrow"><i></i>Runs on your Cloudflare</p>
-<h1>Talk to it.<br><em>It talks back.</em></h1>
-<p class="lede">hark is a voice assistant with <b>no chat box</b>. You talk, it listens, thinks, and answers out loud. Every word is heard, thought, and spoken on <b>your</b> Cloudflare account.</p>
+<h1>A voice agent<br><em>that stays.</em></h1>
+<p class="lede">hark is a <b>long-running, durable</b> voice agent. Talk to it, plug in <b>your own MCP servers</b>, and it keeps its memory, files and tools between every call. No chat box. Everything runs on <b>your</b> Cloudflare account.</p>
 <ul class="points">${POINTS.map(point).join('')}</ul>
 </section>
 <div class="stage"><section class="card" aria-labelledby="start">

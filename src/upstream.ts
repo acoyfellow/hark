@@ -26,6 +26,8 @@ export const IMAGINE_MODEL = '@cf/black-forest-labs/flux-2-klein-4b';
 
 export const IMAGINE_FALLBACK = '@cf/black-forest-labs/flux-1-schnell';
 
+export const JUDGE_MODEL = '@cf/cloudflare/clef';
+
 export class UpstreamFailed extends Error {
   constructor(
     readonly step: string,
@@ -76,6 +78,7 @@ export type Upstream = {
   ) => Promise<ReadableStream<Uint8Array>>;
   readonly see: (image: string, question: string, signal: AbortSignal) => Promise<string>;
   readonly imagine: (prompt: string, signal: AbortSignal) => Promise<string>;
+  readonly judge: (request: Record<string, unknown>, signal: AbortSignal) => Promise<unknown>;
   readonly routes: () => Readonly<Record<string, string>>;
 };
 
@@ -182,6 +185,16 @@ export const upstream = (
     const message = choice?.message as Record<string, unknown> | undefined;
 
     return typeof message?.content === 'string' ? message.content : 'I could not make out the picture.';
+  },
+
+  judge: async (request, signal) => {
+    const response = await runModel(JUDGE_MODEL, () => JSON.stringify(request), 'application/json', signal);
+
+    if (!response.ok) throw await failure('Judging (Clef)', response);
+
+    const parsed: unknown = await response.json();
+
+    return typeof parsed === 'object' && parsed !== null && 'result' in parsed ? (parsed as { result: unknown }).result : parsed;
   },
 
   imagine: async (prompt, signal) => {

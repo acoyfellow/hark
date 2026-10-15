@@ -11,7 +11,7 @@ export const appPage = (origin: string, local: boolean) =>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>hark</title>
-<meta name="description" content="A voice you talk to. It listens, thinks, and answers on your own Cloudflare account.">
+<meta name="description" content="A long-running durable voice agent on your own Cloudflare account. Bring your own MCP servers.">
 <meta name="theme-color" content="#09090b">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">

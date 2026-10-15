@@ -6,6 +6,7 @@ import { appPage } from './ui/page';
 
 export { Directory } from './directory';
 export { Hark } from './hark';
+export { HarkBridge } from './workbench';
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 
@@ -73,6 +74,12 @@ const route = async (request: Request, env: Env, owner: string, local: boolean):
   if (AGENT_PATH.test(pathname)) return voiceSocket(request, env, owner, local);
 
   if (isLoopback(request) && pathname === '/__trace' && request.method === 'POST') return browserTrace(request);
+
+  if (local && pathname === '/__bench' && request.method === 'POST') {
+    const agent = await getAgentByName(env.HARK, owner);
+
+    return Response.json(await agent.benchProbe(await request.text()));
+  }
 
   if (pathname === '/' && request.method === 'GET') return appPage(new URL(request.url).origin, local);
 

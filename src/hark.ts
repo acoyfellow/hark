@@ -29,6 +29,8 @@ import { parseArguments, runTool, type ToolHost, toolLabel, toolSchemas } from '
 import type { ChatMessage } from './chat';
 import { CLOUDFLARE_ORIGINS, type Credentials, type Origins, type Upstream, UpstreamFailed, upstream } from './upstream';
 import { userAI } from './user-ai';
+import { judgeQuestion, type McpPort } from './tools';
+import { MAX_FILE_BYTES, runOnBench } from './workbench';
 import { EchoGatedTranscriber, SpokenRecord } from './echo-gate';
 
 const HISTORY_KEEP = 24;
@@ -101,6 +103,7 @@ export class Hark extends VoiceAgent<Env> {
     this.sql`CREATE TABLE IF NOT EXISTS memories (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, at INTEGER NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS missed (label TEXT NOT NULL, at INTEGER NOT NULL)`;
+    this.sql`CREATE TABLE IF NOT EXISTS files (path TEXT PRIMARY KEY, content TEXT NOT NULL, at INTEGER NOT NULL)`;
   }
 
   override onConnect(connection: Connection, context: ConnectionContext) {
@@ -247,6 +250,105 @@ export class Hark extends VoiceAgent<Env> {
     };
   }
 
+  async benchProbe(code: string) {
+    return runOnBench(this.env, this.name, code);
+  }
+
+  private async liveForBench(): Promise<Upstream> {
+    if (this.live !== null) return this.live;
+
+    const local = this.name === LOCAL_OWNER;
+    const caller: Caller = { owner: this.name, local, traced: false, timeZone: 'UTC', locale: 'en-US', camera: false, firstTurn: false };
+    const grant = await this.grantFor(caller);
+
+    if (grant === null) throw new Error('hark is not signed in to a Cloudflare account');
+
+    this.live = upstream(this.credentials(caller, grant), this.origins(caller));
+
+    return this.live;
+  }
+
+  async benchCall(name: string, input: unknown): Promise<unknown> {
+    const args = typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : {};
+    const text = (key: string) => (typeof args[key] === 'string' ? args[key] : '');
+    const port = this.mcpPort();
+
+    if (name === 'read_file') return this.sql<{ content: string }>`SELECT content FROM files WHERE path = ${text('path')}`[0]?.content ?? null;
+
+    if (name === 'write_file') {
+      const content = text('content');
+
+      if (content.length > MAX_FILE_BYTES) throw new Error(`files are limited to ${MAX_FILE_BYTES} characters`);
+
+      this.sql`INSERT INTO files (path, content, at) VALUES (${text('path')}, ${content}, ${Date.now()}) ON CONFLICT(path) DO UPDATE SET content = excluded.content, at = excluded.at`;
+
+      return { written: text('path'), bytes: content.length };
+    }
+
+    if (name === 'list_files') return this.sql<{ path: string; at: number }>`SELECT path, at FROM files ORDER BY path`;
+
+    if (name === 'delete_file') {
+      this.sql`DELETE FROM files WHERE path = ${text('path')}`;
+
+      return { deleted: text('path') };
+    }
+
+    if (name === 'judge') {
+      const questions = Array.isArray(args.questions) ? args.questions : [];
+
+      return (await this.liveForBench()).judge(
+        {
+          state: { context: text('context') || 'the input' },
+          questions: Object.fromEntries(questions.map((question, index) => [`q${index + 1}`, judgeQuestion(question)])),
+        },
+        AbortSignal.timeout(20_000),
+      );
+    }
+
+    if (name === 'imagine') return (await this.liveForBench()).imagine(text('prompt'), AbortSignal.timeout(45_000));
+
+    if (name === 'mcp_connect') return port.connect(text('name'), text('url'), text('token'));
+
+    if (name === 'mcp_tools') return port.tools();
+
+    if (name === 'mcp_call') return port.call(text('server'), text('tool'), typeof args.args === 'object' && args.args !== null ? (args.args as Record<string, unknown>) : {});
+
+    throw new Error(`no capability ${name}`);
+  }
+
+  private mcpPort(): McpPort {
+    const serverFor = (wanted: string) => {
+      const servers = Object.entries(this.getMcpServers().servers);
+      const match = servers.find(([id, server]) => id === wanted || server.name === wanted) ?? (servers.length === 1 ? servers[0] : undefined);
+
+      return match?.[0] ?? null;
+    };
+
+    return {
+      servers: () => Object.entries(this.getMcpServers().servers).map(([id, server]) => ({ id, name: server.name, state: server.state })),
+      tools: () => {
+        const names = this.getMcpServers().servers;
+
+        return this.mcp.listTools().map((tool) => ({ server: names[tool.serverId]?.name ?? tool.serverId, name: tool.name, description: tool.description ?? '', schema: tool.inputSchema }));
+      },
+      connect: async (name, url, token) => {
+        const added = await this.addMcpServer(name, url, { transport: token === '' ? {} : { headers: { authorization: `Bearer ${token}` } } });
+
+        return added.state === 'authenticating' ? `${name} needs sign-in. Open this link: ${added.authUrl}` : `${name} is connected.`;
+      },
+      call: async (server, tool, args) => {
+        const serverId = serverFor(server);
+
+        if (serverId === null) return `No connected server called ${server}.`;
+
+        const result = await this.mcp.callTool({ serverId, name: tool, arguments: args });
+        const parts = Array.isArray(result.content) ? result.content : [];
+
+        return parts.map((part) => (part.type === 'text' ? part.text : `[${part.type}]`)).join('\n') || JSON.stringify(result.structuredContent ?? result);
+      },
+    };
+  }
+
   private signOutEveryone() {
     for (const connection of this.getConnections()) {
       this.send(connection, { _tag: 'Fault', reason: 'Your Cloudflare sign-in has run out. Sign in again to keep talking.', fatal: true });
@@ -387,6 +489,9 @@ export class Hark extends VoiceAgent<Env> {
         }),
       see: (image, question) => this.requireLive().see(image, question, AbortSignal.timeout(20_000)),
       imagine: (prompt) => this.requireLive().imagine(prompt, AbortSignal.timeout(45_000)),
+      judge: (request) => this.requireLive().judge(request, AbortSignal.timeout(20_000)),
+      mcp: this.mcpPort(),
+      runCode: async (code) => JSON.stringify(await runOnBench(this.env, this.name, code)),
       setVoice: (voice) => {
         const current = this.settings();
         const engine = voicesFor(current.engine).includes(voice) ? current.engine : current.engine === 'aura-1' ? 'aura-2' : 'aura-1';
