@@ -5,7 +5,7 @@ const JSON_START = /^\s*[[{]/u;
 
 const TOOL_NAMES = TOOLS.map((tool) => tool.name).join('|');
 
-const MARKUP_START = new RegExp(`<\\s*(${TOOL_NAMES})\\b|(?:^|\\s)(${TOOL_NAMES})\\s*:\\s*(?=[{[])`, 'u');
+const MARKUP_START = new RegExp(`<\\s*(${TOOL_NAMES})\\b|(?:^|\\s)(${TOOL_NAMES})\\s*:\\s*(?=[{[])`, 'iu');
 
 export const mightBeLeakedCall = (text: string) => JSON_START.test(text);
 
@@ -88,7 +88,7 @@ export const markupCalls = (text: string): ToolCall[] => {
 
   if (match === null) return [];
 
-  const name = match[1] ?? match[2] ?? '';
+  const name = (match[1] ?? match[2] ?? '').toLowerCase();
   const rest = text.slice(match.index + match[0].length);
 
   if (match[2] !== undefined) {

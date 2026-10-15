@@ -112,6 +112,15 @@ describe('tool calls a brain writes as text', () => {
     expect(markupStart(text)).toBe(0);
     expect(markupCalls(text)[0]?.name).toBe('show_form');
   });
+
+  it('reads the capitalised call GPT-OSS writes after a sentence, with bare keys in a bare array', () => {
+    const text = 'I hear you loud and clear.  \nShow_form: [{kind:"solid", value:"sphere", seconds:6, motion:"spin"}]';
+
+    expect(markupStart(text)).toBeGreaterThan(0);
+    expect(markupCalls(text)).toEqual([
+      { id: 'leaked_colon', name: 'show_form', arguments: JSON.stringify({ beats: [{ kind: 'solid', value: 'sphere', seconds: 6, motion: 'spin' }] }) },
+    ]);
+  });
 });
 
 describe('a written call followed by more words', () => {

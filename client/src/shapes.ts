@@ -255,6 +255,39 @@ export const solidDots = (name: string): Dot[] => {
   });
 };
 
+const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+
+const safeSvg = (markup: string): string | null => {
+  const parsed = new DOMParser().parseFromString(markup, 'image/svg+xml');
+  const root = parsed.documentElement;
+
+  if (root.nodeName !== 'svg' || parsed.querySelector('parsererror') !== null) return null;
+
+  for (const node of root.querySelectorAll('script, foreignObject, iframe, image, use')) node.remove();
+
+  for (const element of [root, ...root.querySelectorAll('*')])
+    for (const attribute of Array.from(element.attributes)) if (/^on/iu.test(attribute.name) || /href/iu.test(attribute.name)) element.removeAttribute(attribute.name);
+
+  if (!root.hasAttribute('viewBox')) root.setAttribute('viewBox', '0 0 100 100');
+  root.setAttribute('xmlns', SVG_NAMESPACE);
+  root.setAttribute('width', String(SAMPLE));
+  root.setAttribute('height', String(SAMPLE));
+
+  return new XMLSerializer().serializeToString(root);
+};
+
+export const svgDots = async (markup: string): Promise<Dot[]> => {
+  const clean = safeSvg(markup);
+
+  if (clean === null) return [];
+
+  const image = await loadImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(clean)}`);
+
+  if (image === null) return [];
+
+  return traced((context, size) => context.drawImage(image, 0, 0, size, size), 9000);
+};
+
 export const loadImage = (src: string) =>
   new Promise<HTMLImageElement | null>((resolve) => {
     const image = new Image();

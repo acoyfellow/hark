@@ -3,7 +3,11 @@ import { EYES_MODEL, SPEECH_SAMPLE_RATE, type SpeechEngine, type Voice } from '.
 export type Credentials = {
   readonly accountId: string;
   readonly token: () => Promise<string>;
+  readonly refresh: () => Promise<string>;
+  readonly signedOut: () => void;
 };
+
+export const SIGNED_OUT_DETAIL = 'Your Cloudflare sign-in expired. Sign in with Cloudflare again.';
 
 export type Origins = { readonly api: string };
 
@@ -36,10 +40,27 @@ const enc = encodeURIComponent;
 
 const aiBase = (origins: Origins, credentials: Credentials) => `${origins.api}/accounts/${enc(credentials.accountId)}/ai`;
 
-const headersFor = async (credentials: Credentials, extra: Record<string, string> = {}) => ({
-  authorization: `Bearer ${await credentials.token()}`,
-  ...extra,
-});
+const UNAUTHORIZED = 401;
+
+const authorizedSend =
+  (credentials: Credentials, send: typeof fetch) =>
+  async (url: string, init: RequestInit & { headers?: Record<string, string> }): Promise<Response> => {
+    const attempt = (token: string) => send(url, { ...init, headers: { authorization: `Bearer ${token}`, ...init.headers } });
+    const first = await attempt(await credentials.token());
+
+    if (first.status !== UNAUTHORIZED) return first;
+
+    const retried = await credentials
+      .refresh()
+      .then(attempt)
+      .catch(() => null);
+
+    if (retried !== null && retried.status !== UNAUTHORIZED) return retried;
+
+    credentials.signedOut();
+
+    throw new UpstreamFailed('Signing in', UNAUTHORIZED, SIGNED_OUT_DETAIL);
+  };
 
 const failure = async (step: string, response: Response) =>
   new UpstreamFailed(step, response.status, await response.text().catch(() => ''));
@@ -73,8 +94,9 @@ export const listenUrl = (origins: Origins, credentials: Credentials, params: Re
 export const upstream = (
   credentials: Credentials,
   origins: Origins = CLOUDFLARE_ORIGINS,
-  send: typeof fetch = (input, init) => fetch(input, init),
+  rawSend: typeof fetch = (input, init) => fetch(input, init),
 ): Upstream => {
+  const send = authorizedSend(credentials, rawSend);
   const runModel = async (
     model: string,
     body: () => BodyInit,
@@ -83,7 +105,7 @@ export const upstream = (
   ): Promise<Response> =>
     send(`${aiBase(origins, credentials)}/run/${model}`, {
       method: 'POST',
-      headers: await headersFor(credentials, contentType === null ? {} : { 'content-type': contentType }),
+      headers: contentType === null ? {} : { 'content-type': contentType },
       body: body(),
       signal,
     });
@@ -93,7 +115,7 @@ export const upstream = (
 
   listen: async (params) => {
     const response = await send(listenUrl(origins, credentials, params), {
-      headers: await headersFor(credentials, { upgrade: 'websocket' }),
+      headers: { upgrade: 'websocket' },
     });
     const socket = response.webSocket;
 
@@ -105,7 +127,7 @@ export const upstream = (
   chat: async (body, signal) => {
     const response = await send(`${aiBase(origins, credentials)}/v1/chat/completions`, {
       method: 'POST',
-      headers: await headersFor(credentials, { 'content-type': 'application/json' }),
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
       signal,
     });
@@ -134,7 +156,7 @@ export const upstream = (
   see: async (image, question, signal) => {
     const response = await send(`${aiBase(origins, credentials)}/v1/chat/completions`, {
       method: 'POST',
-      headers: await headersFor(credentials, { 'content-type': 'application/json' }),
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         model: EYES_MODEL,
         max_tokens: 300,

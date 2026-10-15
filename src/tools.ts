@@ -249,6 +249,8 @@ const MAX_BEATS = 6;
 
 const MAX_PATH = 4000;
 
+const MAX_PROGRAM = 6000;
+
 const SVG_PATH = /^[MmLlHhVvCcSsQqTtAaZz0-9eE.,\s+-]+$/u;
 
 type BeatProblem = { readonly problem: string };
@@ -260,17 +262,27 @@ const beatOf = (raw: unknown): Beat | BeatProblem => {
   const motion = str(item.motion, 'still');
   const seconds = Math.min(12, Math.max(1, Number.isFinite(num(item.seconds)) ? num(item.seconds) : 4));
 
-  if (!isFormKind(kind) || value === '') return { problem: 'every beat needs a kind and a value' };
+  const still = isMotion(motion) ? motion : 'still';
+  const asWord = (text: string): Beat => ({ kind: 'word', value: text.slice(0, SHORT_WORD), seconds, motion: still });
+  const asPainting = (prompt: string): Beat => ({ kind: 'painting', value: prompt, seconds, motion: still });
 
-  if (kind === 'icon' && !FORM_ICONS.some((icon) => icon === value)) return { problem: `no ${value} icon; icons are ${FORM_ICONS.join(', ')}` };
+  if (value === '') return { problem: 'every beat needs a value' };
 
-  if (kind === 'solid' && !FORM_SOLIDS.some((solid) => solid === value)) return { problem: `no ${value} solid; solids are ${FORM_SOLIDS.join(', ')}` };
+  if (!isFormKind(kind)) return value.length <= SHORT_WORD ? asWord(value) : asPainting(value);
 
-  if (kind === 'word' && value.length > SHORT_WORD) return { problem: `"${value}" is too long; words are ${SHORT_WORD} letters at most` };
+  if (kind === 'icon' && !FORM_ICONS.some((icon) => icon === value)) return asWord(value);
 
-  if (kind === 'draw' && (value.length > MAX_PATH || !SVG_PATH.test(value))) return { problem: 'draw needs plain SVG path data on a 0 to 100 canvas, under 4000 characters' };
+  if (kind === 'solid' && !FORM_SOLIDS.some((solid) => solid === value)) return asWord(value);
 
-  return { kind, value, seconds, motion: isMotion(motion) ? motion : 'still' };
+  if (kind === 'word' && value.length > SHORT_WORD) return asPainting(value);
+
+  if (kind === 'draw' && !SVG_PATH.test(value)) return value.includes('<svg') ? { kind: 'svg', value: value.slice(0, MAX_PROGRAM), seconds, motion: still } : asPainting(value.slice(0, 300));
+
+  if (kind === 'draw' && value.length > MAX_PATH) return asPainting(value.slice(0, 300));
+
+  if ((kind === 'svg' || kind === 'code') && value.length > MAX_PROGRAM) return { problem: `${kind} must be under ${MAX_PROGRAM} characters` };
+
+  return { kind, value, seconds, motion: still };
 };
 
 const isProblem = (beat: Beat | BeatProblem): beat is BeatProblem => 'problem' in beat;
@@ -287,9 +299,12 @@ const showForm: Definition = {
     `- "icon": one of ${FORM_ICONS.join(', ')}.`,
     `- "solid": a real 3D shape you can spin: ${FORM_SOLIDS.join(', ')}.`,
     '- "draw": anything at all. Write SVG path data on a 0 to 100 canvas (M L Q C A Z commands, strokes are drawn as glowing lines). Draw a cat, a bicycle, a map, a face, a punchline. Be inventive.',
+    '- "svg": a whole <svg viewBox="0 0 100 100"> scene with fills, strokes, text, gradients. Brightness becomes glow. Best for scenes, lettering, logos, diagrams.',
+    '- "code": the most powerful kind. A JavaScript function body that moves every particle every frame, for any animation: orbits, waves, a beating heart, a running dog, a rocket launch, a clock, fireworks, a DNA helix. It receives (i, n, t, out): particle index i of n, time t in seconds. Write out[0], out[1], out[2] (x, y, z, about -1 to 1) and out[3] (brightness 0 to 1). Math is available. No DOM, no network. Example: const a=i/n*Math.PI*2+t; out[0]=Math.cos(a)*0.8; out[1]=Math.sin(a*2)*0.4; out[2]=0; out[3]=0.8;',
     '- "painting": a short image prompt; a real picture is painted and the swarm becomes it. Slow (a few seconds), so use it for the big moments.',
     `Each beat has seconds (1 to 12) and motion: ${FORM_MOTIONS.join(', ')}.`,
-    'Then keep talking. Never describe the shape, never read out the path.',
+    'If someone asks you to make, show, draw or animate anything, always try. Prefer code for motion and svg for scenes. Never refuse.',
+    'Then keep talking. Never describe the shape, never read out the path or the code.',
   ].join('\n'),
   parameters: object(
     {
@@ -299,7 +314,7 @@ const showForm: Definition = {
         items: object(
           {
             kind: { type: 'string', enum: [...FORM_KINDS] },
-            value: { type: 'string', description: 'The emoji, word, icon name, solid name, SVG path data, or painting prompt.' },
+            value: { type: 'string', description: 'The emoji, word, icon name, solid name, SVG path data, SVG markup, JavaScript body, or painting prompt.' },
             seconds: { type: 'number', description: 'How long this beat holds, 1 to 12.' },
             motion: { type: 'string', enum: [...FORM_MOTIONS] },
           },

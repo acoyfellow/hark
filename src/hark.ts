@@ -220,6 +220,15 @@ export class Hark extends VoiceAgent<Env> {
   }
 
   private credentials(caller: Caller, grant: Grant): Credentials {
+    const refresh = async () => {
+      const directory = this.env.DIRECTORY.getByName(DIRECTORY_NAME);
+      const token = await refreshedToken(this.env, this.grant ?? grant, directory);
+
+      this.grant = await directory.grantFor(caller.owner);
+
+      return token;
+    };
+
     return {
       accountId: grant.accountId,
       token: async () => {
@@ -227,14 +236,22 @@ export class Hark extends VoiceAgent<Env> {
 
         if (caller.local || current.expiresAt - TOKEN_REFRESH_MARGIN_MS > Date.now()) return current.accessToken;
 
-        const directory = this.env.DIRECTORY.getByName(DIRECTORY_NAME);
-        const token = await refreshedToken(this.env, current, directory);
-
-        this.grant = await directory.grantFor(caller.owner);
-
-        return token;
+        return refresh();
       },
+      refresh: async () => {
+        if (caller.local) throw new Error('local tokens do not refresh');
+
+        return refresh();
+      },
+      signedOut: () => this.signOutEveryone(),
     };
+  }
+
+  private signOutEveryone() {
+    for (const connection of this.getConnections()) {
+      this.send(connection, { _tag: 'Fault', reason: 'Your Cloudflare sign-in has run out. Sign in again to keep talking.', fatal: true });
+      connection.close(4401, 'signed out');
+    }
   }
 
   override async beforeCallStart(connection: Connection): Promise<boolean> {
@@ -451,8 +468,7 @@ export class Hark extends VoiceAgent<Env> {
       fail: (reason) => {
         trace('fault', { reason });
         if (SIGNED_OUT.test(reason)) {
-          this.send(connection, { _tag: 'Fault', reason: 'Your Cloudflare sign-in has run out. Sign in again to keep talking.', fatal: true });
-          connection.close(4401, 'signed out');
+          this.signOutEveryone();
           return;
         }
 

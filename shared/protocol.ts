@@ -84,7 +84,7 @@ export const DEFAULT_VOICE: Voice = 'asteria';
 export const EYES_MODEL = '@cf/google/gemma-4-26b-a4b-it';
 
 
-export const FORM_KINDS = ['emoji', 'word', 'icon', 'solid', 'draw', 'painting'] as const;
+export const FORM_KINDS = ['emoji', 'word', 'icon', 'solid', 'draw', 'svg', 'code', 'painting'] as const;
 
 export const FormKind = Schema.Literals(FORM_KINDS);
 

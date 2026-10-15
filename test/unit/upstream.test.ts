@@ -1,7 +1,59 @@
 import { describe, expect, it } from 'vitest';
 import { listenUrl, upstream } from '../../src/upstream';
 
-const credentials = { accountId: 'acc 1', token: async () => 'tok' };
+const credentials = { accountId: 'acc 1', token: async () => 'tok', refresh: async () => 'tok', signedOut: () => {} };
+
+const answering = (statusFor: (token: string) => number, seen: string[]): typeof fetch =>
+  (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    const token = String((init?.headers as Record<string, string> | undefined)?.authorization).replace('Bearer ', '');
+
+    seen.push(token);
+
+    return new Response('{}', { status: statusFor(token) });
+  }) as typeof fetch;
+
+describe('a token Cloudflare rejects signs the person out instead of failing quietly', () => {
+  it('refreshes once on a 401 and carries on with the new token', async () => {
+    const seen: string[] = [];
+    let signedOut = false;
+    const live = upstream(
+      { accountId: 'a', token: async () => 'old', refresh: async () => 'new', signedOut: () => { signedOut = true; } },
+      origins,
+      answering((token) => (token === 'old' ? 401 : 200), seen),
+    );
+
+    await live.chat({}, new AbortController().signal).catch(() => null);
+
+    expect(seen).toEqual(['old', 'new']);
+    expect(signedOut).toBe(false);
+  });
+
+  it('signs out when the refreshed token is rejected too', async () => {
+    const seen: string[] = [];
+    let signedOut = false;
+    const live = upstream(
+      { accountId: 'a', token: async () => 'old', refresh: async () => 'new', signedOut: () => { signedOut = true; } },
+      origins,
+      answering(() => 401, seen),
+    );
+
+    await expect(live.listen({})).rejects.toThrow(/sign-in expired/u);
+    expect(seen).toEqual(['old', 'new']);
+    expect(signedOut).toBe(true);
+  });
+
+  it('signs out when there is no way to refresh', async () => {
+    let signedOut = false;
+    const live = upstream(
+      { accountId: 'a', token: async () => 'old', refresh: async () => { throw new Error('no refresh token'); }, signedOut: () => { signedOut = true; } },
+      origins,
+      answering(() => 401, []),
+    );
+
+    await expect(live.chat({}, new AbortController().signal)).rejects.toThrow(/sign-in expired/u);
+    expect(signedOut).toBe(true);
+  });
+});
 const origins = { api: 'https://api' };
 
 describe('every model call goes straight to Workers AI on the person’s own account', () => {

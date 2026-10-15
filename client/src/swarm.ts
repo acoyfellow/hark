@@ -21,14 +21,23 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { meter } from './engine';
-import { type Dot, drawingDots, emojiDots, iconDots, loadImage, pictureDots, solidDots, wordDots } from './shapes';
+import { type Dot, drawingDots, emojiDots, iconDots, loadImage, pictureDots, solidDots, svgDots, wordDots } from './shapes';
+import { type Program, startProgram } from './program';
 import { Message } from './message';
 
 export const EMBER_RAMP = ['#1a0904', '#5a1e08', '#c2520f', '#f6821f', '#ffb35c', '#ffe7c4'] as const;
 
 type Motion = 'still' | 'spin' | 'pulse' | 'bounce' | 'sway' | 'tumble' | 'explode';
 
-type Shape = { readonly dots: readonly Dot[]; readonly scale: number; readonly picture: boolean; readonly solid: boolean; readonly motion: Motion; readonly bornAt: number };
+type Shape = {
+  readonly dots: readonly Dot[];
+  readonly scale: number;
+  readonly picture: boolean;
+  readonly solid: boolean;
+  readonly motion: Motion;
+  readonly bornAt: number;
+  readonly program: Program | null;
+};
 
 type BeatData = { readonly kind: string; readonly value: string; readonly seconds: number; readonly motion: string };
 
@@ -57,18 +66,24 @@ const beatsOf = (raw: string): BeatData[] => {
   }
 };
 
-const dotsFor = async (beat: BeatData): Promise<{ dots: Dot[]; picture: boolean; solid: boolean }> => {
+const PROGRAM_PLACEHOLDER: Dot[] = [[0, 0, 0, 0.7]];
+
+const dotsFor = async (beat: BeatData): Promise<{ dots: Dot[]; picture: boolean; solid: boolean; code: boolean }> => {
+  if (beat.kind === 'code') return { dots: PROGRAM_PLACEHOLDER, picture: false, solid: true, code: true };
+
+  if (beat.kind === 'svg') return { dots: await svgDots(beat.value), picture: false, solid: false, code: false };
+
   if (beat.kind === 'painting') {
     const image = await loadImage(beat.value);
 
-    return { dots: image === null ? [] : pictureDots(image), picture: true, solid: false };
+    return { dots: image === null ? [] : pictureDots(image), picture: true, solid: false, code: false };
   }
 
-  if (beat.kind === 'solid') return { dots: solidDots(beat.value), picture: false, solid: true };
+  if (beat.kind === 'solid') return { dots: solidDots(beat.value), picture: false, solid: true, code: false };
 
   const flat = beat.kind === 'emoji' ? emojiDots(beat.value) : beat.kind === 'word' ? wordDots(beat.value) : beat.kind === 'draw' ? drawingDots(beat.value) : iconDots(beat.value);
 
-  return { dots: flat, picture: false, solid: false };
+  return { dots: flat, picture: false, solid: false, code: false };
 };
 
 const PICTURE_HOLD_MS = 2600;
@@ -213,9 +228,10 @@ const startSwarm = (host: HTMLElement) => {
   };
 
   const hold = (shape: Shape, millis: number) => {
+    state.shape?.program?.stop();
     state.shape = shape;
     state.shapeUntil = performance.now() + millis;
-    state.used = Math.min(count, Math.round(shape.dots.length * (shape.picture ? 1 : shape.solid ? 1.4 : 0.9)));
+    state.used = shape.program !== null ? PROGRAM_PARTICLES : Math.min(count, Math.round(shape.dots.length * (shape.picture ? 1 : shape.solid ? 1.4 : 0.9)));
     material.uniforms.uBoost!.value = shape.picture ? 0.7 : 0.35;
 
     for (let index = 0; index < count; index += 1)
@@ -225,11 +241,14 @@ const startSwarm = (host: HTMLElement) => {
   };
 
   const release = () => {
+    state.shape?.program?.stop();
     state.shape = null;
     material.uniforms.uBoost!.value = 0;
   };
 
-  const SCALES = { flat: 4.6, solid: 7.5, picture: 6.4 };
+  const SCALES = { flat: 4.6, solid: 7.5, picture: 6.4, program: 3.4 };
+
+  const PROGRAM_PARTICLES = Math.min(count, 6000);
 
   const play = async (beats: readonly BeatData[]) => {
     state.show += 1;
@@ -237,14 +256,16 @@ const startSwarm = (host: HTMLElement) => {
     const show = state.show;
     const prepared = await Promise.all(beats.map(async (beat) => ({ beat, ...(await dotsFor(beat)) })));
 
-    for (const { beat, dots, picture, solid } of prepared) {
+    for (const { beat, dots, picture, solid, code } of prepared) {
       if (show !== state.show) return;
 
       if (dots.length === 0) continue;
 
       const millis = Math.min(12, Math.max(1, Number(beat.seconds) || 4)) * 1000;
 
-      hold({ dots, picture, solid, motion: motionOf(beat.motion), bornAt: performance.now(), scale: picture ? SCALES.picture : solid ? SCALES.solid : SCALES.flat }, millis);
+      const program = code ? startProgram(beat.value, PROGRAM_PARTICLES) : null;
+
+      hold({ dots, picture, solid, program, motion: code ? 'still' : motionOf(beat.motion), bornAt: performance.now(), scale: code ? SCALES.program : picture ? SCALES.picture : solid ? SCALES.solid : SCALES.flat }, millis);
       await new Promise((resolve) => setTimeout(resolve, millis));
     }
   };
@@ -285,6 +306,17 @@ const startSwarm = (host: HTMLElement) => {
       out[0] = cx + Math.cos(angle) * radius;
       out[1] = cy + Math.sin(angle) * radius * 0.75;
       out[2] = (shape.picture ? -6 : -1.5) - s * 2;
+      return;
+    }
+
+    if (shaping && shape.program !== null) {
+      const frame = shape.program.latest();
+      const at = index * 3;
+
+      out[0] = cx + (frame?.positions[at] ?? 0) * shape.scale;
+      out[1] = cy + (frame?.positions[at + 1] ?? 0) * shape.scale;
+      out[2] = (frame?.positions[at + 2] ?? 0) * shape.scale;
+      toneGoal[index] = frame?.tones[index] ?? 0.7;
       return;
     }
 
