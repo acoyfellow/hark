@@ -351,7 +351,7 @@ const startSwarm = (host: HTMLElement) => {
     const value = host.dataset.formValue ?? '';
     const dots = kind === 'emoji' ? emojiDots(value) : kind === 'word' ? wordDots(value) : iconDots(value);
 
-    if (dots.length > 0) hold({ dots, scale: 5, picture: false }, FORM_HOLD_MS);
+    if (dots.length > 0) hold({ dots, scale: 4.2, picture: false }, FORM_HOLD_MS);
   };
 
   const readPaint = () => {

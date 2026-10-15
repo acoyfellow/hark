@@ -57,8 +57,14 @@ const fitVoice = (voice: Voice, engine: SpeechEngine): Voice =>
 const isBrainRefused = (cause: unknown) =>
   cause instanceof UpstreamFailed && (cause.status === 403 || cause.status === 400 || cause.status === 404);
 
+const THINKS_BEFORE_TOOLS: readonly Brain[] = ['@cf/moonshotai/kimi-k3'];
+
 const thinkingOptions = (brain: Brain): Record<string, unknown> =>
-  brain.startsWith('@cf/openai/gpt-oss') ? { reasoning_effort: 'low' } : { chat_template_kwargs: { enable_thinking: false } };
+  brain.startsWith('@cf/openai/gpt-oss')
+    ? { reasoning_effort: 'low' }
+    : THINKS_BEFORE_TOOLS.includes(brain)
+      ? {}
+      : { chat_template_kwargs: { enable_thinking: false } };
 
 const SIGNED_OUT = /sign-in expired/u;
 

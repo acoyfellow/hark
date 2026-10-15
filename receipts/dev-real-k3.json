@@ -1,0 +1,391 @@
+{
+  "kind": "dev-real-k3",
+  "measuredAgainst": "local wrangler dev (bun run dev:real) with real Workers AI on the cf-build-bench account, called directly with a Cloudflare token; no AI Gateway",
+  "branch": "v5",
+  "input": "macOS say -v Samantha, 4 questions (Lisbon weather, show me a heart, jacket tonight, capital of Portugal) with 9 s silence, looped by Chromium fake mic",
+  "binaryAudioFrames": 1577,
+  "binaryAudioBytes": 1783282,
+  "events": [
+    {
+      "atMs": 1874,
+      "tag": "sdk:status",
+      "status": "idle"
+    },
+    {
+      "atMs": 1875,
+      "tag": "Ready"
+    },
+    {
+      "atMs": 2153,
+      "tag": "sdk:status",
+      "status": "listening"
+    },
+    {
+      "atMs": 5784,
+      "tag": "sdk:transcript",
+      "text": "user: What's the weather in Lisbon right now?"
+    },
+    {
+      "atMs": 5784,
+      "tag": "sdk:status",
+      "status": "thinking"
+    },
+    {
+      "atMs": 8049,
+      "tag": "Doing",
+      "label": "Checking the sky over Lisbon, Portugal"
+    },
+    {
+      "atMs": 8954,
+      "tag": "Show",
+      "visual": "Weather"
+    },
+    {
+      "atMs": 11873,
+      "tag": "Doing",
+      "label": "Shaping it"
+    },
+    {
+      "atMs": 11906,
+      "tag": "Show",
+      "visual": "Form",
+      "form": "icon:sun"
+    },
+    {
+      "atMs": 11939,
+      "tag": "sdk:status",
+      "status": "speaking"
+    },
+    {
+      "atMs": 15137,
+      "tag": "sdk:status",
+      "status": "listening"
+    },
+    {
+      "atMs": 15137,
+      "tag": "sdk:transcript_end",
+      "text": "assistant: Let me check for you.It's a lovely day in Lisbon — about twenty-seven degrees and clear skies, barely any wind. The rest of the week stays w"
+    },
+    {
+      "atMs": 16795,
+      "tag": "sdk:transcript",
+      "text": "user: Show me a heart."
+    },
+    {
+      "atMs": 16795,
+      "tag": "sdk:status",
+      "status": "thinking"
+    },
+    {
+      "atMs": 17491,
+      "tag": "Doing",
+      "label": "Checking the sky over Lisbon"
+    },
+    {
+      "atMs": 17523,
+      "tag": "Doing",
+      "label": "Shaping it"
+    },
+    {
+      "atMs": 17523,
+      "tag": "Show",
+      "visual": "Form",
+      "form": "emoji:❤️"
+    },
+    {
+      "atMs": 18381,
+      "tag": "Show",
+      "visual": "Weather"
+    },
+    {
+      "atMs": 20830,
+      "tag": "sdk:transcript_end",
+      "text": "assistant: Let me check Lisbon for you.It's a gorgeous day in Lisbon — clear skies and about 80 degrees, barely any wind. Tomorrow stays warm around 83"
+    },
+    {
+      "atMs": 22260,
+      "tag": "sdk:status",
+      "status": "speaking"
+    },
+    {
+      "atMs": 22956,
+      "tag": "sdk:status",
+      "status": "listening"
+    },
+    {
+      "atMs": 24847,
+      "tag": "sdk:status",
+      "status": "listening"
+    },
+    {
+      "atMs": 26426,
+      "tag": "sdk:transcript",
+      "text": "user: Should I bring a jacket tonight?"
+    },
+    {
+      "atMs": 26426,
+      "tag": "sdk:status",
+      "status": "thinking"
+    },
+    {
+      "atMs": 29347,
+      "tag": "Doing",
+      "label": "Checking the sky over Lisbon"
+    },
+    {
+      "atMs": 30219,
+      "tag": "Show",
+      "visual": "Weather"
+    },
+    {
+      "atMs": 32439,
+      "tag": "sdk:status",
+      "status": "speaking"
+    },
+    {
+      "atMs": 32502,
+      "tag": "sdk:transcript_end",
+      "text": "assistant: Let me check tonight's forecast for Lisbon.Probably just a light one. It's dropping to about 66 degrees tonight, so it's mild — you might be"
+    },
+    {
+      "atMs": 33088,
+      "tag": "sdk:status",
+      "status": "listening"
+    },
+    {
+      "atMs": 35556,
+      "tag": "sdk:status",
+      "status": "listening"
+    },
+    {
+      "atMs": 36883,
+      "tag": "sdk:transcript",
+      "text": "user: What is the capital of Portugal?"
+    },
+    {
+      "atMs": 36883,
+      "tag": "sdk:status",
+      "status": "thinking"
+    },
+    {
+      "atMs": 37597,
+      "tag": "sdk:transcript_end",
+      "text": "assistant: Lisbon!"
+    },
+    {
+      "atMs": 37962,
+      "tag": "sdk:status",
+      "status": "speaking"
+    },
+    {
+      "atMs": 38000,
+      "tag": "sdk:status",
+      "status": "listening"
+    },
+    {
+      "atMs": 49658,
+      "tag": "sdk:transcript",
+      "text": "user: What's the weather in Lisbon right now?"
+    },
+    {
+      "atMs": 49658,
+      "tag": "sdk:status",
+      "status": "thinking"
+    },
+    {
+      "atMs": 50388,
+      "tag": "sdk:transcript_end",
+      "text": "assistant: Still lovely there — clear skies and about 80 degrees right now."
+    },
+    {
+      "atMs": 51077,
+      "tag": "sdk:status",
+      "status": "speaking"
+    },
+    {
+      "atMs": 51322,
+      "tag": "sdk:status",
+      "status": "listening"
+    },
+    {
+      "atMs": 60346,
+      "tag": "sdk:transcript",
+      "text": "user: Show me a heart."
+    },
+    {
+      "atMs": 60346,
+      "tag": "sdk:status",
+      "status": "thinking"
+    },
+    {
+      "atMs": 61896,
+      "tag": "Doing",
+      "label": "Shaping it"
+    },
+    {
+      "atMs": 61928,
+      "tag": "Show",
+      "visual": "Form",
+      "form": "icon:heart"
+    },
+    {
+      "atMs": 62747,
+      "tag": "sdk:transcript_end",
+      "text": "assistant: There you go."
+    },
+    {
+      "atMs": 63144,
+      "tag": "sdk:status",
+      "status": "speaking"
+    },
+    {
+      "atMs": 63279,
+      "tag": "sdk:status",
+      "status": "listening"
+    }
+  ],
+  "swarmShaped": [
+    "form",
+    "form",
+    "form",
+    "form",
+    "form",
+    "form",
+    "form",
+    "form",
+    "form",
+    "form",
+    "form",
+    "form",
+    "form",
+    "form",
+    "form",
+    "form",
+    "form",
+    "form",
+    "form",
+    "form"
+  ],
+  "harkTurn": [
+    {
+      "outcome": "interrupted",
+      "speculative": true,
+      "brain": "@cf/moonshotai/kimi-k3",
+      "engine": "aura-1",
+      "tools": [
+        "get_weather",
+        "show_form"
+      ],
+      "thinkMs": 1596,
+      "routes": {
+        "think": "workers-ai",
+        "speak": "workers-ai",
+        "listen": "workers-ai",
+        "paint": "workers-ai"
+      },
+      "error": null
+    },
+    {
+      "outcome": "spoke",
+      "speculative": true,
+      "brain": "@cf/moonshotai/kimi-k3",
+      "engine": "aura-1",
+      "tools": [
+        "get_weather",
+        "show_form"
+      ],
+      "thinkMs": 1087,
+      "routes": {
+        "think": "workers-ai",
+        "speak": "workers-ai",
+        "listen": "workers-ai",
+        "paint": "workers-ai"
+      },
+      "error": null
+    },
+    {
+      "outcome": "spoke",
+      "speculative": true,
+      "brain": "@cf/moonshotai/kimi-k3",
+      "engine": "aura-1",
+      "tools": [
+        "get_weather"
+      ],
+      "thinkMs": 2616,
+      "routes": {
+        "think": "workers-ai",
+        "speak": "workers-ai",
+        "listen": "workers-ai",
+        "paint": "workers-ai"
+      },
+      "error": null
+    },
+    {
+      "outcome": "spoke",
+      "speculative": true,
+      "brain": "@cf/moonshotai/kimi-k3",
+      "engine": "aura-1",
+      "tools": [],
+      "thinkMs": 693,
+      "routes": {
+        "think": "workers-ai",
+        "speak": "workers-ai",
+        "listen": "workers-ai",
+        "paint": "workers-ai"
+      },
+      "error": null
+    },
+    {
+      "outcome": "spoke",
+      "speculative": true,
+      "brain": "@cf/moonshotai/kimi-k3",
+      "engine": "aura-1",
+      "tools": [],
+      "thinkMs": 746,
+      "routes": {
+        "think": "workers-ai",
+        "speak": "workers-ai",
+        "listen": "workers-ai",
+        "paint": "workers-ai"
+      },
+      "error": null
+    },
+    {
+      "outcome": "spoke",
+      "speculative": true,
+      "brain": "@cf/moonshotai/kimi-k3",
+      "engine": "aura-1",
+      "tools": [
+        "show_form"
+      ],
+      "thinkMs": 3049,
+      "routes": {
+        "think": "workers-ai",
+        "speak": "workers-ai",
+        "listen": "workers-ai",
+        "paint": "workers-ai"
+      },
+      "error": null
+    }
+  ],
+  "latency": {
+    "completedTurns": 5,
+    "finalInputToFirstAudioMs": [
+      5516,
+      5988,
+      1082,
+      1452,
+      2851
+    ],
+    "p50": 2851,
+    "speculativeLeadMs": [
+      939,
+      156,
+      1,
+      159,
+      727
+    ]
+  },
+  "gatewayUsed": false,
+  "screenshot": "receipts/shots/dev-swarm-sun.png"
+}
