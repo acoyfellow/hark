@@ -128,6 +128,7 @@ const presence = () => page.locator('#presence').innerText();
 await scenario('the page renders asleep with the ear and no chat box', async () => {
   await page.goto(BASE);
   await page.locator('#orb').waitFor();
+  await page.locator('#swarm canvas').waitFor({ timeout: 10000 });
 
   const text = await presence();
 
@@ -179,7 +180,23 @@ await scenario('remember stores a fact and shows it', async () => {
   await page.locator('[data-visual=memory]').waitFor({ timeout: 25000 });
 });
 
-await scenario('paint puts a FLUX picture on the screen', async () => {
+await scenario('show_form shapes the ember swarm into a heart, with no card', async () => {
+  const form = await waitFrame((frame) => frame._tag === 'Show' && frame.visual._tag === 'Form', 25000, woke);
+
+  if (form.frame.visual.kind !== 'icon' || form.frame.visual.value !== 'heart') throw new Error(`unexpected form ${JSON.stringify(form.frame.visual)}`);
+
+  await page.waitForFunction(() => document.querySelector('#swarm')?.dataset.shaped === 'form', null, { timeout: 8000 });
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: `${SHOTS}/form-heart-desktop.png` });
+
+  if ((await page.locator('[data-visual=form]').count()) !== 0) throw new Error('a form showed up as a card');
+
+  return { form: form.frame.visual };
+});
+
+await scenario('paint forms the picture in the swarm first, then hands it to a card', async () => {
+  await page.waitForFunction(() => document.querySelector('#swarm')?.dataset.shaped === 'picture', null, { timeout: 25000 });
+  await page.screenshot({ path: `${SHOTS}/painting-forming-desktop.png` });
   await page.locator('[data-visual=image] img').waitFor({ timeout: 25000 });
   await page.waitForTimeout(1200);
   await page.screenshot({ path: `${SHOTS}/painted-desktop.png` });

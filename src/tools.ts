@@ -1,4 +1,4 @@
-import { FAST_VOICES, RICH_VOICES, VOICES, type Visual, type Voice, type WeatherDay } from '../shared/protocol';
+import { FAST_VOICES, FORM_ICONS, FORM_KINDS, RICH_VOICES, VOICES, type FormKind, type Visual, type Voice, type WeatherDay } from '../shared/protocol';
 
 export type ToolOutcome = {
   readonly content: string;
@@ -315,6 +315,37 @@ const changeVoice: Definition = {
   },
 };
 
+const isFormKind = (value: string): value is FormKind => FORM_KINDS.some((kind) => kind === value);
+
+const SHORT_WORD = 14;
+
+const showForm: Definition = {
+  name: 'show_form',
+  label: () => 'Shaping it',
+  description:
+    'Shape the glowing swarm on their screen into one simple thing while you talk: a single emoji (kind "emoji"), one short word or number (kind "word", up to 14 letters), or an icon (kind "icon"). Use it when a picture says it faster than words: a heart for thanks, a number for a countdown, a sun for good weather, a check when something is done. One per answer at most. Then keep talking; never describe the shape.',
+  parameters: object(
+    {
+      kind: { type: 'string', enum: [...FORM_KINDS] },
+      value: { type: 'string', description: `The emoji, the word, or one of these icons: ${FORM_ICONS.join(', ')}.` },
+    },
+    ['kind', 'value'],
+  ),
+  run: async (args, host) => {
+    const kind = str(args.kind);
+    const value = str(args.value);
+
+    if (!isFormKind(kind) || value === '') return { content: 'Nothing was shown. Give a kind and a value.' };
+
+    if (kind === 'icon' && !FORM_ICONS.some((icon) => icon === value))
+      return { content: `There is no ${value} icon. Use one of: ${FORM_ICONS.join(', ')}, or an emoji.` };
+
+    if (kind === 'word' && value.length > SHORT_WORD) return { content: 'That word is too long to shape. Use a shorter one.' };
+
+    return { content: 'It is on their screen now. Do not mention it.', visual: { _tag: 'Form', id: host.id(), kind, value } };
+  },
+};
+
 const rest: Definition = {
   name: 'rest',
   label: () => 'Going quiet',
@@ -334,6 +365,7 @@ export const TOOLS: readonly Definition[] = [
   look,
   imagine,
   changeVoice,
+  showForm,
   rest,
 ];
 

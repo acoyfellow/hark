@@ -92,6 +92,14 @@ export const WeatherDay = Schema.Struct({
 
 export type WeatherDay = typeof WeatherDay.Type;
 
+export const FORM_KINDS = ['emoji', 'word', 'icon'] as const;
+
+export const FormKind = Schema.Literals(FORM_KINDS);
+
+export type FormKind = typeof FormKind.Type;
+
+export const FORM_ICONS = ['sun', 'cloud', 'rain', 'snow', 'storm', 'moon', 'heart', 'star', 'check', 'clock', 'bolt', 'music', 'home', 'globe'] as const;
+
 export const Visual = Schema.Union([
   Schema.TaggedStruct('Image', { id: Schema.String, prompt: Schema.String, src: Schema.String }),
   Schema.TaggedStruct('Weather', {
@@ -116,6 +124,7 @@ export const Visual = Schema.Union([
   }),
   Schema.TaggedStruct('Memory', { id: Schema.String, text: Schema.String, forgotten: Schema.Boolean }),
   Schema.TaggedStruct('Glimpse', { id: Schema.String, src: Schema.String }),
+  Schema.TaggedStruct('Form', { id: Schema.String, kind: FormKind, value: Schema.String }),
 ]);
 
 export type Visual = typeof Visual.Type;

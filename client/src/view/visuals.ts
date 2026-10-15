@@ -35,7 +35,7 @@ const weekday = (iso: string) => {
 };
 
 const CARD =
-  'visual pointer-events-auto relative w-full overflow-hidden rounded-3xl border border-white/10 bg-zinc-900/70 text-left shadow-[0_30px_80px_-30px_rgba(0,0,0,0.8)] backdrop-blur-xl';
+  'visual glass pointer-events-auto relative w-full overflow-hidden rounded-3xl text-left';
 
 const dismiss = (h: H, id: string): Html =>
   h.button(
@@ -163,6 +163,8 @@ const card = (h: H, model: Model, visual: Visual): Html => {
           h.p([h.Class(`mt-2 text-[14px] leading-snug ${visual.forgotten ? 'text-white/40 line-through' : 'text-white/85'}`)], [visual.text]),
         ],
       );
+    case 'Form':
+      return h.empty;
     case 'Glimpse':
       return h.article(
         [h.Class(`${CARD} group`), h.DataAttribute('visual', 'glimpse')],
@@ -181,8 +183,10 @@ export const visuals = (h: H, model: Model): Html =>
       h.AriaLabel('What hark showed you'),
       h.AriaLive('polite'),
       h.Class(
-        'pointer-events-none flex w-full flex-col gap-3 md:absolute md:top-6 md:right-6 md:bottom-28 md:w-[340px] md:justify-end',
+        'pointer-events-none flex w-full flex-col gap-3 md:absolute md:top-20 md:right-6 md:bottom-28 md:w-[340px] md:justify-end md:overflow-hidden',
       ),
     ],
-    model.visuals.map((visual) => h.keyed('div')(visual.id, [h.Class('visual-in')], [card(h, model, visual)])),
+    model.visuals
+      .filter((visual) => visual._tag !== 'Form')
+      .map((visual) => h.keyed('div')(visual.id, [h.Class(visual._tag === 'Image' ? 'visual-in painted-in' : 'visual-in')], [card(h, model, visual)])),
   );

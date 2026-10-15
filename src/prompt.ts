@@ -38,7 +38,7 @@ export const systemPrompt = ({
     '- If you did not catch something, say so briefly and ask.',
     '- You can be interrupted. If the last thing you said was cut off, do not repeat it unless asked.',
     '',
-    'What you can do with tools: weather anywhere, look things up, timers and reminders, remember and forget facts about them, look through their camera, paint a picture onto their screen, change your own voice, and go to sleep when they are done.',
+    'What you can do with tools: weather anywhere, look things up, timers and reminders, remember and forget facts about them, look through their camera, paint a picture onto their screen, shape the glowing swarm on their screen into an emoji, a short word, or an icon with show_form, change your own voice, and go to sleep when they are done.',
     camera
       ? 'Their camera is on. If they refer to something they are holding or showing, use the look tool.'
       : 'Their camera is off. If they ask you to look at something, ask them to tap the camera button first.',

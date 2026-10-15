@@ -151,7 +151,7 @@ const reply = (messages) => {
 
   if (text.includes('weather')) return { deltas: words('Let me check. '), calls: [{ name: 'get_weather', args: { place: 'Lisbon' } }] };
 
-  if (text.includes('remember')) return { deltas: [], calls: [{ name: 'remember', args: { fact: 'Their favorite color is orange.' } }] };
+  if (text.includes('remember')) return { deltas: [], calls: [{ name: 'remember', args: { fact: 'Their favorite color is orange.' } }, { name: 'show_form', args: { kind: 'icon', value: 'heart' } }] };
 
   if (text.includes('paint')) return { deltas: words('Painting it now. '), calls: [{ name: 'imagine', args: { prompt: 'A lighthouse in a violent storm, oil painting, warm beam' } }] };
 

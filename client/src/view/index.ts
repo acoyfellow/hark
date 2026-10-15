@@ -3,7 +3,8 @@ import type { Document, Html, HtmlBuilder } from 'foldkit/html';
 import { BRAINS, DEFAULT_BRAIN, DEFAULT_ENGINE, DEFAULT_VOICE, ENGINES, voicesFor } from '../../../shared/protocol';
 import { Message } from '../message';
 import type { Look, Model } from '../model';
-import { Orb, Preview } from '../orb';
+import { Preview } from '../orb';
+import { Swarm } from '../swarm';
 import { icon } from './icons';
 import { visuals } from './visuals';
 
@@ -92,9 +93,7 @@ const stage = (h: H, model: Model): Html =>
               h.Class('orb group relative grid aspect-square w-[min(78vw,46vh,440px)] place-items-center rounded-full outline-none'),
               h.OnClick(Message.ClickedOrb()),
             ],
-            [
-              h.canvas([h.Class('absolute inset-0 size-full'), h.DataAttribute('look', model.look), h.OnMount(Orb()), h.AriaHidden(true)], []),
-            ],
+            [],
           ),
           h.div(
             [h.Class('mt-2 flex min-h-[64px] flex-col items-center gap-1.5 text-center'), h.AriaLive('polite')],
@@ -240,10 +239,55 @@ const sheet = (h: H, model: Model): Html => {
   );
 };
 
+const latestOf = <T extends Model['visuals'][number]['_tag']>(model: Model, tag: T) =>
+  model.visuals.toReversed().find((visual): visual is Extract<Model['visuals'][number], { _tag: T }> => visual._tag === tag);
+
+const swarm = (h: H, model: Model): Html => {
+  const form = latestOf(model, 'Form');
+  const painting = latestOf(model, 'Image');
+
+  return h.div(
+    [
+      h.Id('swarm'),
+      h.Class('swarm absolute inset-0 z-0'),
+      h.AriaHidden(true),
+      h.DataAttribute('look', model.look),
+      h.DataAttribute('form-id', form?.id ?? ''),
+      h.DataAttribute('form-kind', form?.kind ?? ''),
+      h.DataAttribute('form-value', form?.value ?? ''),
+      h.DataAttribute('paint-id', painting?.id ?? ''),
+      h.DataAttribute('paint-src', painting?.src ?? ''),
+      h.OnMount(Swarm()),
+    ],
+    [],
+  );
+};
+
+const toast = (h: H, model: Model): Html =>
+  Option.match(model.doing, {
+    onNone: () => h.empty,
+    onSome: (label) =>
+      h.keyed('div')(
+        label,
+        [h.Id('toast'), h.Class('toast pointer-events-none absolute top-[max(4.75rem,calc(env(safe-area-inset-top)+3.75rem))] right-5 z-30 flex w-[min(330px,calc(100vw-2.5rem))] items-center gap-3.5 md:right-8'), h.Role('status')],
+        [
+          h.span([h.Class('medal grid size-10 flex-none place-items-center rounded-[11px]'), h.AriaHidden(true)], [icon(h, 'bolt', 'size-[18px]')]),
+          h.span(
+            [h.Class('min-w-0')],
+            [
+              h.small([h.Class('block font-mono text-[10px] tracking-[0.14em] text-[var(--e5)]/55 uppercase')], ['On it']),
+              h.strong([h.Class('block truncate text-[14px] font-medium')], [label]),
+            ],
+          ),
+          h.i([h.Class('toast-bar'), h.AriaHidden(true)], []),
+        ],
+      ),
+  });
+
 export const view = (model: Model, h: H): Document => ({
   title: model.look === 'asleep' ? 'hark' : `hark · ${LABELS[model.look].toLowerCase()}`,
   body: h.div(
     [h.Class(`app look-${model.look} relative flex h-dvh flex-col overflow-hidden`)],
-    [h.div([h.Class('backdrop'), h.AriaHidden(true)], []), header(h, model), preview(h, model), fault(h, model), stage(h, model), dock(h, model), sheet(h, model)],
+    [swarm(h, model), header(h, model), toast(h, model), preview(h, model), fault(h, model), stage(h, model), dock(h, model), sheet(h, model)],
   ),
 });
