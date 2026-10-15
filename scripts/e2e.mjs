@@ -152,16 +152,16 @@ await scenario('tapping the ear opens the line to the account and starts listeni
   return { account: ready.frame.account, settings: ready.frame.settings };
 });
 
-await scenario('a spoken question gets a tool call, a weather card, and a spoken answer', async () => {
+await scenario('a spoken question gets a tool call, an article card, and a spoken answer', async () => {
   await waitFrame((frame) => frame._tag === 'Presence' && frame.presence === 'hearing', 20000, woke);
-  await waitFrame((frame) => frame._tag === 'Doing' && /sky/i.test(frame.label), 20000, woke);
-  await page.locator('[data-visual=weather]').waitFor({ timeout: 20000 });
+  await waitFrame((frame) => frame._tag === 'Doing' && /looking up/i.test(frame.label), 20000, woke);
+  await page.locator('[data-visual=article]').waitFor({ timeout: 20000 });
 
   const speaking = await waitFrame((frame) => frame._tag === 'Presence' && frame.presence === 'speaking', 20000, woke);
   const measured = await waitFrame((frame) => frame._tag === 'Measured', 20000, woke);
 
   await page.waitForTimeout(900);
-  await page.screenshot({ path: `${SHOTS}/speaking-weather-desktop.png` });
+  await page.screenshot({ path: `${SHOTS}/speaking-article-desktop.png` });
 
   if (packets.count === 0) throw new Error('no speech audio reached the browser');
 
@@ -180,10 +180,12 @@ await scenario('remember stores a fact and shows it', async () => {
   await page.locator('[data-visual=memory]').waitFor({ timeout: 25000 });
 });
 
-await scenario('show_form shapes the ember swarm into a heart, with no card', async () => {
+await scenario('show_form plays a two-beat particle movie (3D heart, then a drawing), with no card', async () => {
   const form = await waitFrame((frame) => frame._tag === 'Show' && frame.visual._tag === 'Form', 25000, woke);
 
-  if (form.frame.visual.kind !== 'icon' || form.frame.visual.value !== 'heart') throw new Error(`unexpected form ${JSON.stringify(form.frame.visual)}`);
+  const kinds = form.frame.visual.beats.map((beat) => beat.kind).join(',');
+
+  if (kinds !== 'solid,draw') throw new Error(`unexpected beats ${kinds}`);
 
   await page.waitForFunction(() => document.querySelector('#swarm')?.dataset.shaped === 'form', null, { timeout: 8000 });
   await page.waitForTimeout(900);

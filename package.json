@@ -16,6 +16,7 @@
     "build": "node scripts/build-client.mjs",
     "dev": "bash scripts/local.sh",
     "dev:real": "bash scripts/local-real.sh",
+    "trace": "bash scripts/trace.sh",
     "dev:stop": "bash scripts/stop.sh",
     "typecheck": "tsc -p . && tsc -p tsconfig.client.json",
     "lint": "oxlint --deny-warnings",
@@ -23,11 +24,12 @@
     "check": "bash scripts/check.sh",
     "e2e": "node scripts/e2e.mjs",
     "icons": "node scripts/build-icons.mjs",
-    "ship": "bash scripts/ship.sh"
+    "ship": "bash scripts/ship.sh",
+    "dev:signin": "bash scripts/local-signin.sh"
   },
   "dependencies": {
     "@effect/platform-browser": "4.0.0",
-    "agents": "file:./vendor/agents-0.28.1-voice-93aa507.tgz",
+    "agents": "file:./vendor/agents-0.28.1-voice-93aa507-continuous.tgz",
     "effect": "4.0.0",
     "foldkit": "0.168.0",
     "three": "0.169.0"

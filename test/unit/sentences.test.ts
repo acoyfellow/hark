@@ -44,6 +44,11 @@ describe('speakable', () => {
     expect(speakable('- one\n- two\n1. three')).toBe('one two three');
   });
 
+  test('never reads out tool calls a brain wrote as text', () => {
+    expect(speakable('Let me draw that. <show_form beats=[{kind:"draw", value:"M10 10 L90 10"}]></show_form> Ta-da.')).toBe('Let me draw that. Ta-da.');
+    expect(speakable('Here [{"kind":"emoji","value":"x"}] you go.')).toBe('Here you go.');
+  });
+
   test('spells acronyms and turns written pauses into spoken ones', () => {
     expect(speakable('Your API keys and the AI Gateway stop DDoS attacks — fast.')).toBe('Your A P I keys and the A.I. Gateway stop D D O S attacks... fast.');
     expect(speakable('He said "hello" to the URLs.')).toBe("He said hello to the U R L's.");

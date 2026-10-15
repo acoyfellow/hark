@@ -7,7 +7,7 @@ const PORT = Number(process.env.FAKE_PORT ?? 8799);
 const SCRIPT = (
   process.env.FAKE_SCRIPT ??
   [
-    "What's the weather like in Lisbon right now?",
+    'Who was Ada Lovelace?',
     'Remember that my favorite color is orange.',
     'Paint me a lighthouse in a storm.',
     'Tell me a long story about the sea.',
@@ -136,7 +136,7 @@ const reply = (messages) => {
   if (last.role === 'tool' || flattened) {
     const asked = flattened?.[1] ?? messages.findLast((message) => message.role === 'assistant' && message.tool_calls)?.tool_calls?.[0]?.function?.name;
     const answers = {
-      get_weather: "It's about twenty-one degrees and clear in Lisbon. A perfect evening for a walk.",
+      look_up: 'Ada Lovelace wrote the first computer program, for Babbage\'s Analytical Engine.',
       remember: "Got it. Orange it is, and I'll keep that in mind.",
       imagine: 'There you go, a lighthouse holding its own against the storm.',
       set_timer: 'Timer set. Four seconds for tea.',
@@ -149,9 +149,9 @@ const reply = (messages) => {
 
   if (text.includes('timer') && text.includes('finished')) return { deltas: words('Your tea is ready.'), calls: [] };
 
-  if (text.includes('weather')) return { deltas: words('Let me check. '), calls: [{ name: 'get_weather', args: { place: 'Lisbon' } }] };
+  if (text.includes('lovelace')) return { deltas: words('Let me check. '), calls: [{ name: 'look_up', args: { topic: 'Ada Lovelace' } }] };
 
-  if (text.includes('remember')) return { deltas: [], calls: [{ name: 'remember', args: { fact: 'Their favorite color is orange.' } }, { name: 'show_form', args: { kind: 'icon', value: 'heart' } }] };
+  if (text.includes('remember')) return { deltas: [], calls: [{ name: 'remember', args: { fact: 'Their favorite color is orange.' } }, { name: 'show_form', args: { beats: [{ kind: 'solid', value: 'heart', seconds: 2, motion: 'spin' }, { kind: 'draw', value: 'M20 60 Q50 10 80 60 M35 70 L65 70', seconds: 3, motion: 'bounce' }] } }] };
 
   if (text.includes('paint')) return { deltas: words('Painting it now. '), calls: [{ name: 'imagine', args: { prompt: 'A lighthouse in a violent storm, oil painting, warm beam' } }] };
 

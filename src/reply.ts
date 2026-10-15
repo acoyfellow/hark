@@ -1,7 +1,7 @@
 import { Effect } from 'effect';
 import type { Visual } from '../shared/protocol';
 import { flattenForBrain } from './flatten';
-import { leakedCalls, mightBeLeakedCall } from './leaked-calls';
+import { leakedCalls, markupCalls, markupRemainder, markupStart, mightBeLeakedCall, mightStartWrittenCall } from './leaked-calls';
 import { chatEvents, type ToolCall } from './sse';
 import type { ToolOutcome } from './tools';
 import type { ChatMessage } from './chat';
@@ -77,6 +77,9 @@ export async function* reply(
       const body = await ports.chat(flattenForBrain(conversation), signal);
       let text = '';
       let held = '';
+      let markup = '';
+      let tail = '';
+      let parked = '';
       let calls: readonly ToolCall[] = [];
 
       for await (const event of chatEvents(body)) {
@@ -85,9 +88,29 @@ export async function* reply(
         if (event.kind === 'text') {
           result.firstTextAt ??= Date.now();
 
-          const pending = held + event.text;
+          if (markup !== '') {
+            markup += event.text;
 
-          if (text === '' && (pending.trim() === '' || mightBeLeakedCall(pending))) {
+            const after = markupRemainder(markup);
+
+            if (after === null) continue;
+
+            markup = markup.slice(0, markup.length - after.length);
+            parked += after;
+            continue;
+          }
+
+          const joined = held + tail + event.text;
+          const cut = markupStart(joined);
+          const openTag = cut === -1 ? mightStartWrittenCall(joined) : null;
+          const end = cut !== -1 ? cut : openTag !== null ? openTag.index : joined.length;
+          const pending = joined.slice(0, end);
+
+          tail = openTag === null ? '' : joined.slice(end);
+
+          if (cut !== -1) markup = joined.slice(cut);
+
+          if (cut === -1 && text === '' && (pending.trim() === '' || mightBeLeakedCall(pending))) {
             held = pending;
             continue;
           }
@@ -101,9 +124,16 @@ export async function* reply(
         if (event.kind === 'tools') calls = event.calls;
       }
 
-      const recovered = calls.length === 0 && held.trim() !== '' ? leakedCalls(held) : null;
+      const recovered =
+        calls.length > 0 ? null : markup !== '' ? markupCalls(markup) : held.trim() !== '' ? leakedCalls(held) : null;
 
       if (recovered !== null) calls = recovered;
+
+      if (parked.trim() !== '') {
+        text += parked;
+        said = true;
+        yield parked;
+      }
 
       if (calls.length === 0 || round === MAX_ROUNDS - 1) return;
 

@@ -1,38 +1,10 @@
 import type { Html, HtmlBuilder } from 'foldkit/html';
-import type { Visual, WeatherDay } from '../../../shared/protocol';
+import type { Visual } from '../../../shared/protocol';
 import { Message } from '../message';
 import type { Model } from '../model';
 import { type IconName, icon } from './icons';
 
 type H = HtmlBuilder<Message>;
-
-const fahrenheit = () => /^en-US|^en-LR|^my/u.test(navigator.language);
-
-const degrees = (celsius: number) =>
-  Number.isFinite(celsius) ? `${Math.round(fahrenheit() ? celsius * 1.8 + 32 : celsius)}°` : '–';
-
-export const weatherIcon = (code: number): IconName =>
-  code <= 1
-    ? 'sun'
-    : code <= 2
-      ? 'partly'
-      : code <= 3
-        ? 'cloud'
-        : code <= 48
-          ? 'fog'
-          : code <= 67 || (code >= 80 && code <= 82)
-            ? 'rain'
-            : code <= 77 || code <= 86
-              ? 'snow'
-              : 'storm';
-
-const weekday = (iso: string) => {
-  const date = new Date(`${iso}T12:00:00`);
-
-  return Number.isNaN(date.getTime())
-    ? iso
-    : new Intl.DateTimeFormat(navigator.language, { weekday: 'short' }).format(date);
-};
 
 const CARD =
   'visual glass pointer-events-auto relative w-full overflow-hidden rounded-3xl text-left';
@@ -56,15 +28,6 @@ const kicker = (h: H, name: IconName, label: string): Html =>
     [icon(h, name, 'size-3.5'), label],
   );
 
-const day = (h: H, entry: WeatherDay): Html =>
-  h.li(
-    [h.Class('flex flex-col items-center gap-1 rounded-2xl bg-white/[0.04] px-2 py-2.5')],
-    [
-      h.span([h.Class('text-[11px] text-white/50')], [weekday(entry.day)]),
-      h.span([h.Class('text-white/80')], [icon(h, weatherIcon(entry.code), 'size-4')]),
-      h.span([h.Class('text-[12px] tabular-nums')], [degrees(entry.high), h.span([h.Class('text-white/40')], [` ${degrees(entry.low)}`])]),
-    ],
-  );
 
 const pad = (value: number) => String(value).padStart(2, '0');
 
@@ -79,28 +42,6 @@ const countdown = (endsAt: number, now: number) => {
 
 const card = (h: H, model: Model, visual: Visual): Html => {
   switch (visual._tag) {
-    case 'Weather':
-      return h.article(
-        [h.Class(`${CARD} group p-5`), h.DataAttribute('visual', 'weather')],
-        [
-          dismiss(h, visual.id),
-          kicker(h, 'wind', 'Weather'),
-          h.div(
-            [h.Class('mt-3 flex items-center justify-between gap-4')],
-            [
-              h.div(
-                [],
-                [
-                  h.p([h.Class('text-[44px] leading-none font-light tracking-tight tabular-nums')], [degrees(visual.now)]),
-                  h.p([h.Class('mt-2 text-[13px] text-white/60')], [visual.place]),
-                ],
-              ),
-              h.span([h.Class('text-amber')], [icon(h, weatherIcon(visual.code), 'size-14')]),
-            ],
-          ),
-          h.ul([h.Class('mt-4 grid grid-cols-4 gap-1.5')], visual.days.map((entry) => day(h, entry))),
-        ],
-      );
     case 'Article':
       return h.article(
         [h.Class(`${CARD} group`), h.DataAttribute('visual', 'article')],

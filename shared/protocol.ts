@@ -83,16 +83,8 @@ export const DEFAULT_VOICE: Voice = 'asteria';
 
 export const EYES_MODEL = '@cf/google/gemma-4-26b-a4b-it';
 
-export const WeatherDay = Schema.Struct({
-  day: Schema.String,
-  high: Schema.Number,
-  low: Schema.Number,
-  code: Schema.Number,
-});
 
-export type WeatherDay = typeof WeatherDay.Type;
-
-export const FORM_KINDS = ['emoji', 'word', 'icon'] as const;
+export const FORM_KINDS = ['emoji', 'word', 'icon', 'solid', 'draw', 'painting'] as const;
 
 export const FormKind = Schema.Literals(FORM_KINDS);
 
@@ -100,16 +92,20 @@ export type FormKind = typeof FormKind.Type;
 
 export const FORM_ICONS = ['sun', 'cloud', 'rain', 'snow', 'storm', 'moon', 'heart', 'star', 'check', 'clock', 'bolt', 'music', 'home', 'globe'] as const;
 
+export const FORM_SOLIDS = ['sphere', 'cube', 'torus', 'helix', 'galaxy', 'wave', 'heart', 'star', 'planet', 'tornado', 'flower', 'mobius'] as const;
+
+export const FORM_MOTIONS = ['still', 'spin', 'pulse', 'bounce', 'sway', 'tumble', 'explode'] as const;
+
+export const FormMotion = Schema.Literals(FORM_MOTIONS);
+
+export type FormMotion = typeof FormMotion.Type;
+
+export const Beat = Schema.Struct({ kind: FormKind, value: Schema.String, seconds: Schema.Number, motion: FormMotion });
+
+export type Beat = typeof Beat.Type;
+
 export const Visual = Schema.Union([
   Schema.TaggedStruct('Image', { id: Schema.String, prompt: Schema.String, src: Schema.String }),
-  Schema.TaggedStruct('Weather', {
-    id: Schema.String,
-    place: Schema.String,
-    now: Schema.Number,
-    code: Schema.Number,
-    wind: Schema.Number,
-    days: Schema.Array(WeatherDay),
-  }),
   Schema.TaggedStruct('Article', {
     id: Schema.String,
     title: Schema.String,
@@ -124,7 +120,7 @@ export const Visual = Schema.Union([
   }),
   Schema.TaggedStruct('Memory', { id: Schema.String, text: Schema.String, forgotten: Schema.Boolean }),
   Schema.TaggedStruct('Glimpse', { id: Schema.String, src: Schema.String }),
-  Schema.TaggedStruct('Form', { id: Schema.String, kind: FormKind, value: Schema.String }),
+  Schema.TaggedStruct('Form', { id: Schema.String, beats: Schema.Array(Beat) }),
 ]);
 
 export type Visual = typeof Visual.Type;

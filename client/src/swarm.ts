@@ -21,13 +21,16 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { meter } from './engine';
+import { type Dot, drawingDots, emojiDots, iconDots, loadImage, pictureDots, solidDots, wordDots } from './shapes';
 import { Message } from './message';
 
 export const EMBER_RAMP = ['#1a0904', '#5a1e08', '#c2520f', '#f6821f', '#ffb35c', '#ffe7c4'] as const;
 
-type Dot = readonly [x: number, y: number, z: number, tone: number];
+type Motion = 'still' | 'spin' | 'pulse' | 'bounce' | 'sway' | 'tumble' | 'explode';
 
-type Shape = { readonly dots: readonly Dot[]; readonly scale: number; readonly picture: boolean };
+type Shape = { readonly dots: readonly Dot[]; readonly scale: number; readonly picture: boolean; readonly solid: boolean; readonly motion: Motion; readonly bornAt: number };
+
+type BeatData = { readonly kind: string; readonly value: string; readonly seconds: number; readonly motion: string };
 
 type Look = 'asleep' | 'waking' | 'listening' | 'hearing' | 'thinking' | 'speaking';
 
@@ -35,155 +38,40 @@ const LOOKS: readonly Look[] = ['asleep', 'waking', 'listening', 'hearing', 'thi
 
 const isLook = (value: string): value is Look => LOOKS.some((look) => look === value);
 
-const LOOK_TONE: Record<Look, number> = { asleep: 0.12, waking: 0.55, listening: 0.6, hearing: 0.8, thinking: 0.7, speaking: 0.85 };
+const LOOK_TONE: Record<Look, number> = { asleep: 0.72, waking: 0.55, listening: 0.6, hearing: 0.8, thinking: 0.7, speaking: 0.85 };
 
-const ICON_PATHS: Record<string, string> = {
-  sun: 'M12 7a5 5 0 1 0 0 10a5 5 0 1 0 0-10M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1',
-  cloud: 'M7 18h10a4 4 0 0 0 .5-8a6 6 0 0 0-11.4 1.5A3.3 3.3 0 0 0 7 18z',
-  rain: 'M7 14h10a4 4 0 0 0 .5-8a6 6 0 0 0-11.4 1.5A3.3 3.3 0 0 0 7 14zM8 17l-1 3M12 17l-1 3M16 17l-1 3',
-  snow: 'M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 4l3 2l3-2M9 20l3-2l3 2',
-  storm: 'M7 13h10a4 4 0 0 0 .5-8a6 6 0 0 0-11.4 1.5A3.3 3.3 0 0 0 7 13zM13 13l-3 5h4l-3 5',
-  moon: 'M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z',
-  heart: 'M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z',
-  star: 'M12 2.5l2.9 6.1l6.6.8l-4.9 4.5l1.3 6.6L12 17.2l-5.9 3.3l1.3-6.6L2.5 9.4l6.6-.8z',
-  check: 'M4 12.5l5 5L20 6.5',
-  clock: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7v5l3.5 2',
-  bolt: 'M13 2L4 14h7l-1 8l9-12h-7z',
-  music: 'M9 18V5l11-2v13M9 18a3 3 0 1 1-6 0a3 3 0 1 1 6 0M20 16a3 3 0 1 1-6 0a3 3 0 1 1 6 0',
-  home: 'M3 11l9-8l9 8M5 9.5V21h5v-6h4v6h5V9.5',
-  globe: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18',
+const MOTIONS: readonly Motion[] = ['still', 'spin', 'pulse', 'bounce', 'sway', 'tumble', 'explode'];
+
+const motionOf = (value: string): Motion => MOTIONS.find((motion) => motion === value) ?? 'still';
+
+const isBeat = (value: unknown): value is BeatData =>
+  typeof value === 'object' && value !== null && typeof (value as BeatData).kind === 'string' && typeof (value as BeatData).value === 'string';
+
+const beatsOf = (raw: string): BeatData[] => {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+
+    return Array.isArray(parsed) ? parsed.filter(isBeat) : [];
+  } catch {
+    return [];
+  }
 };
 
-const SAMPLE = 240;
+const dotsFor = async (beat: BeatData): Promise<{ dots: Dot[]; picture: boolean; solid: boolean }> => {
+  if (beat.kind === 'painting') {
+    const image = await loadImage(beat.value);
 
-const PICTURE_GRID = 132;
-
-const FORM_HOLD_MS = 7000;
-
-const PICTURE_HOLD_MS = 2600;
-
-const sampler = () => {
-  const canvas = document.createElement('canvas');
-
-  canvas.width = SAMPLE;
-  canvas.height = SAMPLE;
-
-  return { canvas, context: canvas.getContext('2d', { willReadFrequently: true }) };
-};
-
-const luminance = (data: Uint8ClampedArray, at: number) => (0.299 * data[at]! + 0.587 * data[at + 1]! + 0.114 * data[at + 2]!) / 255;
-
-const shuffle = <T>(items: T[]): T[] => {
-  for (let index = items.length - 1; index > 0; index -= 1) {
-    const other = Math.floor(Math.random() * (index + 1));
-    const swap = items[index]!;
-
-    items[index] = items[other]!;
-    items[other] = swap;
+    return { dots: image === null ? [] : pictureDots(image), picture: true, solid: false };
   }
 
-  return items;
+  if (beat.kind === 'solid') return { dots: solidDots(beat.value), picture: false, solid: true };
+
+  const flat = beat.kind === 'emoji' ? emojiDots(beat.value) : beat.kind === 'word' ? wordDots(beat.value) : beat.kind === 'draw' ? drawingDots(beat.value) : iconDots(beat.value);
+
+  return { dots: flat, picture: false, solid: false };
 };
 
-const traced = (draw: (context: CanvasRenderingContext2D, size: number) => void, cap = 9000): Dot[] => {
-  const { context } = sampler();
-
-  if (context === null) return [];
-
-  draw(context, SAMPLE);
-
-  const data = context.getImageData(0, 0, SAMPLE, SAMPLE).data;
-  const dots: Dot[] = [];
-
-  for (let y = 0; y < SAMPLE; y += 1)
-    for (let x = 0; x < SAMPLE; x += 1) {
-      const at = (y * SAMPLE + x) * 4;
-      const alpha = data[at + 3]! / 255;
-      const light = luminance(data, at);
-
-      if (alpha > 0.12 && Math.random() < alpha) dots.push([x / SAMPLE - 0.5, 0.5 - y / SAMPLE, alpha * (0.4 + light * 0.6) * 0.35, 0.45 + light * 0.55]);
-    }
-
-  return shuffle(dots).slice(0, cap);
-};
-
-const emojiDots = (value: string) =>
-  traced((context, size) => {
-    context.font = `${size * 0.78}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-    context.fillText(value, size / 2, size * 0.54);
-  });
-
-const wordDots = (value: string) =>
-  traced((context, size) => {
-    let font = size * 0.5;
-
-    context.fillStyle = '#fff';
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-    context.font = `600 ${font}px "Google Sans Flex", system-ui, sans-serif`;
-
-    const fit = (size * 0.92) / context.measureText(value).width;
-
-    if (fit < 1) {
-      font *= fit;
-      context.font = `600 ${font}px "Google Sans Flex", system-ui, sans-serif`;
-    }
-
-    context.fillText(value, size / 2, size / 2);
-  });
-
-const iconDots = (name: string) =>
-  traced((context, size) => {
-    const path = ICON_PATHS[name];
-
-    if (path === undefined) return;
-
-    context.save();
-    context.translate(size * 0.1, size * 0.1);
-    context.scale((size * 0.8) / 24, (size * 0.8) / 24);
-    context.strokeStyle = '#fff';
-    context.lineWidth = 2.1;
-    context.lineCap = 'round';
-    context.lineJoin = 'round';
-    context.stroke(new Path2D(path));
-    context.restore();
-  });
-
-const pictureDots = (image: HTMLImageElement): Dot[] => {
-  const { context } = sampler();
-
-  if (context === null) return [];
-
-  context.drawImage(image, 0, 0, PICTURE_GRID, PICTURE_GRID);
-
-  const data = context.getImageData(0, 0, PICTURE_GRID, PICTURE_GRID).data;
-  const lights = Float32Array.from({ length: PICTURE_GRID * PICTURE_GRID }, (_, index) => luminance(data, index * 4));
-  const sorted = lights.toSorted();
-  const low = sorted[Math.floor(lights.length * 0.02)] ?? 0;
-  const high = sorted[Math.floor(lights.length * 0.985)] ?? 1;
-  const dots: Dot[] = [];
-
-  for (let y = 0; y < PICTURE_GRID; y += 1)
-    for (let x = 0; x < PICTURE_GRID; x += 1) {
-      const light = Math.pow(Math.min(1, Math.max(0, (lights[y * PICTURE_GRID + x]! - low) / Math.max(0.05, high - low))), 0.8);
-      const jitter = () => (Math.random() - 0.5) / PICTURE_GRID;
-
-      if (light > 0.08 || Math.random() < 0.35) dots.push([x / PICTURE_GRID - 0.5 + jitter(), 0.5 - y / PICTURE_GRID + jitter(), light * 0.12, 0.06 + light * 0.94]);
-    }
-
-  return dots;
-};
-
-const loadImage = (src: string) =>
-  new Promise<HTMLImageElement | null>((resolve) => {
-    const image = new Image();
-
-    image.onload = () => resolve(image);
-    image.onerror = () => resolve(null);
-    image.src = src;
-  });
+const PICTURE_HOLD_MS = 2600;
 
 const VERTEX = `
 attribute float tone; attribute float seed; attribute float heat; attribute float formed;
@@ -193,9 +81,9 @@ void main() {
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * mv;
   float twinkle = 0.75 + 0.25 * sin(uTime * 2.0 + seed * 40.0);
-  gl_PointSize = (0.9 + seed * 1.5 + formed * (0.6 + uBoost) + heat * 2.4 + uLevel * 0.8) * uDpr * (14.0 / -mv.z);
+  gl_PointSize = (1.3 + seed * 1.8 + formed * (0.8 + uBoost) + heat * 2.8 + uLevel * 1.2) * uDpr * (14.0 / -mv.z);
   vTone = clamp(tone + heat * 0.35, 0.0, 1.0);
-  vAlpha = twinkle * mix(0.18 + 0.42 * tone, 0.7 + 0.6 * tone, formed);
+  vAlpha = twinkle * mix(0.32 + 0.6 * tone, 0.85 + 0.7 * tone, formed);
 }`;
 
 const FRAGMENT = `
@@ -217,13 +105,13 @@ void main() {
 
 const dynamic = (array: Float32Array, size: number) => new BufferAttribute(array, size).setUsage(DynamicDrawUsage);
 
-const particleCount = () => (innerWidth < 700 ? 11000 : 24000);
+const particleCount = () => (innerWidth < 700 ? 9000 : 16000);
 
 const startSwarm = (host: HTMLElement) => {
   const renderer = new WebGLRenderer({ antialias: false, powerPreference: 'high-performance', alpha: false });
 
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
-  renderer.setClearColor(new Color().setRGB(0.0003, 0.00018, 0.00012, LinearSRGBColorSpace), 1);
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
+  renderer.setClearColor(new Color().setRGB(0.012, 0.0055, 0.0028, LinearSRGBColorSpace), 1);
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.domElement.className = 'size-full';
   host.appendChild(renderer.domElement);
@@ -234,7 +122,7 @@ const startSwarm = (host: HTMLElement) => {
   camera.position.set(0, 0, 14);
 
   const composer = new EffectComposer(renderer);
-  const bloom = new UnrealBloomPass(new Vector2(1, 1), 0.5, 0.35, 0.55);
+  const bloom = new UnrealBloomPass(new Vector2(1, 1), 1.15, 0.7, 0.18);
 
   composer.addPass(new RenderPass(scene, camera));
   composer.addPass(bloom);
@@ -252,7 +140,7 @@ const startSwarm = (host: HTMLElement) => {
   for (let index = 0; index < count; index += 1) {
     seed[index] = Math.random();
     position[index * 3] = (Math.random() - 0.5) * 22;
-    position[index * 3 + 1] = -4.2 + Math.random() * 0.5;
+    position[index * 3 + 1] = (Math.random() - 0.5) * 8;
     position[index * 3 + 2] = (Math.random() - 0.5) * 4;
     tone[index] = 0.15;
   }
@@ -291,6 +179,7 @@ const startSwarm = (host: HTMLElement) => {
     shapeUntil: 0,
     formKey: '',
     paintKey: '',
+    show: 0,
     shocks: [] as number[],
   };
 
@@ -303,7 +192,7 @@ const startSwarm = (host: HTMLElement) => {
     camera.updateProjectionMatrix();
     renderer.setSize(width, height, false);
     composer.setSize(width, height);
-    bloom.resolution.set(width, height);
+    bloom.resolution.set(width / 2, height / 2);
   };
 
   const anchor = () => {
@@ -326,11 +215,11 @@ const startSwarm = (host: HTMLElement) => {
   const hold = (shape: Shape, millis: number) => {
     state.shape = shape;
     state.shapeUntil = performance.now() + millis;
-    state.used = Math.min(count, Math.round(shape.dots.length * (shape.picture ? 1 : 1.6)));
-    material.uniforms.uBoost!.value = shape.picture ? 0.7 : 0;
+    state.used = Math.min(count, Math.round(shape.dots.length * (shape.picture ? 1 : shape.solid ? 1.4 : 0.9)));
+    material.uniforms.uBoost!.value = shape.picture ? 0.7 : 0.35;
 
     for (let index = 0; index < count; index += 1)
-      toneGoal[index] = index < state.used ? shape.dots[index % shape.dots.length]![3] : shape.picture ? 0.02 : 0.08 + seed[index]! * 0.12;
+      toneGoal[index] = index < state.used ? shape.dots[index % shape.dots.length]![3] : shape.picture ? 0.02 : 0.12 + seed[index]! * 0.15;
 
     state.shocks.push(performance.now());
   };
@@ -340,18 +229,33 @@ const startSwarm = (host: HTMLElement) => {
     material.uniforms.uBoost!.value = 0;
   };
 
+  const SCALES = { flat: 4.6, solid: 7.5, picture: 6.4 };
+
+  const play = async (beats: readonly BeatData[]) => {
+    state.show += 1;
+
+    const show = state.show;
+    const prepared = await Promise.all(beats.map(async (beat) => ({ beat, ...(await dotsFor(beat)) })));
+
+    for (const { beat, dots, picture, solid } of prepared) {
+      if (show !== state.show) return;
+
+      if (dots.length === 0) continue;
+
+      const millis = Math.min(12, Math.max(1, Number(beat.seconds) || 4)) * 1000;
+
+      hold({ dots, picture, solid, motion: motionOf(beat.motion), bornAt: performance.now(), scale: picture ? SCALES.picture : solid ? SCALES.solid : SCALES.flat }, millis);
+      await new Promise((resolve) => setTimeout(resolve, millis));
+    }
+  };
+
   const readForm = () => {
     const key = host.dataset.formId ?? '';
 
     if (key === '' || key === state.formKey) return;
 
     state.formKey = key;
-
-    const kind = host.dataset.formKind ?? '';
-    const value = host.dataset.formValue ?? '';
-    const dots = kind === 'emoji' ? emojiDots(value) : kind === 'word' ? wordDots(value) : iconDots(value);
-
-    if (dots.length > 0) hold({ dots, scale: 4.2, picture: false }, FORM_HOLD_MS);
+    void play(beatsOf(host.dataset.formBeats ?? '[]'));
   };
 
   const readPaint = () => {
@@ -361,13 +265,7 @@ const startSwarm = (host: HTMLElement) => {
     if (key === '' || key === state.paintKey || src === '') return;
 
     state.paintKey = key;
-    void loadImage(src).then((image) => {
-      if (image === null) return;
-
-      const dots = pictureDots(image);
-
-      if (dots.length > 0) hold({ dots, scale: 6.4, picture: true }, PICTURE_HOLD_MS);
-    });
+    void play([{ kind: 'painting', value: src, seconds: PICTURE_HOLD_MS / 1000, motion: 'still' }]);
   };
 
   const voiceLevel = () =>
@@ -392,19 +290,50 @@ const startSwarm = (host: HTMLElement) => {
 
     if (shaping) {
       const dot = shape.dots[index % shape.dots.length]!;
-      const scale = shape.scale * (state.look === 'speaking' ? 1 + state.level * 0.05 : 1);
+      const age = (performance.now() - shape.bornAt) / 1000;
+      const motion = shape.motion;
+      const voice = state.look === 'speaking' ? 1 + state.level * 0.06 : 1;
+      const pulse = motion === 'pulse' ? 1 + Math.sin(age * 6) * 0.08 : 1;
+      const burst = motion === 'explode' ? 1 + Math.max(0, age - 1.2) * 2.2 : 1;
+      const scale = shape.scale * voice * pulse * burst;
+      const yaw = shape.solid ? age * (motion === 'spin' || motion === 'tumble' ? 1.4 : 0.35) : motion === 'spin' ? Math.sin(age * 1.6) * 0.9 : motion === 'sway' ? Math.sin(age * 2) * 0.35 : 0;
+      const pitch = shape.solid ? 0.35 + (motion === 'tumble' ? age * 0.9 : Math.sin(age * 0.5) * 0.25) : 0;
+      const lift = motion === 'bounce' ? Math.abs(Math.sin(age * 4)) * 0.7 : 0;
+      const depth = shape.solid ? 1 : 0.25;
+      const x0 = dot[0] * scale;
+      const y0 = dot[1] * scale;
+      const z0 = dot[2] * scale * depth;
+      const x1 = x0 * Math.cos(yaw) + z0 * Math.sin(yaw);
+      const z1 = -x0 * Math.sin(yaw) + z0 * Math.cos(yaw);
+      const y1 = y0 * Math.cos(pitch) - z1 * Math.sin(pitch);
+      const z2 = y0 * Math.sin(pitch) + z1 * Math.cos(pitch);
       const wobble = state.look === 'speaking' ? Math.sin(time * 13 + s * 6) * state.level * 0.03 : Math.sin(time * 1.3 + s * 9) * 0.012;
 
-      out[0] = cx + dot[0] * scale + wobble;
-      out[1] = cy + dot[1] * scale + wobble;
-      out[2] = dot[2] * scale * 0.25 + (s - 0.5) * 0.03;
+      out[0] = cx + x1 + wobble;
+      out[1] = cy + y1 + lift + wobble;
+      out[2] = z2 + (s - 0.5) * 0.03;
       return;
     }
 
     if (state.look === 'asleep') {
-      out[0] = (k - 0.5) * 22;
-      out[1] = -4.3 + 0.35 * Math.sin(k * 9 + time * 0.3) * Math.sin(k * 3) + s * 0.25;
-      out[2] = (s - 0.5) * 5;
+      const breath = 1 + Math.sin(time * 1.4) * 0.06;
+
+      if (index % 3 === 0) {
+        const angle = k * Math.PI * 2 + time * 0.12;
+        const radius = (1.85 + Math.sin(angle * 5 + time * 1.1) * 0.05 + (s - 0.5) * 0.08) * breath;
+
+        out[0] = cx + Math.cos(angle) * radius;
+        out[1] = cy + Math.sin(angle) * radius;
+        out[2] = (s - 0.5) * 0.2;
+        return;
+      }
+
+      const angle = k * Math.PI * 2 * 7 + time * 0.25 * (0.5 + s);
+      const radius = Math.pow(s, 2.2) * 1.25 * breath;
+
+      out[0] = cx + Math.cos(angle) * radius;
+      out[1] = cy + Math.sin(angle) * radius;
+      out[2] = (Math.sin(k * 40) - 0.5) * 0.8;
       return;
     }
 
@@ -451,7 +380,7 @@ const startSwarm = (host: HTMLElement) => {
 
     anchor();
 
-    const stiffness = state.look === 'asleep' ? 1.6 : state.look === 'thinking' ? 13 : 7.5;
+    const stiffness = state.look === 'asleep' ? 2.2 : state.look === 'thinking' ? 13 : 7.5;
     const shaping = state.shape !== null && state.look !== 'thinking';
     const baseTone = LOOK_TONE[state.look];
     const { x: cx, y: cy } = state.center;
@@ -491,10 +420,12 @@ const startSwarm = (host: HTMLElement) => {
       position[at + 2] = position[at + 2]! + velocity[at + 2]! * delta;
       heat[index] = heat[index]! * 0.94;
 
-      const toneTarget = shaping ? toneGoal[index]! : baseTone * (0.6 + seed[index]! * 0.5);
+      const idleRing = state.look === 'asleep' && index % 3 === 0;
+      const idleCore = state.look === 'asleep' && !idleRing ? 1 - Math.min(1, Math.hypot(position[at]! - cx, position[at + 1]! - cy) / 1.3) : 0;
+      const toneTarget = shaping ? toneGoal[index]! : idleRing ? 0.86 + seed[index]! * 0.14 : state.look === 'asleep' ? 0.4 + idleCore * 0.55 : baseTone * (0.6 + seed[index]! * 0.5);
 
       tone[index] = tone[index]! + (toneTarget - tone[index]!) * 0.07;
-      formed[index] = formed[index]! + ((shaping && index < state.used ? 1 : 0) - formed[index]!) * 0.2;
+      formed[index] = formed[index]! + (((shaping && index < state.used) || idleRing ? 1 : 0) - formed[index]!) * 0.2;
     }
 
     state.shocks = state.shocks.filter((shock) => now - shock < 1100);

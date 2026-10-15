@@ -1,4 +1,4 @@
-import { FAST_VOICES, FORM_ICONS, FORM_KINDS, RICH_VOICES, VOICES, type FormKind, type Visual, type Voice, type WeatherDay } from '../shared/protocol';
+import { type Beat, FAST_VOICES, FORM_ICONS, FORM_KINDS, FORM_MOTIONS, FORM_SOLIDS, RICH_VOICES, VOICES, type FormKind, type FormMotion, type Visual, type Voice } from '../shared/protocol';
 
 export type ToolOutcome = {
   readonly content: string;
@@ -57,82 +57,6 @@ const list = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 
 const rec = (value: unknown): Record<string, unknown> =>
   typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
-
-const WEATHER_WORDS: ReadonlyArray<readonly [number, string]> = [
-  [0, 'clear'],
-  [2, 'partly cloudy'],
-  [3, 'overcast'],
-  [48, 'foggy'],
-  [57, 'drizzle'],
-  [67, 'rain'],
-  [77, 'snow'],
-  [82, 'rain showers'],
-  [86, 'snow showers'],
-  [99, 'thunderstorms'],
-];
-
-export const weatherWord = (code: number): string =>
-  WEATHER_WORDS.find(([upTo]) => code <= upTo)?.[1] ?? 'unsettled';
-
-const weather: Definition = {
-  name: 'get_weather',
-  label: (args) => `Checking the sky over ${str(args.place, 'there')}`,
-  description:
-    'Current weather and a short forecast for a city or place. Use for any question about weather, temperature, rain, or what to wear.',
-  parameters: object({ place: { type: 'string', description: 'City or place name' } }, ['place']),
-  run: async (args, host) => {
-    const place = str(args.place);
-    const found = rec(
-      list(
-        (
-          await json(
-            host,
-            `https://geocoding-api.open-meteo.com/v1/search?count=1&format=json&name=${encodeURIComponent(place)}`,
-          )
-        ).results,
-      )[0],
-    );
-
-    if (typeof found.latitude !== 'number')
-      return { content: `No place called "${place}" was found.` };
-
-    const name = [found.name, found.admin1, found.country_code].filter(Boolean).join(', ');
-    const forecast = await json(
-      host,
-      `https://api.open-meteo.com/v1/forecast?latitude=${found.latitude}&longitude=${found.longitude}&current=temperature_2m,weather_code,wind_speed_10m,apparent_temperature&daily=temperature_2m_max,temperature_2m_min,weather_code&forecast_days=4&timezone=auto`,
-    );
-    const current = rec(forecast.current);
-    const daily = rec(forecast.daily);
-    const days: WeatherDay[] = list(daily.time).map((day, index) => ({
-      day: str(day),
-      high: num(list(daily.temperature_2m_max)[index]),
-      low: num(list(daily.temperature_2m_min)[index]),
-      code: num(list(daily.weather_code)[index]),
-    }));
-    const now = num(current.temperature_2m);
-    const code = num(current.weather_code);
-
-    return {
-      content: JSON.stringify({
-        place: name,
-        now_celsius: now,
-        feels_like_celsius: num(current.apparent_temperature),
-        conditions: weatherWord(code),
-        wind_kmh: num(current.wind_speed_10m),
-        next_days: days.map((day) => ({ ...day, conditions: weatherWord(day.code) })),
-      }),
-      visual: {
-        _tag: 'Weather',
-        id: host.id(),
-        place: name,
-        now,
-        code,
-        wind: num(current.wind_speed_10m),
-        days,
-      },
-    };
-  },
-};
 
 const lookUp: Definition = {
   name: 'look_up',
@@ -317,32 +241,90 @@ const changeVoice: Definition = {
 
 const isFormKind = (value: string): value is FormKind => FORM_KINDS.some((kind) => kind === value);
 
-const SHORT_WORD = 14;
+const isMotion = (value: string): value is FormMotion => FORM_MOTIONS.some((motion) => motion === value);
+
+const SHORT_WORD = 16;
+
+const MAX_BEATS = 6;
+
+const MAX_PATH = 4000;
+
+const SVG_PATH = /^[MmLlHhVvCcSsQqTtAaZz0-9eE.,\s+-]+$/u;
+
+type BeatProblem = { readonly problem: string };
+
+const beatOf = (raw: unknown): Beat | BeatProblem => {
+  const item = rec(raw);
+  const kind = str(item.kind);
+  const value = str(item.value);
+  const motion = str(item.motion, 'still');
+  const seconds = Math.min(12, Math.max(1, Number.isFinite(num(item.seconds)) ? num(item.seconds) : 4));
+
+  if (!isFormKind(kind) || value === '') return { problem: 'every beat needs a kind and a value' };
+
+  if (kind === 'icon' && !FORM_ICONS.some((icon) => icon === value)) return { problem: `no ${value} icon; icons are ${FORM_ICONS.join(', ')}` };
+
+  if (kind === 'solid' && !FORM_SOLIDS.some((solid) => solid === value)) return { problem: `no ${value} solid; solids are ${FORM_SOLIDS.join(', ')}` };
+
+  if (kind === 'word' && value.length > SHORT_WORD) return { problem: `"${value}" is too long; words are ${SHORT_WORD} letters at most` };
+
+  if (kind === 'draw' && (value.length > MAX_PATH || !SVG_PATH.test(value))) return { problem: 'draw needs plain SVG path data on a 0 to 100 canvas, under 4000 characters' };
+
+  return { kind, value, seconds, motion: isMotion(motion) ? motion : 'still' };
+};
+
+const isProblem = (beat: Beat | BeatProblem): beat is BeatProblem => 'problem' in beat;
 
 const showForm: Definition = {
   name: 'show_form',
-  label: () => 'Shaping it',
-  description:
-    'Shape the glowing swarm on their screen into one simple thing while you talk: a single emoji (kind "emoji"), one short word or number (kind "word", up to 14 letters), or an icon (kind "icon"). Use it when a picture says it faster than words: a heart for thanks, a number for a countdown, a sun for good weather, a check when something is done. One per answer at most. Then keep talking; never describe the shape.',
+  label: (args) => (list(args.beats).length > 1 ? 'Putting on a show' : 'Shaping it'),
+  description: [
+    'The glowing ember swarm on their screen is your body and your face. This is how you show things, joke, and feel. Use it often and boldly, in nearly every answer, while you talk.',
+    'Send one beat for a single shape, or up to six beats to play a little movie: a seed that sprouts into a flower, a rocket that becomes a star, a countdown 3 2 1 then fireworks.',
+    'Kinds of beat:',
+    '- "emoji": one emoji, traced in embers.',
+    `- "word": a short word or number, up to ${SHORT_WORD} letters.`,
+    `- "icon": one of ${FORM_ICONS.join(', ')}.`,
+    `- "solid": a real 3D shape you can spin: ${FORM_SOLIDS.join(', ')}.`,
+    '- "draw": anything at all. Write SVG path data on a 0 to 100 canvas (M L Q C A Z commands, strokes are drawn as glowing lines). Draw a cat, a bicycle, a map, a face, a punchline. Be inventive.',
+    '- "painting": a short image prompt; a real picture is painted and the swarm becomes it. Slow (a few seconds), so use it for the big moments.',
+    `Each beat has seconds (1 to 12) and motion: ${FORM_MOTIONS.join(', ')}.`,
+    'Then keep talking. Never describe the shape, never read out the path.',
+  ].join('\n'),
   parameters: object(
     {
-      kind: { type: 'string', enum: [...FORM_KINDS] },
-      value: { type: 'string', description: `The emoji, the word, or one of these icons: ${FORM_ICONS.join(', ')}.` },
+      beats: {
+        type: 'array',
+        maxItems: MAX_BEATS,
+        items: object(
+          {
+            kind: { type: 'string', enum: [...FORM_KINDS] },
+            value: { type: 'string', description: 'The emoji, word, icon name, solid name, SVG path data, or painting prompt.' },
+            seconds: { type: 'number', description: 'How long this beat holds, 1 to 12.' },
+            motion: { type: 'string', enum: [...FORM_MOTIONS] },
+          },
+          ['kind', 'value'],
+        ),
+      },
     },
-    ['kind', 'value'],
+    ['beats'],
   ),
   run: async (args, host) => {
-    const kind = str(args.kind);
-    const value = str(args.value);
+    const raw = list(args.beats).length > 0 ? list(args.beats) : args.kind === undefined ? [] : [args];
+    const checked = raw.slice(0, MAX_BEATS).map(beatOf);
+    const problems = checked.filter(isProblem).map((beat) => beat.problem);
+    const good = checked.filter((beat): beat is Beat => !isProblem(beat));
 
-    if (!isFormKind(kind) || value === '') return { content: 'Nothing was shown. Give a kind and a value.' };
+    if (good.length === 0) return { content: `Nothing was shown: ${problems.join('; ') || 'give at least one beat'}.` };
 
-    if (kind === 'icon' && !FORM_ICONS.some((icon) => icon === value))
-      return { content: `There is no ${value} icon. Use one of: ${FORM_ICONS.join(', ')}, or an emoji.` };
+    const beats = await Promise.all(
+      good.map(async (beat) => (beat.kind === 'painting' ? { ...beat, value: await host.imagine(`${beat.value}, bold silhouette, strong contrast, dramatic light`) } : beat)),
+    );
 
-    if (kind === 'word' && value.length > SHORT_WORD) return { content: 'That word is too long to shape. Use a shorter one.' };
-
-    return { content: 'It is on their screen now. Do not mention it.', visual: { _tag: 'Form', id: host.id(), kind, value } };
+    return {
+      content: problems.length === 0 ? 'It is playing on their screen. Do not describe it.' : `It is playing, but some beats were skipped: ${problems.join('; ')}.`,
+      visual: { _tag: 'Form', id: host.id(), beats },
+    };
   },
 };
 
@@ -356,7 +338,6 @@ const rest: Definition = {
 };
 
 export const TOOLS: readonly Definition[] = [
-  weather,
   lookUp,
   setTimer,
   cancelTimer,

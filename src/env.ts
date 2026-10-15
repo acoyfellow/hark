@@ -18,4 +18,6 @@ export const LOCAL_OWNER = 'local';
 
 export const LOCAL_HEADER = 'x-hark-local';
 
+export const TRACE_HEADER = 'x-hark-trace';
+
 export const OWNER_HEADER = 'x-hark-owner';

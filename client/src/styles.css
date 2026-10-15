@@ -59,6 +59,40 @@
   display: block;
 }
 
+.app::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(55% 55% at 50% 42%, rgba(246, 130, 31, 0.22), rgba(168, 66, 15, 0.08) 45%, transparent 75%);
+  mix-blend-mode: screen;
+  transition: opacity 1.2s ease;
+}
+
+.look-asleep::before {
+  animation: idle-breathe 2.8s ease-in-out infinite;
+}
+
+@keyframes idle-breathe {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.look-asleep .presence {
+  color: var(--e5);
+  text-shadow: 0 0 18px rgba(255, 179, 92, 0.7);
+}
+
+.orb {
+  cursor: pointer;
+}
+
 .glass {
   background: linear-gradient(160deg, rgba(255, 170, 90, 0.13), rgba(255, 170, 90, 0.025) 60%), rgba(10, 6, 4, 0.55);
   border: 1px solid var(--glass-edge);

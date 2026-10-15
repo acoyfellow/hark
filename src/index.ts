@@ -1,6 +1,6 @@
 import { getAgentByName } from 'agents';
 import { gate } from './auth/gate';
-import { type Env, LOCAL_HEADER, LOCAL_OWNER, OWNER_HEADER } from './env';
+import { type Env, LOCAL_HEADER, LOCAL_OWNER, OWNER_HEADER, TRACE_HEADER } from './env';
 import { signInPage } from './auth/sign-in-page';
 import { appPage } from './ui/page';
 
@@ -11,8 +11,9 @@ const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 
 const PUBLIC = /^\/(brand|icons|audio|app)\/|^\/(manifest\.webmanifest|robots\.txt|favicon\.ico)$/u;
 
-const isLocalDev = (request: Request, env: Env) =>
-  env.LOCAL_DEV_WITHOUT_AUTH === '1' && LOCAL_HOSTS.has(new URL(request.url).hostname);
+const isLoopback = (request: Request) => LOCAL_HOSTS.has(new URL(request.url).hostname);
+
+const isLocalDev = (request: Request, env: Env) => env.LOCAL_DEV_WITHOUT_AUTH === '1' && isLoopback(request);
 
 const isCrossOrigin = (request: Request) => {
   const origin = request.headers.get('Origin');
@@ -48,16 +49,30 @@ const voiceSocket = async (request: Request, env: Env, owner: string, local: boo
 
   headers.set(OWNER_HEADER, owner);
   headers.set(LOCAL_HEADER, local ? '1' : '0');
+  headers.set(TRACE_HEADER, isLoopback(request) ? '1' : '0');
 
   const agent = await getAgentByName(env.HARK, owner);
 
   return agent.fetch(new Request(request.url, { headers }));
 };
 
+const MAX_TRACE_BYTES = 64_000;
+
+const browserTrace = async (request: Request) => {
+  const text = (await request.text()).slice(0, MAX_TRACE_BYTES);
+  const parsed: unknown = JSON.parse(text === '' ? '[]' : text);
+
+  for (const entry of Array.isArray(parsed) ? parsed : []) console.info(JSON.stringify(entry));
+
+  return new Response(null, { status: 204 });
+};
+
 const route = async (request: Request, env: Env, owner: string, local: boolean): Promise<Response> => {
   const { pathname } = new URL(request.url);
 
   if (AGENT_PATH.test(pathname)) return voiceSocket(request, env, owner, local);
+
+  if (isLoopback(request) && pathname === '/__trace' && request.method === 'POST') return browserTrace(request);
 
   if (pathname === '/' && request.method === 'GET') return appPage(new URL(request.url).origin, local);
 

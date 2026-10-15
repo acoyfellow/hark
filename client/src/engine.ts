@@ -2,7 +2,11 @@ import { VoiceClient } from 'agents/voice/client';
 import { type ClientFrame, encodeClientFrame, ServerFrame, type ServerFrame as Frame } from '../../shared/protocol';
 import { Schema } from 'effect';
 
+import { trace, traceStatus } from './trace';
+
 export const meter = { mic: 0, speech: 0 };
+
+const MIC_LEVEL_NEVER_REACHED = 2;
 
 export class MicrophoneRefused extends Error {}
 
@@ -42,13 +46,14 @@ const opened = (client: VoiceClient) =>
   });
 
 export const startEngine = async (hooks: EngineHooks, camera: boolean): Promise<Engine> => {
-  const client = new VoiceClient({ agent: 'Hark', name: 'me', preferredFormat: 'pcm16', interruptMode: 'duck' });
+  const client = new VoiceClient({ agent: 'Hark', name: 'me', preferredFormat: 'pcm16', interruptMode: 'duck', interruptThreshold: MIC_LEVEL_NEVER_REACHED });
   let stopped = false;
   let status: string = 'idle';
 
   const send = (frame: ClientFrame) => client.sendJSON(plain(frame));
 
   client.addEventListener('statuschange', (next) => {
+    traceStatus(next);
     status = next;
 
     if (next === 'listening' || next === 'thinking' || next === 'speaking') hooks.frame({ _tag: 'Presence', presence: next });
@@ -65,7 +70,10 @@ export const startEngine = async (hooks: EngineHooks, camera: boolean): Promise<
   client.addEventListener('custommessage', (message) => {
     const decoded = decodeFrame(message);
 
-    if (decoded._tag === 'Some') hooks.frame(decoded.value);
+    if (decoded._tag === 'Some') {
+      if (decoded.value._tag === 'Fault' || decoded.value._tag === 'Show' || decoded.value._tag === 'Doing') trace('frame', { tag: decoded.value._tag, detail: JSON.stringify(decoded.value).slice(0, 300) });
+      hooks.frame(decoded.value);
+    }
   });
   client.addEventListener('turnmetrics', (metrics) => {
     if (metrics.finalInputToFirstAudioMs === undefined) return;
@@ -81,6 +89,7 @@ export const startEngine = async (hooks: EngineHooks, camera: boolean): Promise<
     });
   });
   client.addEventListener('voiceerror', (error) => {
+    trace('voice-error', { message: error.message });
     hooks.frame({ _tag: 'Fault', reason: error.message, fatal: false });
   });
   client.addEventListener('connectionchange', (connected) => {

@@ -20,7 +20,7 @@ import {
 } from '../shared/protocol';
 import { refreshedToken, TOKEN_REFRESH_MARGIN_MS } from './auth/refresh';
 import { DIRECTORY_NAME, type Grant } from './directory';
-import { type Env, LOCAL_HEADER, LOCAL_OWNER, OWNER_HEADER } from './env';
+import { type Env, LOCAL_HEADER, TRACE_HEADER, LOCAL_OWNER, OWNER_HEADER } from './env';
 import { systemPrompt } from './prompt';
 import { type ReplyPorts, type ReplyResult, reply } from './reply';
 import { speakable } from './sentences';
@@ -29,6 +29,7 @@ import { parseArguments, runTool, type ToolHost, toolLabel, toolSchemas } from '
 import type { ChatMessage } from './chat';
 import { CLOUDFLARE_ORIGINS, type Credentials, type Origins, type Upstream, UpstreamFailed, upstream } from './upstream';
 import { userAI } from './user-ai';
+import { EchoGatedTranscriber, SpokenRecord } from './echo-gate';
 
 const HISTORY_KEEP = 24;
 
@@ -43,7 +44,7 @@ const VoiceAgent = withVoice(Agent, {
   speculativeTurns: true,
 });
 
-type Caller = { owner: string; local: boolean; timeZone: string; locale: string; camera: boolean; firstTurn: boolean };
+type Caller = { owner: string; local: boolean; traced: boolean; timeZone: string; locale: string; camera: boolean; firstTurn: boolean };
 
 const isBrain = (value: string): value is Brain => BRAINS.some((brain) => brain.id === value);
 
@@ -54,8 +55,10 @@ const engineOf = (value: string): SpeechEngine => (value === 'aura-2' ? 'aura-2'
 const fitVoice = (voice: Voice, engine: SpeechEngine): Voice =>
   voicesFor(engine).includes(voice) ? voice : engine === 'aura-1' ? DEFAULT_VOICE : 'luna';
 
+const NOT_ALLOWED = /not allowed to access|5018|No such model|not found/iu;
+
 const isBrainRefused = (cause: unknown) =>
-  cause instanceof UpstreamFailed && (cause.status === 403 || cause.status === 400 || cause.status === 404);
+  cause instanceof UpstreamFailed && (cause.status === 403 || cause.status === 404 || (cause.status === 400 && NOT_ALLOWED.test(cause.message)));
 
 const THINKS_BEFORE_TOOLS: readonly Brain[] = ['@cf/moonshotai/kimi-k3'];
 
@@ -72,6 +75,10 @@ export class Hark extends VoiceAgent<Env> {
   private callers = new Map<string, Caller>();
 
   private live: Upstream | null = null;
+
+  private readonly spokenRecord = new SpokenRecord();
+
+  private gateTraced = false;
 
   private grant: Grant | null = null;
 
@@ -102,6 +109,7 @@ export class Hark extends VoiceAgent<Env> {
     this.callers.set(connection.id, {
       owner: headers.get(OWNER_HEADER) ?? '',
       local: headers.get(LOCAL_HEADER) === '1',
+      traced: headers.get(TRACE_HEADER) === '1',
       timeZone: 'UTC',
       locale: 'en-US',
       camera: false,
@@ -130,7 +138,7 @@ export class Hark extends VoiceAgent<Env> {
 
     if (found !== undefined) return found;
 
-    const fresh: Caller = { owner: '', local: false, timeZone: 'UTC', locale: 'en-US', camera: false, firstTurn: true };
+    const fresh: Caller = { owner: '', local: false, traced: false, timeZone: 'UTC', locale: 'en-US', camera: false, firstTurn: true };
 
     this.callers.set(connection.id, fresh);
 
@@ -270,8 +278,12 @@ export class Hark extends VoiceAgent<Env> {
     );
   }
 
+  override onInterrupt() {
+    this.spokenRecord.silenced();
+  }
+
   override createTranscriber() {
-    return new WorkersAIFluxSTT(
+    const flux = new WorkersAIFluxSTT(
       userAI(() => {
         if (this.live === null) throw new Error('hark is not connected to your Cloudflare account');
 
@@ -279,10 +291,16 @@ export class Hark extends VoiceAgent<Env> {
       }),
       { keyterms: ['hark'], eotThreshold: 0.75, eagerEotThreshold: EAGER_EOT_THRESHOLD, eotTimeoutMs: 3500 },
     );
+
+    return new EchoGatedTranscriber(flux, this.spokenRecord, (event, heard) => {
+      if (this.gateTraced) console.info(JSON.stringify({ trace: event, heard }));
+    });
   }
 
   override async beforeSynthesize(text: string): Promise<string | null> {
     const spoken = speakable(text);
+
+    if (spoken !== '') this.spokenRecord.spoke(spoken);
 
     return spoken === '' ? null : spoken;
   }
@@ -393,11 +411,18 @@ export class Hark extends VoiceAgent<Env> {
     ];
 
     caller.firstTurn = false;
+    this.gateTraced = caller.traced;
+
+    const trace = (event: string, detail: Record<string, unknown>) => {
+      if (caller.traced) console.info(JSON.stringify({ trace: event, at: Date.now() - startedAt, ...detail }));
+    };
+
+    trace('heard', { transcript, speculative: context.speculative, brain: this.brainInUse() });
 
     const ports: ReplyPorts = {
       chat: async (messages, signal) => {
         const ask = (brain: Brain) =>
-          live.chat({ model: brain, messages, tools: toolSchemas(), stream: true, max_tokens: 600, temperature: 0.7, ...thinkingOptions(brain) }, signal);
+          live.chat({ model: brain, messages, tools: toolSchemas(), stream: true, max_tokens: THINKS_BEFORE_TOOLS.includes(brain) ? 2400 : 900, temperature: 0.7, ...thinkingOptions(brain) }, signal);
         const chosen = this.brainInUse();
 
         try {
@@ -406,15 +431,25 @@ export class Hark extends VoiceAgent<Env> {
           if (chosen === FALLBACK_BRAIN || !isBrainRefused(cause)) throw cause;
 
           this.refusedBrains.add(chosen);
+          trace('brain-refused', { brain: chosen, reason: cause instanceof Error ? cause.message.slice(0, 200) : String(cause) });
 
           return ask(FALLBACK_BRAIN);
         }
       },
       label: (call) => toolLabel(call.name, parseArguments(call.arguments)),
-      tool: async (call) => ((await context.confirmed) ? runTool(call.name, parseArguments(call.arguments), host) : { content: 'The person kept talking, so this was not done.' }),
+      tool: async (call) => {
+        trace('tool', { name: call.name, arguments: call.arguments.slice(0, 600) });
+
+        const outcome = (await context.confirmed) ? await runTool(call.name, parseArguments(call.arguments), host) : { content: 'The person kept talking, so this was not done.' };
+
+        trace('tool-result', { name: call.name, content: outcome.content.slice(0, 300), visual: outcome.visual?._tag ?? null });
+
+        return outcome;
+      },
       doing: (label) => this.send(connection, { _tag: 'Doing', label }),
       show: (visual) => this.send(connection, { _tag: 'Show', visual }),
       fail: (reason) => {
+        trace('fault', { reason });
         if (SIGNED_OUT.test(reason)) {
           this.send(connection, { _tag: 'Fault', reason: 'Your Cloudflare sign-in has run out. Sign in again to keep talking.', fatal: true });
           connection.close(4401, 'signed out');
@@ -445,10 +480,21 @@ export class Hark extends VoiceAgent<Env> {
       if (result.sleep && !context.signal.aborted) this.send(connection, { _tag: 'Sleep', reason: 'Said goodbye.' });
     };
 
+    const record = this.spokenRecord;
+
     async function* spoken() {
+      let said = '';
+
+      record.turnStarted();
+
       try {
-        yield* reply(ports, history, context.signal, result);
+        for await (const piece of reply(ports, history, context.signal, result)) {
+          said += piece;
+          yield piece;
+        }
       } finally {
+        record.turnEnded();
+        trace('said', { text: said.slice(0, 1200), aborted: context.signal.aborted, tools: result.tools, error: result.error });
         finish();
       }
     }
