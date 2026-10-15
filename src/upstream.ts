@@ -2,15 +2,13 @@ import { EYES_MODEL, SPEECH_SAMPLE_RATE, type SpeechEngine, type Voice } from '.
 
 export type Credentials = {
   readonly accountId: string;
-  readonly gateway: string;
   readonly token: () => Promise<string>;
 };
 
-export type Origins = { readonly api: string; readonly gateway: string };
+export type Origins = { readonly api: string };
 
 export const CLOUDFLARE_ORIGINS: Origins = {
   api: 'https://api.cloudflare.com/client/v4',
-  gateway: 'https://gateway.ai.cloudflare.com/v1',
 };
 
 export const LISTEN_MODEL = '@cf/deepgram/flux';
@@ -36,19 +34,12 @@ export class UpstreamFailed extends Error {
 
 const enc = encodeURIComponent;
 
-const gatewayBase = (origins: Origins, credentials: Credentials) =>
-  `${origins.gateway}/${enc(credentials.accountId)}/${enc(credentials.gateway)}/workers-ai`;
+const aiBase = (origins: Origins, credentials: Credentials) => `${origins.api}/accounts/${enc(credentials.accountId)}/ai`;
 
-const headersFor = async (credentials: Credentials, step: string, extra: Record<string, string> = {}) => {
-  const token = await credentials.token();
-
-  return {
-    authorization: `Bearer ${token}`,
-    'cf-aig-authorization': `Bearer ${token}`,
-    'cf-aig-metadata': JSON.stringify({ app: 'hark', step }),
-    ...extra,
-  };
-};
+const headersFor = async (credentials: Credentials, extra: Record<string, string> = {}) => ({
+  authorization: `Bearer ${await credentials.token()}`,
+  ...extra,
+});
 
 const failure = async (step: string, response: Response) =>
   new UpstreamFailed(step, response.status, await response.text().catch(() => ''));
@@ -69,9 +60,7 @@ export type Upstream = {
 
 
 export const listenUrl = (origins: Origins, credentials: Credentials, params: Readonly<Record<string, unknown>>) => {
-  const url = new URL(gatewayBase(origins, credentials));
-
-  url.searchParams.set('model', LISTEN_MODEL);
+  const url = new URL(`${aiBase(origins, credentials)}/run/${LISTEN_MODEL}`);
 
   for (const [key, value] of Object.entries(params)) {
     if (Array.isArray(value)) for (const each of value) url.searchParams.append(key, String(each));
@@ -86,55 +75,25 @@ export const upstream = (
   origins: Origins = CLOUDFLARE_ORIGINS,
   send: typeof fetch = (input, init) => fetch(input, init),
 ): Upstream => {
-  type Route = 'gateway' | 'rest';
-
-  let preferred: Route = 'gateway';
-  const used: Record<string, string> = {};
-
   const runModel = async (
-    step: string,
     model: string,
     body: () => BodyInit,
     contentType: string | null,
     signal: AbortSignal,
-  ): Promise<Response> => {
-    const order: Route[] = preferred === 'gateway' ? ['gateway', 'rest'] : ['rest', 'gateway'];
-    let refused: Response | null = null;
-
-    for (const route of order) {
-      const url =
-        route === 'gateway'
-          ? `${gatewayBase(origins, credentials)}/${model}`
-          : `${origins.api}/accounts/${enc(credentials.accountId)}/ai/run/${model}`;
-      const extra: Record<string, string> = route === 'rest' ? { 'cf-aig-gateway-id': credentials.gateway } : {};
-
-      if (contentType !== null) extra['content-type'] = contentType;
-
-      const response = await send(url, { method: 'POST', headers: await headersFor(credentials, step, extra), body: body(), signal });
-
-      if (response.status === 401 || response.status === 403) {
-        await response.body?.cancel().catch(() => undefined);
-        refused = response;
-        continue;
-      }
-
-      if (response.ok) {
-        preferred = route;
-        used[step] = route;
-      }
-
-      return response;
-    }
-
-    return refused ?? new Response('no route', { status: 502 });
-  };
+  ): Promise<Response> =>
+    send(`${aiBase(origins, credentials)}/run/${model}`, {
+      method: 'POST',
+      headers: await headersFor(credentials, contentType === null ? {} : { 'content-type': contentType }),
+      body: body(),
+      signal,
+    });
 
   return {
-  routes: () => ({ ...used }),
+  routes: () => ({ think: 'workers-ai', speak: 'workers-ai', listen: 'workers-ai', paint: 'workers-ai' }),
 
   listen: async (params) => {
     const response = await send(listenUrl(origins, credentials, params), {
-      headers: await headersFor(credentials, 'listen', { upgrade: 'websocket' }),
+      headers: await headersFor(credentials, { upgrade: 'websocket' }),
     });
     const socket = response.webSocket;
 
@@ -144,9 +103,9 @@ export const upstream = (
   },
 
   chat: async (body, signal) => {
-    const response = await send(`${gatewayBase(origins, credentials)}/v1/chat/completions`, {
+    const response = await send(`${aiBase(origins, credentials)}/v1/chat/completions`, {
       method: 'POST',
-      headers: await headersFor(credentials, 'think', { 'content-type': 'application/json' }),
+      headers: await headersFor(credentials, { 'content-type': 'application/json' }),
       body: JSON.stringify(body),
       signal,
     });
@@ -159,7 +118,7 @@ export const upstream = (
   speak: async (text, voice, engine, signal) => {
     const body = () =>
       JSON.stringify({ text, speaker: voice, encoding: 'linear16', container: 'none', sample_rate: SPEECH_SAMPLE_RATE });
-    const attempt = () => runModel('speak', SPEAK_MODELS[engine], body, 'application/json', signal);
+    const attempt = () => runModel(SPEAK_MODELS[engine], body, 'application/json', signal);
     const first = await attempt().catch((cause: unknown) => {
       if (signal.aborted) throw cause;
 
@@ -173,9 +132,9 @@ export const upstream = (
   },
 
   see: async (image, question, signal) => {
-    const response = await send(`${gatewayBase(origins, credentials)}/v1/chat/completions`, {
+    const response = await send(`${aiBase(origins, credentials)}/v1/chat/completions`, {
       method: 'POST',
-      headers: await headersFor(credentials, 'see', { 'content-type': 'application/json' }),
+      headers: await headersFor(credentials, { 'content-type': 'application/json' }),
       body: JSON.stringify({
         model: EYES_MODEL,
         max_tokens: 300,
@@ -213,12 +172,12 @@ export const upstream = (
 
       return data;
     };
-    const klein = await runModel('paint', IMAGINE_MODEL, form, null, signal);
+    const klein = await runModel(IMAGINE_MODEL, form, null, signal);
     const image = klein.ok ? await imageOf(klein) : null;
 
     if (image !== null) return image;
 
-    const schnell = await runModel('paint', IMAGINE_FALLBACK, () => JSON.stringify({ prompt, steps: 6 }), 'application/json', signal);
+    const schnell = await runModel(IMAGINE_FALLBACK, () => JSON.stringify({ prompt, steps: 6 }), 'application/json', signal);
 
     if (!schnell.ok) throw await failure('Imagining (FLUX)', schnell);
 

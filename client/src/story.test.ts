@@ -15,7 +15,6 @@ const ready = frame({
   _tag: 'Ready',
   settings: { voice: 'asteria', brain: '@cf/openai/gpt-oss-20b', engine: 'aura-1' },
   account: 'Jordan’s Account',
-  gateway: 'default',
   memories: 2,
 });
 

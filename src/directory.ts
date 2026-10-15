@@ -7,7 +7,6 @@ export type Grant = {
   readonly email: string | null;
   readonly accountId: string;
   readonly accountName: string;
-  readonly gateway: string;
   readonly accessToken: string;
   readonly refreshToken: string | null;
   readonly expiresAt: number;
@@ -19,7 +18,6 @@ type GrantRow = {
   email: string | null;
   account_id: string;
   account_name: string;
-  gateway: string;
   access_token: string;
   refresh_token: string | null;
   expires_at: number;
@@ -44,7 +42,7 @@ export class Directory extends DurableObject {
       grant.email,
       grant.accountId,
       grant.accountName,
-      grant.gateway,
+      '',
       grant.accessToken,
       grant.refreshToken,
       grant.expiresAt,
@@ -56,7 +54,7 @@ export class Directory extends DurableObject {
   grantFor(owner: string): Grant | null {
     const row = this.ctx.storage.sql
       .exec<GrantRow>(
-        'SELECT owner, email, account_id, account_name, gateway, access_token, refresh_token, expires_at, scope FROM grants WHERE owner = ?',
+        'SELECT owner, email, account_id, account_name, access_token, refresh_token, expires_at, scope FROM grants WHERE owner = ?',
         owner,
       )
       .toArray()[0];
@@ -68,7 +66,6 @@ export class Directory extends DurableObject {
           email: row.email,
           accountId: row.account_id,
           accountName: row.account_name,
-          gateway: row.gateway,
           accessToken: row.access_token,
           refreshToken: row.refresh_token,
           expiresAt: row.expires_at,

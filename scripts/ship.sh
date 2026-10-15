@@ -35,7 +35,6 @@ config="wrangler.$instance.local.jsonc"
 sed "s/\"name\": \"hark\"/\"name\": \"hark-$instance\"/" wrangler.jsonc > "$config"
 
 vars=(--var "OAUTH_CLIENT_ID:$HARK_OAUTH_CLIENT_ID")
-[ -z "${HARK_USER_GATEWAY:-}" ] || vars+=(--var "HARK_USER_GATEWAY:$HARK_USER_GATEWAY")
 
 if [ "${HARK_DEPLOY_AS:-domain}" = route ]; then
   # A route on a proxied DNS record does not count toward the zone's Workers custom domain limit.

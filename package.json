@@ -15,6 +15,7 @@
   "scripts": {
     "build": "node scripts/build-client.mjs",
     "dev": "bash scripts/local.sh",
+    "dev:real": "bash scripts/local-real.sh",
     "dev:stop": "bash scripts/stop.sh",
     "typecheck": "tsc -p . && tsc -p tsconfig.client.json",
     "lint": "oxlint --deny-warnings",

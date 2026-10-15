@@ -233,12 +233,12 @@ await scenario('the settings sheet shows the stack, voices, and brains', async (
 
   const text = await page.locator('aside[role=dialog]').innerText();
 
-  for (const needle of ['Deepgram Flux', 'Aura 1', 'GPT-OSS 20B', 'Asteria', 'Quick', 'Rich']) if (!text.toLowerCase().includes(needle.toLowerCase())) throw new Error(`missing ${needle}`);
+  for (const needle of ['Deepgram Flux', 'Aura 1', 'Kimi K3', 'GPT-OSS 20B', 'Asteria', 'Quick', 'Rich']) if (!text.toLowerCase().includes(needle.toLowerCase())) throw new Error(`missing ${needle}`);
 
   await page.keyboard.press('Escape');
 });
 
-await scenario('every upstream call carried the account token through AI Gateway', async () => {
+await scenario('every upstream call went straight to Workers AI with the account token', async () => {
   const log = await (await fetch(`${FAKE}/__log`)).json();
   const unauthorized = log.filter((entry) => !entry.authorized);
   const kinds = new Set(log.map((entry) => (entry.method === 'WS' ? 'listen' : entry.path.split('/').pop())));
@@ -247,7 +247,11 @@ await scenario('every upstream call carried the account token through AI Gateway
 
   for (const kind of ['listen', 'completions', 'aura-1']) if (!kinds.has(kind)) throw new Error(`no ${kind} call`);
 
-  return { calls: log.length, kinds: [...kinds] };
+  const brains = [...new Set(log.filter((entry) => entry.method === 'BRAIN').map((entry) => entry.model))];
+
+  if (!brains.includes('@cf/moonshotai/kimi-k3') || !brains.includes('@cf/openai/gpt-oss-20b')) throw new Error(`brain fallback not exercised: ${brains}`);
+
+  return { calls: log.length, kinds: [...kinds], brains };
 });
 
 const phone = await browser.newContext({

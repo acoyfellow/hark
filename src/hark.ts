@@ -5,6 +5,7 @@ import {
   type Brain,
   type ClientFrame,
   DEFAULT_BRAIN,
+  FALLBACK_BRAIN,
   DEFAULT_ENGINE,
   DEFAULT_VOICE,
   decodeClientFrame,
@@ -26,7 +27,7 @@ import { speakable } from './sentences';
 import { UserSpeech } from './speech';
 import { parseArguments, runTool, type ToolHost, toolLabel, toolSchemas } from './tools';
 import type { ChatMessage } from './chat';
-import { CLOUDFLARE_ORIGINS, type Credentials, type Origins, type Upstream, upstream } from './upstream';
+import { CLOUDFLARE_ORIGINS, type Credentials, type Origins, type Upstream, UpstreamFailed, upstream } from './upstream';
 import { userAI } from './user-ai';
 
 const HISTORY_KEEP = 24;
@@ -53,6 +54,9 @@ const engineOf = (value: string): SpeechEngine => (value === 'aura-2' ? 'aura-2'
 const fitVoice = (voice: Voice, engine: SpeechEngine): Voice =>
   voicesFor(engine).includes(voice) ? voice : engine === 'aura-1' ? DEFAULT_VOICE : 'luna';
 
+const isBrainRefused = (cause: unknown) =>
+  cause instanceof UpstreamFailed && (cause.status === 403 || cause.status === 400 || cause.status === 404);
+
 const thinkingOptions = (brain: Brain): Record<string, unknown> =>
   brain.startsWith('@cf/openai/gpt-oss') ? { reasoning_effort: 'low' } : { chat_template_kwargs: { enable_thinking: false } };
 
@@ -64,6 +68,14 @@ export class Hark extends VoiceAgent<Env> {
   private live: Upstream | null = null;
 
   private grant: Grant | null = null;
+
+  private readonly refusedBrains = new Set<Brain>();
+
+  private brainInUse(): Brain {
+    const { brain } = this.settings();
+
+    return this.refusedBrains.has(brain) ? FALLBACK_BRAIN : brain;
+  }
 
   private snaps = new Map<string, (src: string | null) => void>();
 
@@ -172,7 +184,7 @@ export class Hark extends VoiceAgent<Env> {
   private origins(caller: Caller): Origins {
     const fake = this.env.HARK_FAKE_ORIGIN ?? '';
 
-    return caller.local && fake !== '' ? { api: fake, gateway: fake } : CLOUDFLARE_ORIGINS;
+    return caller.local && fake !== '' ? { api: fake } : CLOUDFLARE_ORIGINS;
   }
 
   private async grantFor(caller: Caller): Promise<Grant | null> {
@@ -182,7 +194,6 @@ export class Hark extends VoiceAgent<Env> {
         email: null,
         accountId: this.env.LOCAL_CF_ACCOUNT ?? 'local',
         accountName: 'Local account',
-        gateway: this.env.LOCAL_CF_GATEWAY ?? 'default',
         accessToken: this.env.LOCAL_CF_TOKEN ?? 'local',
         refreshToken: null,
         expiresAt: Number.MAX_SAFE_INTEGER,
@@ -197,7 +208,6 @@ export class Hark extends VoiceAgent<Env> {
   private credentials(caller: Caller, grant: Grant): Credentials {
     return {
       accountId: grant.accountId,
-      gateway: grant.gateway,
       token: async () => {
         const current = this.grant ?? grant;
 
@@ -231,7 +241,6 @@ export class Hark extends VoiceAgent<Env> {
         _tag: 'Ready',
         settings: this.settings(),
         account: grant.accountName,
-        gateway: grant.gateway,
         memories: this.memories().length,
       });
 
@@ -380,10 +389,20 @@ export class Hark extends VoiceAgent<Env> {
     caller.firstTurn = false;
 
     const ports: ReplyPorts = {
-      chat: (messages, signal) => {
-        const { brain } = this.settings();
+      chat: async (messages, signal) => {
+        const ask = (brain: Brain) =>
+          live.chat({ model: brain, messages, tools: toolSchemas(), stream: true, max_tokens: 600, temperature: 0.7, ...thinkingOptions(brain) }, signal);
+        const chosen = this.brainInUse();
 
-        return live.chat({ model: brain, messages, tools: toolSchemas(), stream: true, max_tokens: 600, temperature: 0.7, ...thinkingOptions(brain) }, signal);
+        try {
+          return await ask(chosen);
+        } catch (cause) {
+          if (chosen === FALLBACK_BRAIN || !isBrainRefused(cause)) throw cause;
+
+          this.refusedBrains.add(chosen);
+
+          return ask(FALLBACK_BRAIN);
+        }
       },
       label: (call) => toolLabel(call.name, parseArguments(call.arguments)),
       tool: async (call) => ((await context.confirmed) ? runTool(call.name, parseArguments(call.arguments), host) : { content: 'The person kept talking, so this was not done.' }),
@@ -400,7 +419,8 @@ export class Hark extends VoiceAgent<Env> {
       },
     };
     const finish = () => {
-      const { brain, engine } = this.settings();
+      const { engine } = this.settings();
+      const brain = this.brainInUse();
 
       console.info(
         JSON.stringify({

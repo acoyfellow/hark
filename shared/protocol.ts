@@ -62,6 +62,7 @@ export const voicesFor = (engine: SpeechEngine): readonly string[] =>
   engine === 'aura-1' ? FAST_VOICES : RICH_VOICES;
 
 export const BRAINS = [
+  { id: '@cf/moonshotai/kimi-k3', label: 'Kimi K3', note: 'Smartest. Falls back to GPT-OSS 20B if your account cannot use it yet.' },
   { id: '@cf/openai/gpt-oss-20b', label: 'GPT-OSS 20B', note: 'Quickest. The internal voice benchmark baseline.' },
   { id: '@cf/openai/gpt-oss-120b', label: 'GPT-OSS 120B', note: 'Sharper, a little slower.' },
   { id: '@cf/google/gemma-4-26b-a4b-it', label: 'Gemma 4', note: 'Thinking off. Measure before you trust it.' },
@@ -72,7 +73,9 @@ export const Brain = Schema.Literals(BRAINS.map((brain) => brain.id));
 
 export type Brain = typeof Brain.Type;
 
-export const DEFAULT_BRAIN: Brain = '@cf/openai/gpt-oss-20b';
+export const DEFAULT_BRAIN: Brain = '@cf/moonshotai/kimi-k3';
+
+export const FALLBACK_BRAIN: Brain = '@cf/openai/gpt-oss-20b';
 
 export const DEFAULT_ENGINE: SpeechEngine = 'aura-1';
 
@@ -134,7 +137,6 @@ export const ServerFrame = Schema.Union([
   Schema.TaggedStruct('Ready', {
     settings: Settings,
     account: Schema.String,
-    gateway: Schema.String,
     memories: Schema.Number,
   }),
   Schema.TaggedStruct('Presence', { presence: Presence }),

@@ -218,26 +218,14 @@ const sheet = (h: H, model: Model): Html => {
             [h.Class('divide-y divide-white/[0.06]')],
             [
               row(h, 'Account', Option.getOrElse(model.account, () => 'connects when you wake hark')),
-              h.div(
-                [h.Class('flex items-center justify-between gap-4 py-2 text-[13px]')],
-                [
-                  h.span([h.Class('text-white/45')], ['AI Gateway']),
-                  h.span(
-                    [h.Class('flex items-center gap-3')],
-                    [
-                      h.span([h.Class('font-mono text-[12px] text-white/80')], [Option.getOrElse(model.gateway, () => '·')]),
-                      ...(model.local ? [] : [h.a([h.Href('/oauth/gateway'), h.Id('change-gateway'), h.Class('text-[12px] text-ember hover:underline')], ['Change'])]),
-                    ],
-                  ),
-                ],
-              ),
+              row(h, 'Route', 'Workers AI, your account'),
               row(h, 'Ears', 'Deepgram Flux'),
               row(h, 'Voice', settings.engine === 'aura-1' ? 'Deepgram Aura 1' : 'Deepgram Aura 2'),
               row(h, 'Pictures', 'FLUX.2 klein'),
               row(h, 'Memories', String(model.memories)),
             ],
           ),
-          h.p([h.Class('mt-4 text-[12px] leading-relaxed text-white/40')], ['Every word is heard, thought, and spoken by models on your own account, through your AI Gateway. Ask hark to forget something and it will.']),
+          h.p([h.Class('mt-4 text-[12px] leading-relaxed text-white/40')], ['Every word is heard, thought, and spoken by models on your own Cloudflare account with Workers AI. Ask hark to forget something and it will.']),
           ...(model.local
             ? []
             : [

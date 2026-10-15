@@ -167,7 +167,7 @@ const reply = (messages) => {
 };
 
 const authorized = (request) =>
-  request.headers.authorization?.startsWith('Bearer ') && request.headers['cf-aig-authorization']?.startsWith('Bearer ');
+  request.headers.authorization?.startsWith('Bearer ') && request.headers['cf-aig-authorization'] === undefined && !(request.url ?? '').includes('workers-ai');
 
 const server = createServer(async (request, response) => {
   const url = new URL(request.url ?? '/', `http://127.0.0.1:${PORT}`);
@@ -187,8 +187,16 @@ const server = createServer(async (request, response) => {
     return;
   }
 
-  if (url.pathname.endsWith('/workers-ai/v1/chat/completions')) {
-    const { messages, stream } = JSON.parse(body.toString('utf8'));
+  if (url.pathname.endsWith('/ai/v1/chat/completions')) {
+    const { messages, stream, model } = JSON.parse(body.toString('utf8'));
+
+    log.push({ method: 'BRAIN', path: url.pathname, model, authorized: true, at: Date.now() });
+
+    if (model === '@cf/moonshotai/kimi-k3') {
+      response.writeHead(403, { 'content-type': 'application/json' });
+      response.end(JSON.stringify({ errors: [{ code: 5018, message: 'AiError: Ai: This account is not allowed to access @cf/moonshotai/kimi-k3.' }] }));
+      return;
+    }
 
     if (stream !== true) {
       response.writeHead(200, { 'content-type': 'application/json' });
@@ -237,7 +245,7 @@ server.on('upgrade', (request, socket, head) => {
 
   log.push({ method: 'WS', path: url.pathname, model: url.searchParams.get('model'), authorized: Boolean(authorized(request)), at: Date.now() });
 
-  if (!authorized(request) || url.searchParams.get('model') !== '@cf/deepgram/flux') {
+  if (!authorized(request) || !url.pathname.endsWith('/ai/run/@cf/deepgram/flux')) {
     socket.end('HTTP/1.1 401 Unauthorized\r\n\r\n');
     return;
   }

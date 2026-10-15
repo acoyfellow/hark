@@ -12,7 +12,6 @@ export const Model = Schema.Struct({
   connected: Schema.Boolean,
   look: Look,
   account: Schema.Option(Schema.String),
-  gateway: Schema.Option(Schema.String),
   memories: Schema.Number,
   settings: Schema.Option(Settings),
   doing: Schema.Option(Schema.String),

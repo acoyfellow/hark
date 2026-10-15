@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { listenUrl, upstream } from '../../src/upstream';
 
-const credentials = { accountId: 'acc 1', gateway: 'default', token: async () => 'tok' };
+const credentials = { accountId: 'acc 1', token: async () => 'tok' };
+const origins = { api: 'https://api' };
 
-describe('every model call goes to the person’s own account through their AI Gateway', () => {
-  it('opens Deepgram Flux on the gateway with whatever the Agents SDK Flux provider asks for', () => {
+describe('every model call goes straight to Workers AI on the person’s own account', () => {
+  it('opens Deepgram Flux on the Workers AI run route with whatever the Agents SDK Flux provider asks for', () => {
     const url = new URL(
-      listenUrl({ api: 'https://api', gateway: 'https://gw/v1' }, credentials, {
+      listenUrl(origins, credentials, {
         encoding: 'linear16',
         sample_rate: '16000',
         eager_eot_threshold: '0.5',
@@ -14,17 +15,16 @@ describe('every model call goes to the person’s own account through their AI G
       }),
     );
 
-    expect(url.origin + url.pathname).toBe('https://gw/v1/acc%201/default/workers-ai');
-    expect(url.searchParams.get('model')).toBe('@cf/deepgram/flux');
+    expect(url.origin + url.pathname).toBe('https://api/accounts/acc%201/ai/run/@cf/deepgram/flux');
     expect(url.searchParams.get('encoding')).toBe('linear16');
     expect(url.searchParams.get('sample_rate')).toBe('16000');
     expect(url.searchParams.get('eager_eot_threshold')).toBe('0.5');
     expect(url.searchParams.getAll('keyterm')).toEqual(['hark', 'Cloudflare']);
   });
 
-  it('streams chat and speech with the user token in both auth headers', async () => {
+  it('streams chat and speech with only the user token and never touches AI Gateway', async () => {
     const seen: Request[] = [];
-    const up = upstream(credentials, { api: 'https://api', gateway: 'https://gw/v1' }, async (input, init) => {
+    const up = upstream(credentials, origins, async (input, init) => {
       seen.push(new Request(input, init));
       return new Response('data: [DONE]\n\n');
     });
@@ -33,14 +33,14 @@ describe('every model call goes to the person’s own account through their AI G
     await up.speak('Hello there.', 'orion', 'aura-1', new AbortController().signal);
 
     expect(seen.map((request) => request.url)).toEqual([
-      'https://gw/v1/acc%201/default/workers-ai/v1/chat/completions',
-      'https://gw/v1/acc%201/default/workers-ai/@cf/deepgram/aura-1',
+      'https://api/accounts/acc%201/ai/v1/chat/completions',
+      'https://api/accounts/acc%201/ai/run/@cf/deepgram/aura-1',
     ]);
 
     for (const request of seen) {
       expect(request.headers.get('authorization')).toBe('Bearer tok');
-      expect(request.headers.get('cf-aig-authorization')).toBe('Bearer tok');
-      expect(JSON.parse(request.headers.get('cf-aig-metadata') ?? '{}').app).toBe('hark');
+      expect(request.headers.get('cf-aig-authorization')).toBeNull();
+      expect(request.headers.get('cf-aig-gateway-id')).toBeNull();
     }
 
     expect(await seen[1]?.json()).toEqual({ text: 'Hello there.', speaker: 'orion', encoding: 'linear16', container: 'none', sample_rate: 24000 });
@@ -49,7 +49,7 @@ describe('every model call goes to the person’s own account through their AI G
   it('retries speech once, and routes the rich voice to Aura 2', async () => {
     const urls: string[] = [];
     let calls = 0;
-    const up = upstream(credentials, { api: 'https://api', gateway: 'https://gw/v1' }, async (input, init) => {
+    const up = upstream(credentials, origins, async (input, init) => {
       urls.push(new Request(input, init).url);
       calls += 1;
 
@@ -58,35 +58,12 @@ describe('every model call goes to the person’s own account through their AI G
 
     await up.speak('Hi.', 'thalia', 'aura-2', new AbortController().signal);
 
-    expect(urls).toEqual(['https://gw/v1/acc%201/default/workers-ai/@cf/deepgram/aura-2-en', 'https://gw/v1/acc%201/default/workers-ai/@cf/deepgram/aura-2-en']);
+    expect(urls).toEqual(['https://api/accounts/acc%201/ai/run/@cf/deepgram/aura-2-en', 'https://api/accounts/acc%201/ai/run/@cf/deepgram/aura-2-en']);
   });
 
   it('turns an upstream refusal into a readable error', async () => {
-    const up = upstream(credentials, undefined, async () => new Response('{"errors":[{"message":"Gateway authentication failed"}]}', { status: 401 }));
+    const up = upstream(credentials, undefined, async () => new Response('{"errors":[{"message":"not allowed to access"}]}', { status: 403 }));
 
-    await expect(up.chat({}, new AbortController().signal)).rejects.toThrow(/Thinking failed \(401\).*Gateway authentication/);
-  });
-
-  it('falls back to Workers AI REST through the same gateway when the gateway model route refuses the token, then remembers it', async () => {
-    const seen: Request[] = [];
-    const up = upstream(credentials, { api: 'https://api', gateway: 'https://gw/v1' }, async (input, init) => {
-      const request = new Request(input, init);
-
-      seen.push(request);
-
-      return request.url.startsWith('https://gw/') ? new Response('{"errors":[{"code":10000}]}', { status: 401 }) : new Response(new Uint8Array(4));
-    });
-
-    await up.speak('Hi.', 'asteria', 'aura-1', new AbortController().signal);
-    await up.speak('Again.', 'asteria', 'aura-1', new AbortController().signal);
-
-    expect(seen.map((request) => request.url)).toEqual([
-      'https://gw/v1/acc%201/default/workers-ai/@cf/deepgram/aura-1',
-      'https://api/accounts/acc%201/ai/run/@cf/deepgram/aura-1',
-      'https://api/accounts/acc%201/ai/run/@cf/deepgram/aura-1',
-    ]);
-    expect(seen[1]?.headers.get('cf-aig-gateway-id')).toBe('default');
-    expect(seen[1]?.headers.get('authorization')).toBe('Bearer tok');
-    expect(up.routes()).toEqual({ speak: 'rest' });
+    await expect(up.chat({}, new AbortController().signal)).rejects.toThrow(/Thinking failed \(403\).*not allowed/);
   });
 });

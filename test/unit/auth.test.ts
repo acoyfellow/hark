@@ -1,24 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { cloudflareAuth } from '../../src/auth/cloudflare';
-import { authorizeUrl, exchangeCode, pickGateway, SCOPES } from '../../src/auth/oauth';
+import { authorizeUrl, exchangeCode, SCOPES } from '../../src/auth/oauth';
 import { parseSession, readCookie, sign, unsign } from '../../src/auth/session';
 import type { Grant } from '../../src/directory';
 
 const SECRET = 'a'.repeat(40);
 
 describe('Sign in with Cloudflare (same shape as coil)', () => {
-  it('picks only gateways that check the Cloudflare token', () => {
-    const gateways = [
-      { id: 'default', authenticated: false },
-      { id: 'team', authenticated: true },
-      { id: 'mine', authenticated: true },
-    ];
-
-    expect(pickGateway(gateways, 'mine')).toBe('mine');
-    expect(pickGateway(gateways, undefined)).toBe('team');
-    expect(pickGateway([{ id: 'default', authenticated: false }], undefined)).toBeNull();
-  });
-
   it('asks Cloudflare for a PKCE code with the AI scopes', async () => {
     const url = new URL(
       await authorizeUrl({ clientId: 'client', clientSecret: 's', redirectUri: 'https://hark.example/oauth/callback' }, 'state-1', 'verifier-1'),
@@ -74,13 +62,13 @@ const memoryDirectory = () => {
   return { grants, sessions, namespace: { getByName: () => stub } as never };
 };
 
-const cloudflare = (gatewayAuthenticated: boolean) => async (input: RequestInfo | URL, init?: RequestInit) => {
+const cloudflare = (hasAccount: boolean) => async (input: RequestInfo | URL, init?: RequestInit) => {
   const url = new Request(input, init).url;
 
   if (url.endsWith('/oauth2/token')) return Response.json({ access_token: 'user-token', refresh_token: 'refresh', expires_in: 3600, scope: SCOPES.join(' ') });
   if (url.endsWith('/oauth2/userinfo')) return Response.json({ sub: 'u-1', email: 'jordan@example.com' });
-  if (url.includes('/accounts?')) return Response.json({ result: [{ id: 'acc-1', name: 'Jordan’s Account' }] });
-  if (url.includes('/ai-gateway/gateways')) return Response.json({ result: [{ id: 'default', authentication: gatewayAuthenticated }] });
+  if (url.includes('/accounts?')) return Response.json({ result: hasAccount ? [{ id: 'acc-1', name: 'Jordan’s Account' }] : [] });
+  if (url.includes('/ai-gateway/')) return new Response('hark must not ask about AI Gateway', { status: 500 });
   if (url.endsWith('/oauth2/revoke')) return new Response(null, { status: 200 });
 
   return new Response('unexpected', { status: 500 });
@@ -97,7 +85,7 @@ const cookiesOf = (response: Response) =>
   response.headers.getSetCookie().map((line) => line.split(';')[0] ?? '').join('; ');
 
 describe('the full sign-in round trip', () => {
-  it('logs in, stores the grant with the authenticated gateway, admits the session, and signs out', async () => {
+  it('logs in, stores the grant without any AI Gateway, admits the session, and signs out', async () => {
     const directory = memoryDirectory();
     const auth = cloudflareAuth(env(directory), cloudflare(true));
     const origin = 'https://hark.example';
@@ -113,7 +101,8 @@ describe('the full sign-in round trip', () => {
     )) as Response;
 
     expect(callback.status).toBe(302);
-    expect(directory.grants.get('cf:u-1')).toMatchObject({ accountId: 'acc-1', gateway: 'default', accessToken: 'user-token' });
+    expect(directory.grants.get('cf:u-1')).toMatchObject({ accountId: 'acc-1', accessToken: 'user-token' });
+    expect(callback.headers.get('location')).toBe('/');
 
     const session = cookiesOf(callback);
     const admitted = await auth.admit(new Request(`${origin}/api/voice`, { headers: { cookie: session } }));
@@ -130,7 +119,7 @@ describe('the full sign-in round trip', () => {
     expect('refused' in (await auth.admit(new Request(`${origin}/api/voice`, { headers: { cookie: session } })))).toBe(true);
   });
 
-  it('refuses an account whose AI Gateway does not check tokens, and says how to fix it', async () => {
+  it('refuses a sign-in that granted no account, and says how to fix it', async () => {
     const directory = memoryDirectory();
     const auth = cloudflareAuth(env(directory), cloudflare(false));
     const origin = 'https://hark.example';
@@ -139,7 +128,7 @@ describe('the full sign-in round trip', () => {
     const callback = (await auth.routes(new Request(`${origin}/oauth/callback?code=c&state=${state}`, { headers: { cookie: cookiesOf(login) } }))) as Response;
 
     expect(callback.status).toBe(403);
-    expect(await callback.text()).toContain('authentication');
+    expect(await callback.text()).toContain('pick one');
     expect(directory.grants.size).toBe(0);
   });
 
@@ -150,45 +139,4 @@ describe('the full sign-in round trip', () => {
     expect(callback.status).toBe(400);
   });
 
-  it('asks which gateway to use when the account has more than one with authentication on, and saves the choice', async () => {
-    const directory = memoryDirectory();
-    const many = async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = new Request(input, init).url;
-
-      if (url.includes('/ai-gateway/gateways'))
-        return Response.json({ result: [{ id: 'default', authentication: true }, { id: 'ax', authentication: true }, { id: 'open', authentication: false }] });
-
-      return cloudflare(true)(input, init);
-    };
-    const auth = cloudflareAuth(env(directory), many);
-    const origin = 'https://hark.example';
-    const login = (await auth.routes(new Request(`${origin}/oauth/login`))) as Response;
-    const state = new URL(login.headers.get('location') ?? '').searchParams.get('state');
-    const callback = (await auth.routes(new Request(`${origin}/oauth/callback?code=c&state=${state}`, { headers: { cookie: cookiesOf(login) } }))) as Response;
-
-    expect(callback.headers.get('location')).toBe('/oauth/gateway');
-
-    const session = cookiesOf(callback);
-    const page = (await auth.routes(new Request(`${origin}/oauth/gateway`, { headers: { cookie: session } }))) as Response;
-    const html = await page.text();
-
-    expect(html).toContain('value="ax"');
-    expect(html).toContain('auth off');
-
-    const refused = (await auth.routes(
-      new Request(`${origin}/oauth/gateway`, { method: 'POST', headers: { cookie: session, origin: 'https://evil.example' }, body: new URLSearchParams({ gateway: 'ax' }) }),
-    )) as Response;
-
-    expect(refused.status).toBe(403);
-
-    const unusable = (await auth.routes(
-      new Request(`${origin}/oauth/gateway`, { method: 'POST', headers: { cookie: session, origin }, body: new URLSearchParams({ gateway: 'open' }) }),
-    )) as Response;
-
-    expect(unusable.status).toBe(400);
-
-    await auth.routes(new Request(`${origin}/oauth/gateway`, { method: 'POST', headers: { cookie: session, origin }, body: new URLSearchParams({ gateway: 'ax' }) }));
-
-    expect(directory.grants.get('cf:u-1')?.gateway).toBe('ax');
-  });
 });

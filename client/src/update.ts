@@ -58,7 +58,7 @@ const toggle = (model: Model): Return => {
 const onFrame = (model: Model, frame: ServerFrame): Return =>
   Match.value(frame).pipe(
     Match.tagsExhaustive({
-      Ready: ({ settings, account, gateway, memories }): Return => {
+      Ready: ({ settings, account, memories }): Return => {
         const chosen = Option.getOrElse(model.settings, () => settings);
         const commands: AnyCommand[] =
           chosen.voice === settings.voice && chosen.brain === settings.brain && chosen.engine === settings.engine
@@ -71,7 +71,6 @@ const onFrame = (model: Model, frame: ServerFrame): Return =>
           model: modifyFields(model, {
             settings: () => Option.some(chosen),
             account: () => Option.some(account),
-            gateway: () => Option.some(gateway),
             memories: () => memories,
           }),
           commands,

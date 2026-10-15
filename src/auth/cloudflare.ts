@@ -1,19 +1,15 @@
 import type { Directory } from '../directory';
 import { DIRECTORY_NAME } from '../directory-name';
-import { gatewayPage } from './gateway-page';
 import {
   accountsOf,
   authorizeUrl,
   exchangeCode,
-  gatewaysOf,
   type OAuthClient,
   OAuthFailed,
-  pickGateway,
   randomToken,
   revoke,
   userInfo,
 } from './oauth';
-import { refreshedToken, SignedOut, TOKEN_REFRESH_MARGIN_MS } from './refresh';
 import {
   clearCookie,
   cookie,
@@ -34,7 +30,6 @@ export type CloudflareAuthEnv = {
   readonly OAUTH_CLIENT_ID?: string;
   readonly OAUTH_CLIENT_SECRET?: string;
   readonly SESSION_SECRET?: string;
-  readonly HARK_USER_GATEWAY?: string;
 };
 
 const html = (body: string, status = 200, headers: Record<string, string> = {}) =>
@@ -172,17 +167,6 @@ export const cloudflareAuth = (env: CloudflareAuthEnv, send: typeof fetch = fetc
           403,
         );
 
-      const gateways = await gatewaysOf(tokens.accessToken, account.id, send);
-      const gateway = pickGateway(gateways, env.HARK_USER_GATEWAY);
-      const shouldChoose = gateways.filter((each) => each.authenticated).length > 1;
-
-      if (gateway === null)
-        return page(
-          request,
-          `${account.name} has no AI Gateway with authentication turned on. Turn on authentication for a gateway in the Cloudflare dashboard, then sign in again.`,
-          403,
-        );
-
       const owner = `${CLOUDFLARE_OWNER_PREFIX}${user.sub}`;
       const session = { owner, id: randomToken(), expires: Date.now() + SESSION_TTL_MS };
 
@@ -191,7 +175,6 @@ export const cloudflareAuth = (env: CloudflareAuthEnv, send: typeof fetch = fetc
         email: user.email,
         accountId: account.id,
         accountName: account.name,
-        gateway,
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         expiresAt: tokens.expiresAt,
@@ -199,7 +182,7 @@ export const cloudflareAuth = (env: CloudflareAuthEnv, send: typeof fetch = fetc
       });
       await directory().openSession(session.id, owner, session.expires);
 
-      return redirect(shouldChoose ? '/oauth/gateway' : '/', [
+      return redirect('/', [
         clearCookie(jar, jar.flow),
         cookie(jar, jar.session, await sign(secret, sessionValue(session)), SESSION_TTL_MS),
       ]);
@@ -252,57 +235,7 @@ export const cloudflareAuth = (env: CloudflareAuthEnv, send: typeof fetch = fetc
       signedIn: true,
       email: grant?.email ?? null,
       account: grant?.accountName ?? null,
-      gateway: grant?.gateway ?? null,
     });
-  };
-
-  const freshToken = async (owner: string) => {
-    const grant = await directory().grantFor(owner);
-
-    if (grant === null) return null;
-
-    if (grant.expiresAt > Date.now() + TOKEN_REFRESH_MARGIN_MS) return { grant, token: grant.accessToken };
-
-    return { grant, token: await refreshedToken(env, grant, directory(), send) };
-  };
-
-  const gatewayChoice = async (request: Request) => {
-    const session = await sessionOf(request);
-
-    if (session === null) return redirect('/');
-
-    const fresh = await freshToken(session.owner).catch((cause: unknown) => {
-      if (cause instanceof SignedOut) return null;
-      throw cause;
-    });
-
-    if (fresh === null) return redirect('/');
-
-    const gateways = await gatewaysOf(fresh.token, fresh.grant.accountId, send);
-    const view = (error?: string, current = fresh.grant.gateway, status = 200) =>
-      html(
-        gatewayPage({
-          accountName: fresh.grant.accountName,
-          current,
-          gateways,
-          ...(error === undefined ? {} : { error }),
-        }),
-        status,
-      );
-
-    if (request.method === 'GET') return view();
-
-    if (request.headers.get('origin') !== new URL(request.url).origin)
-      return new Response('cross-origin request refused', { status: 403 });
-
-    const chosen = String((await request.formData()).get('gateway') ?? '');
-    const usable = gateways.some((each) => each.id === chosen && each.authenticated);
-
-    if (!usable) return view('Pick a gateway that has authentication turned on.', fresh.grant.gateway, 400);
-
-    await directory().saveGrant({ ...fresh.grant, gateway: chosen });
-
-    return redirect('/');
   };
 
   return {
@@ -316,9 +249,6 @@ export const cloudflareAuth = (env: CloudflareAuthEnv, send: typeof fetch = fetc
       if (pathname === '/oauth/logout' && request.method === 'POST') return logout(request);
 
       if (pathname === '/oauth/me' && request.method === 'GET') return me(request);
-
-      if (pathname === '/oauth/gateway' && (request.method === 'GET' || request.method === 'POST'))
-        return gatewayChoice(request);
 
       return null;
     },

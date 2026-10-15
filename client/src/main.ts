@@ -25,7 +25,6 @@ export const initialModel = ({ local, now }: Flags): Model => ({
   connected: false,
   look: 'asleep',
   account: Option.none(),
-  gateway: Option.none(),
   memories: 0,
   settings: Option.none(),
   doing: Option.none(),

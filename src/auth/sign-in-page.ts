@@ -42,7 +42,7 @@ const point = ({ icon, title, body }: Point) =>
 
 const STEPS: readonly string[] = [
   'Pick an account on Cloudflare&rsquo;s consent screen.',
-  'hark uses an <b>AI Gateway with authentication on</b> in that account.',
+  'hark runs <b>Workers AI</b> on that account with your own token.',
   'Usage lands on that account. <b>Revoke anytime</b> in your Cloudflare profile.',
 ];
 
@@ -167,7 +167,7 @@ ${error === undefined ? '' : alert(error)}
 </main>
 <footer>
 <span>A showcase of the Cloudflare Developer Platform. Open source.</span>
-<span class="stack">Workers · Durable Objects · Workers AI · AI Gateway · Flux · Aura 2 · FLUX.2</span>
+<span class="stack">Workers · Durable Objects · Workers AI · Flux · Aura 2 · FLUX.2</span>
 </footer>
 </div>
 </body>
