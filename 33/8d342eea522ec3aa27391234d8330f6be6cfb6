@@ -1,0 +1,47 @@
+.guardrail/deploys/2026-10-15T23-47-15-280Z.json
+  s_ca5a6532cca4b3::t_af0ff14a4cb97c 1-43
+.guardrail/deploys/2026-10-15T23-47-31-055Z.json
+  s_ca5a6532cca4b3::t_42e4d21b2d3230 1-43
+.guardrail/deploys/2026-10-15T23-47-38-384Z.json
+  s_ca5a6532cca4b3::t_7da8482f9fbb25 1-43
+receipts/byo-mcp/odds-mcp-worker.ts.txt
+  s_ca5a6532cca4b3::t_db33cfbcef7c0d 1-93
+scripts/local-signin.sh
+  s_ca5a6532cca4b3::t_90774221ef4201 5-7,12-14
+src/auth/sign-in-page.ts
+  s_ca5a6532cca4b3::t_3f569bd963913a 21-23,26-28,31-33,36-38,113,115,157-158
+src/env.ts
+  s_ca5a6532cca4b3::t_983cce8adf1d30 8
+src/hark.ts
+  s_ca5a6532cca4b3::t_934eee994b5287 32-33,106,253-351,492-494
+src/index.ts
+  s_ca5a6532cca4b3::t_a7947e469c5aac 9,78-83
+src/tools.ts
+  s_ca5a6532cca4b3::t_08f65a4e7acd4b 19-21,27-33,295-298,304-335,379,392-529,549-551
+src/ui/page.ts
+  s_ca5a6532cca4b3::t_ea4b8190190b66 14
+src/upstream.ts
+  s_ca5a6532cca4b3::t_9a19564f368c87 29-30,81,190-199
+src/workbench.ts
+  s_ca5a6532cca4b3::t_241a91529f1990 1-80
+src/worker-env.ts
+  s_ca5a6532cca4b3::t_4412973f58381b 1-9
+wrangler.jsonc
+  s_ca5a6532cca4b3::t_19a4fe8f45736f 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "338d342eea522ec3aa27391234d8330f6be6cfb6",
+  "prompts": {},
+  "sessions": {
+    "s_ca5a6532cca4b3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a13c32-5367-7000-8a26-f0799dfcdedc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
