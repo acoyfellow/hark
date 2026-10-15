@@ -42,30 +42,14 @@ const opened = (client: VoiceClient) =>
   });
 
 export const startEngine = async (hooks: EngineHooks, camera: boolean): Promise<Engine> => {
-  const client = new VoiceClient({ agent: 'Hark', name: 'me', preferredFormat: 'pcm16' });
+  const client = new VoiceClient({ agent: 'Hark', name: 'me', preferredFormat: 'pcm16', interruptMode: 'duck' });
   let stopped = false;
   let status: string = 'idle';
-  let speaking: ReturnType<typeof setInterval> | null = null;
 
   const send = (frame: ClientFrame) => client.sendJSON(plain(frame));
 
   client.addEventListener('statuschange', (next) => {
     status = next;
-
-    if (speaking !== null) clearInterval(speaking);
-
-    speaking = null;
-    meter.speech = 0;
-
-    if (next === 'speaking') {
-      const started = performance.now();
-
-      speaking = setInterval(() => {
-        const t = (performance.now() - started) / 1000;
-
-        meter.speech = 0.05 + 0.04 * Math.abs(Math.sin(t * 7.3) * Math.sin(t * 2.1));
-      }, 50);
-    }
 
     if (next === 'listening' || next === 'thinking' || next === 'speaking') hooks.frame({ _tag: 'Presence', presence: next });
   });
@@ -74,6 +58,9 @@ export const startEngine = async (hooks: EngineHooks, camera: boolean): Promise<
   });
   client.addEventListener('audiolevelchange', (level) => {
     meter.mic = level;
+  });
+  client.addEventListener('playbacklevelchange', (level) => {
+    meter.speech = level;
   });
   client.addEventListener('custommessage', (message) => {
     const decoded = decodeFrame(message);
@@ -89,7 +76,7 @@ export const startEngine = async (hooks: EngineHooks, camera: boolean): Promise<
         total: metrics.finalInputToFirstAudioMs,
         model: metrics.modelToFirstTextMs ?? 0,
         speech: metrics.ttsToFirstAudioMs ?? 0,
-        eager: false,
+        eager: metrics.speculativeLeadMs !== undefined,
       },
     });
   });
@@ -135,13 +122,11 @@ export const startEngine = async (hooks: EngineHooks, camera: boolean): Promise<
 
             clearTimeout(timer);
             client.removeEventListener('statuschange', onChange);
-            setTimeout(resolve, 900);
+            resolve();
           };
 
           client.addEventListener('statuschange', onChange);
         });
-
-      if (speaking !== null) clearInterval(speaking);
 
       client.endCall();
       client.disconnect();

@@ -33,10 +33,13 @@ const HISTORY_KEEP = 24;
 
 const SNAP_TIMEOUT_MS = 6_000;
 
+const EAGER_EOT_THRESHOLD = 0.5;
+
 const VoiceAgent = withVoice(Agent, {
   audioFormat: 'pcm16',
   sampleRate: SPEECH_SAMPLE_RATE,
   historyLimit: HISTORY_KEEP,
+  speculativeTurns: true,
 });
 
 type Caller = { owner: string; local: boolean; timeZone: string; locale: string; camera: boolean; firstTurn: boolean };
@@ -259,7 +262,7 @@ export class Hark extends VoiceAgent<Env> {
 
         return this.live;
       }),
-      { keyterms: ['hark'], eotThreshold: 0.75, eotTimeoutMs: 3500 },
+      { keyterms: ['hark'], eotThreshold: 0.75, eagerEotThreshold: EAGER_EOT_THRESHOLD, eotTimeoutMs: 3500 },
     );
   }
 
@@ -383,7 +386,7 @@ export class Hark extends VoiceAgent<Env> {
         return live.chat({ model: brain, messages, tools: toolSchemas(), stream: true, max_tokens: 600, temperature: 0.7, ...thinkingOptions(brain) }, signal);
       },
       label: (call) => toolLabel(call.name, parseArguments(call.arguments)),
-      tool: (call) => runTool(call.name, parseArguments(call.arguments), host),
+      tool: async (call) => ((await context.confirmed) ? runTool(call.name, parseArguments(call.arguments), host) : { content: 'The person kept talking, so this was not done.' }),
       doing: (label) => this.send(connection, { _tag: 'Doing', label }),
       show: (visual) => this.send(connection, { _tag: 'Show', visual }),
       fail: (reason) => {
@@ -403,6 +406,7 @@ export class Hark extends VoiceAgent<Env> {
         JSON.stringify({
           event: 'hark.turn',
           outcome: context.signal.aborted ? 'interrupted' : result.error === null ? 'spoke' : 'failed',
+          speculative: context.speculative,
           brain,
           engine,
           tools: result.tools,

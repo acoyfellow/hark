@@ -281,6 +281,9 @@ const listen = (ws) => {
         eager = false;
         updates = 0;
         send('StartOfTurn');
+      } else if (eager) {
+        eager = false;
+        send('TurnResumed', words(transcript).slice(0, Math.ceil(updates / 3)).join('').trim());
       }
 
       updates += 1;

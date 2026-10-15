@@ -88,7 +88,7 @@ export const normalize = (raw) => {
   if (raw.type === 'playback_interrupt') return [{ _tag: 'Interrupt' }];
   if (raw.type === 'metrics') return [{ _tag: 'SpeechEnd' }];
   if (raw.type === 'turn_metrics' && raw.finalInputToFirstAudioMs !== undefined)
-    return [{ _tag: 'Measured', latency: { total: raw.finalInputToFirstAudioMs, model: raw.modelToFirstTextMs, speech: raw.ttsToFirstAudioMs } }];
+    return [{ _tag: 'Measured', latency: { total: raw.finalInputToFirstAudioMs, model: raw.modelToFirstTextMs, speech: raw.ttsToFirstAudioMs, eager: raw.speculativeLeadMs !== undefined, leadMs: raw.speculativeLeadMs } }];
   return [];
 };
 
@@ -163,6 +163,8 @@ await scenario('a spoken question gets a tool call, a weather card, and a spoken
   await page.screenshot({ path: `${SHOTS}/speaking-weather-desktop.png` });
 
   if (packets.count === 0) throw new Error('no speech audio reached the browser');
+
+  if (measured.frame.latency.eager !== true) throw new Error('the reply did not start on the eager end of turn');
 
   return { latency: measured.frame.latency, firstSpeechMs: speaking.at - woke, packets: packets.count };
 });
