@@ -122,6 +122,16 @@ describe('the reply hark returns from onTurn', () => {
     expect(result.error).toBe('Thinking failed (400)');
   });
 
+  it('never speaks tool-call JSON a brain wrote as text, and runs it as the tool instead', async () => {
+    const result = fresh();
+    const leaked = ports([{ deltas: ['[{"kind":', '"emoji","value":"❤️"}]'] }, { deltas: ['There you go.'] }]);
+
+    expect(await collect(reply(leaked, [], new AbortController().signal, result))).toBe('There you go.');
+    expect(result.tools).toEqual(['show_form']);
+    expect(await collect(reply(ports([{ deltas: ['{not json'] }]), [], new AbortController().signal, fresh()))).toBe(RECOVERY);
+    expect(await collect(reply(ports([{ deltas: ['  ', 'Lisbon.'] }]), [], new AbortController().signal, fresh()))).toBe('  Lisbon.');
+  });
+
   it('marks goodbye so the call can close after it is spoken', async () => {
     const result = fresh();
 

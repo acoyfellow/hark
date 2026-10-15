@@ -1,6 +1,7 @@
 import { Effect } from 'effect';
 import type { Visual } from '../shared/protocol';
 import { flattenForBrain } from './flatten';
+import { leakedCalls, mightBeLeakedCall } from './leaked-calls';
 import { chatEvents, type ToolCall } from './sse';
 import type { ToolOutcome } from './tools';
 import type { ChatMessage } from './chat';
@@ -75,6 +76,7 @@ export async function* reply(
     for (let round = 0; round < MAX_ROUNDS && !signal.aborted; round += 1) {
       const body = await ports.chat(flattenForBrain(conversation), signal);
       let text = '';
+      let held = '';
       let calls: readonly ToolCall[] = [];
 
       for await (const event of chatEvents(body)) {
@@ -82,13 +84,26 @@ export async function* reply(
 
         if (event.kind === 'text') {
           result.firstTextAt ??= Date.now();
-          text += event.text;
-          said = said || event.text.trim() !== '';
-          yield event.text;
+
+          const pending = held + event.text;
+
+          if (text === '' && (pending.trim() === '' || mightBeLeakedCall(pending))) {
+            held = pending;
+            continue;
+          }
+
+          held = '';
+          text += pending;
+          said = said || pending.trim() !== '';
+          yield pending;
         }
 
         if (event.kind === 'tools') calls = event.calls;
       }
+
+      const recovered = calls.length === 0 && held.trim() !== '' ? leakedCalls(held) : null;
+
+      if (recovered !== null) calls = recovered;
 
       if (calls.length === 0 || round === MAX_ROUNDS - 1) return;
 

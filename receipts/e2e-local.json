@@ -2,7 +2,7 @@
   "kind": "hark.e2e",
   "target": "local",
   "base": "http://127.0.0.1:8790",
-  "at": "2026-10-15T14:13:32.849Z",
+  "at": "2026-10-15T14:21:20.437Z",
   "passed": 18,
   "total": 18,
   "speech": {
@@ -13,12 +13,12 @@
     {
       "name": "the page renders asleep with the ear and no chat box",
       "ok": true,
-      "ms": 3412
+      "ms": 3787
     },
     {
       "name": "tapping the ear opens the line to the account and starts listening",
       "ok": true,
-      "ms": 1696,
+      "ms": 2164,
       "detail": {
         "account": "Local account",
         "settings": {
@@ -31,16 +31,16 @@
     {
       "name": "a spoken question gets a tool call, a weather card, and a spoken answer",
       "ok": true,
-      "ms": 6506,
+      "ms": 6499,
       "detail": {
         "latency": {
-          "total": 0,
-          "model": 138,
-          "speech": 65,
+          "total": 113,
+          "model": 139,
+          "speech": 69,
           "eager": true,
-          "leadMs": 336
+          "leadMs": 149
         },
-        "firstSpeechMs": 4542,
+        "firstSpeechMs": 5280,
         "packets": 136
       }
     },
@@ -52,16 +52,16 @@
     {
       "name": "remember stores a fact and shows it",
       "ok": true,
-      "ms": 5453
+      "ms": 5716
     },
     {
       "name": "show_form shapes the ember swarm into a heart, with no card",
       "ok": true,
-      "ms": 2474,
+      "ms": 2597,
       "detail": {
         "form": {
           "_tag": "Form",
-          "id": "fec7707f-7914-4561-b2a8-e4622a9f95ae",
+          "id": "ffb673c9-56a3-401a-b580-b3c31713c0c6",
           "kind": "icon",
           "value": "heart"
         }
@@ -70,48 +70,48 @@
     {
       "name": "paint forms the picture in the swarm first, then hands it to a card",
       "ok": true,
-      "ms": 8995
+      "ms": 9367
     },
     {
       "name": "talking over a long answer interrupts it (barge-in)",
       "ok": true,
-      "ms": 11715,
+      "ms": 11165,
       "detail": {
-        "interruptedAfterMs": 6720
+        "interruptedAfterMs": 6521
       }
     },
     {
       "name": "a timer counts down and hark announces it when it ends (Durable Object alarm)",
       "ok": true,
-      "ms": 4844,
+      "ms": 5392,
       "detail": {
-        "announcedAfterMs": 2635
+        "announcedAfterMs": 3011
       }
     },
     {
       "name": "with the camera on, asking about it takes one frame and looks",
       "ok": true,
-      "ms": 8450
+      "ms": 8719
     },
     {
       "name": "saying goodbye puts hark to sleep and closes the microphone",
       "ok": true,
-      "ms": 5770
+      "ms": 5039
     },
     {
       "name": "one tap wakes it again after it slept, and it listens",
       "ok": true,
-      "ms": 1493
+      "ms": 1519
     },
     {
       "name": "the settings sheet shows the stack, voices, and brains",
       "ok": true,
-      "ms": 3143
+      "ms": 3186
     },
     {
       "name": "every upstream call went straight to Workers AI with the account token",
       "ok": true,
-      "ms": 8,
+      "ms": 10,
       "detail": {
         "calls": 54,
         "kinds": [
@@ -130,7 +130,7 @@
     {
       "name": "the desktop layout keeps cards off the ear and nothing overflows",
       "ok": true,
-      "ms": 53,
+      "ms": 65,
       "detail": {
         "overflowX": false,
         "cardsOverOrb": 0,
@@ -150,7 +150,7 @@
     {
       "name": "the phone layout renders asleep, then talks and shows a card",
       "ok": true,
-      "ms": 11877,
+      "ms": 12842,
       "detail": {
         "overflowX": false,
         "cardsOverOrb": 0,
@@ -170,7 +170,7 @@
     {
       "name": "the landing page offers Sign in with Cloudflare on desktop and phone",
       "ok": true,
-      "ms": 2668
+      "ms": 2675
     },
     {
       "name": "no uncaught page errors",
