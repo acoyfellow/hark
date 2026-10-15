@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { flattenForBrain } from '../../src/flatten';
-import type { ChatMessage } from '../../src/turn';
+import type { ChatMessage } from '../../src/chat';
 
 describe('tool rounds sent to the brain as plain text (Workers AI gpt-oss rejects role:tool messages)', () => {
   it('turns tool calls and tool results into ordinary string messages', () => {

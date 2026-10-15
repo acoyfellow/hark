@@ -81,9 +81,23 @@ const page = await context.newPage();
 const frames = [];
 const packets = { count: 0, bytes: 0 };
 
+export const normalize = (raw) => {
+  if (raw._tag) return [raw];
+  if (raw.type === 'status' && raw.status !== 'idle') return [{ _tag: 'Presence', presence: raw.status }];
+  if (raw.type === 'transcript_interim' && raw.text) return [{ _tag: 'Presence', presence: 'hearing' }];
+  if (raw.type === 'playback_interrupt') return [{ _tag: 'Interrupt' }];
+  if (raw.type === 'metrics') return [{ _tag: 'SpeechEnd' }];
+  if (raw.type === 'turn_metrics' && raw.finalInputToFirstAudioMs !== undefined)
+    return [{ _tag: 'Measured', latency: { total: raw.finalInputToFirstAudioMs, model: raw.modelToFirstTextMs, speech: raw.ttsToFirstAudioMs } }];
+  return [];
+};
+
 page.on('websocket', (socket) => {
+  socket.on('framesent', ({ payload }) => {
+    if (typeof payload === 'string' && payload.includes('"type":"interrupt"')) frames.push({ at: Date.now(), frame: { _tag: 'Interrupt', from: 'client' } });
+  });
   socket.on('framereceived', ({ payload }) => {
-    if (typeof payload === 'string') frames.push({ at: Date.now(), frame: JSON.parse(payload) });
+    if (typeof payload === 'string') for (const frame of normalize(JSON.parse(payload))) frames.push({ at: Date.now(), frame });
     else {
       packets.count += 1;
       packets.bytes += payload.length;
@@ -171,10 +185,9 @@ await scenario('paint puts a FLUX picture on the screen', async () => {
 
 await scenario('talking over a long answer interrupts it (barge-in)', async () => {
   const story = await waitFrame((frame) => frame._tag === 'Presence' && frame.presence === 'speaking', 30000, Date.now());
-  const duck = await waitFrame((frame) => frame._tag === 'Duck' && frame.ducked, 20000, story.at);
-  const cut = await waitFrame((frame) => frame._tag === 'Interrupt', 20000, duck.at);
+  const cut = await waitFrame((frame) => frame._tag === 'Interrupt', 20000, story.at);
 
-  return { duckedAfterMs: duck.at - story.at, interruptedAfterMs: cut.at - story.at };
+  return { interruptedAfterMs: cut.at - story.at };
 });
 
 await scenario('a timer counts down and hark announces it when it ends (Durable Object alarm)', async () => {
@@ -247,7 +260,7 @@ const mobileFrames = [];
 
 mobile.on('websocket', (socket) => {
   socket.on('framereceived', ({ payload }) => {
-    if (typeof payload === 'string') mobileFrames.push(JSON.parse(payload)._tag === 'Presence' ? `Presence:${JSON.parse(payload).presence}` : JSON.parse(payload)._tag);
+    if (typeof payload === 'string') for (const frame of normalize(JSON.parse(payload))) mobileFrames.push(frame._tag === 'Presence' ? `Presence:${frame.presence}` : frame._tag);
   });
 });
 

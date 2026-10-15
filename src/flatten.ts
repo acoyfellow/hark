@@ -1,4 +1,4 @@
-import type { ChatMessage } from './turn';
+import type { ChatMessage } from './chat';
 
 export type BrainMessage =
   | { readonly role: 'system' | 'user' | 'assistant'; readonly content: string }

@@ -1,4 +1,4 @@
-import { EYES_MODEL, MIC_SAMPLE_RATE, SPEECH_SAMPLE_RATE, type SpeechEngine, type Voice } from '../shared/protocol';
+import { EYES_MODEL, SPEECH_SAMPLE_RATE, type SpeechEngine, type Voice } from '../shared/protocol';
 
 export type Credentials = {
   readonly accountId: string;
@@ -54,7 +54,7 @@ const failure = async (step: string, response: Response) =>
   new UpstreamFailed(step, response.status, await response.text().catch(() => ''));
 
 export type Upstream = {
-  readonly listen: (options: ListenOptions) => Promise<WebSocket>;
+  readonly listen: (params: Readonly<Record<string, unknown>>) => Promise<WebSocket>;
   readonly chat: (body: Record<string, unknown>, signal: AbortSignal) => Promise<ReadableStream<Uint8Array>>;
   readonly speak: (
     text: string,
@@ -67,19 +67,16 @@ export type Upstream = {
   readonly routes: () => Readonly<Record<string, string>>;
 };
 
-export type ListenOptions = { readonly keyterms: readonly string[] };
 
-export const listenUrl = (origins: Origins, credentials: Credentials, options: ListenOptions) => {
+export const listenUrl = (origins: Origins, credentials: Credentials, params: Readonly<Record<string, unknown>>) => {
   const url = new URL(gatewayBase(origins, credentials));
 
   url.searchParams.set('model', LISTEN_MODEL);
-  url.searchParams.set('encoding', 'linear16');
-  url.searchParams.set('sample_rate', String(MIC_SAMPLE_RATE));
-  url.searchParams.set('eot_threshold', '0.75');
-  url.searchParams.set('eager_eot_threshold', '0.5');
-  url.searchParams.set('eot_timeout_ms', '3500');
 
-  for (const term of options.keyterms) url.searchParams.append('keyterm', term);
+  for (const [key, value] of Object.entries(params)) {
+    if (Array.isArray(value)) for (const each of value) url.searchParams.append(key, String(each));
+    else if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
+  }
 
   return url.toString();
 };
@@ -135,16 +132,13 @@ export const upstream = (
   return {
   routes: () => ({ ...used }),
 
-  listen: async (options) => {
-    const response = await send(listenUrl(origins, credentials, options), {
+  listen: async (params) => {
+    const response = await send(listenUrl(origins, credentials, params), {
       headers: await headersFor(credentials, 'listen', { upgrade: 'websocket' }),
     });
     const socket = response.webSocket;
 
     if (socket === null) throw await failure('Listening (Deepgram Flux)', response);
-
-    socket.accept();
-    socket.binaryType = 'arraybuffer';
 
     return socket;
   },

@@ -1,7 +1,5 @@
 import { Schema } from 'effect';
 
-export const SOCKET_PATH = '/api/voice';
-
 export const MIC_SAMPLE_RATE = 16_000;
 
 export const SPEECH_SAMPLE_RATE = 24_000;
@@ -179,21 +177,3 @@ export const decodeServerFrame = Schema.decodeUnknownOption(ServerFrameJson);
 export const encodeClientFrame = Schema.encodeSync(ClientFrameJson);
 
 export const decodeClientFrame = Schema.decodeUnknownOption(ClientFrameJson);
-
-export const SPEECH_HEADER_BYTES = 4;
-
-export const speechPacket = (turn: number, pcm: Uint8Array): Uint8Array => {
-  const packet = new Uint8Array(SPEECH_HEADER_BYTES + pcm.byteLength);
-
-  new DataView(packet.buffer).setUint32(0, turn, true);
-  packet.set(pcm, SPEECH_HEADER_BYTES);
-
-  return packet;
-};
-
-export const readSpeechPacket = (
-  packet: ArrayBuffer,
-): { readonly turn: number; readonly pcm: Int16Array } => ({
-  turn: new DataView(packet).getUint32(0, true),
-  pcm: new Int16Array(packet.slice(SPEECH_HEADER_BYTES)),
-});

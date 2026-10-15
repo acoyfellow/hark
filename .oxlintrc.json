@@ -29,7 +29,13 @@
     ],
     "no-underscore-dangle": "off",
     "unicorn/require-post-message-target-origin": "off",
-    "unicorn/prefer-add-event-listener": "off"
+    "unicorn/prefer-add-event-listener": "off",
+    "no-unused-expressions": [
+      "error",
+      {
+        "allowTaggedTemplates": true
+      }
+    ]
   },
   "overrides": [
     {
