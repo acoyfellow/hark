@@ -1,0 +1,21 @@
+client/src/view/visuals.ts
+  s_ca5a6532cca4b3::t_04d9beff503357 186,191
+receipts/e2e-local.json
+  s_ca5a6532cca4b3::t_6c9b9048547dcd 5,16,21,34,37-39,41,43,55,60,64,73,78,80,86,88,94,99,104,109,114,133,153,173
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "40c27c48cd4d3d6eaf77cf4be3875ab4b7f4b337",
+  "prompts": {},
+  "sessions": {
+    "s_ca5a6532cca4b3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a13c32-5367-7000-8a26-f0799dfcdedc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
