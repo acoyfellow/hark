@@ -1,0 +1,41 @@
+client/src/update.ts
+  s_ca5a6532cca4b3::t_887c88d1371b58 61
+client/src/view/index.ts
+  s_ca5a6532cca4b3::t_bff55e15f1c742 221,228
+package.json
+  s_ca5a6532cca4b3::t_f6ac1c8ccd0489 18
+scripts/e2e.mjs
+  s_ca5a6532cca4b3::t_e218e30f40abc2 236,241,250-254
+scripts/fake-cloudflare.mjs
+  s_ca5a6532cca4b3::t_8753b7e91fdb62 170,190-199,248
+scripts/local-real.sh
+  s_ca5a6532cca4b3::t_556ea081455ae0 1-15
+shared/protocol.ts
+  s_ca5a6532cca4b3::t_36a446b0553f73 65,76-78
+src/auth/sign-in-page.ts
+  s_ca5a6532cca4b3::t_5bc809233ecd6c 45,170
+src/directory.ts
+  s_ca5a6532cca4b3::t_53fff9f5404676 45,57
+src/hark.ts
+  s_ca5a6532cca4b3::t_76335a02c72aa0 8,30,57-59,72-79,187,392-400,402-405,422-423
+src/upstream.ts
+  s_ca5a6532cca4b3::t_1a79f56071a96c 8,37,39-42,63,83-89,92,96,106,108,121,135,137,175,180
+test/unit/auth.test.ts
+  s_ca5a6532cca4b3::t_5b5697557a409a 3,65,70-71,88,104-105,122,131
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "0c97de3b4d9d806a032830f16c51e73556e1ff05",
+  "prompts": {},
+  "sessions": {
+    "s_ca5a6532cca4b3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a13c32-5367-7000-8a26-f0799dfcdedc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
