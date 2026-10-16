@@ -14,8 +14,8 @@ grep -q '^https://dash.cloudflare.com/oauth2/auth' <<<"$location" || fail "/oaut
 grep -q 'aig.run' <<<"$location" || fail "OAuth request is missing the aig.run scope"
 grep -q "redirect_uri=https%3A%2F%2F$host%2Foauth%2Fcallback" <<<"$location" || fail "redirect_uri is not $base/oauth/callback"
 
-status=$(curl -s -o /dev/null -w '%{http_code}' "$base/api/voice")
-[ "$status" = 401 ] || fail "/api/voice answered $status to a stranger, expected 401"
+status=$(curl -s -o /dev/null -w '%{http_code}' "$base/agents/hark")
+[ "$status" = 401 ] || fail "/agents/hark answered $status to a stranger, expected 401"
 
 status=$(curl -s -o /dev/null -w '%{http_code}' "$base/manifest.webmanifest")
 [ "$status" = 200 ] || fail "manifest answered $status"

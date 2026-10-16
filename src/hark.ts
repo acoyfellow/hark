@@ -138,7 +138,7 @@ export class Hark extends VoiceAgent<Env> {
   );
 
   override async onStart() {
-    this.sql`CREATE TABLE IF NOT EXISTS cf_voice_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, role TEXT NOT NULL, text TEXT NOT NULL, timestamp INTEGER NOT NULL)`;
+    this.ensureVoiceHistory();
     this.sql`CREATE TABLE IF NOT EXISTS memories (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, at INTEGER NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS missed (label TEXT NOT NULL, at INTEGER NOT NULL)`;
@@ -709,7 +709,18 @@ export class Hark extends VoiceAgent<Env> {
     if (this.turnSignal?.aborted === true) throw new Error('The person interrupted, so this call was stopped.');
   }
 
+  private ensureVoiceHistory() {
+    this.sql`CREATE TABLE IF NOT EXISTS cf_voice_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, role TEXT NOT NULL, text TEXT NOT NULL, timestamp INTEGER NOT NULL)`;
+  }
+
+  override saveMessage(role: 'user' | 'assistant', text: string) {
+    this.ensureVoiceHistory();
+    super.saveMessage(role, text);
+  }
+
   override getConversationHistory(limit?: number) {
+    this.ensureVoiceHistory();
+
     const inThisSession = this.sql<{ count: number }>`SELECT COUNT(*) AS count FROM cf_voice_messages WHERE id > ${this.sessionStartsAfter}`[0]?.count ?? 0;
     const recent = super.getConversationHistory(limit);
 
@@ -717,6 +728,7 @@ export class Hark extends VoiceAgent<Env> {
   }
 
   private startFreshSession() {
+    this.ensureVoiceHistory();
     this.sessionStartsAfter = this.sql<{ last: number | null }>`SELECT MAX(id) AS last FROM cf_voice_messages`[0]?.last ?? 0;
   }
 

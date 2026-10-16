@@ -6,7 +6,7 @@ mkdir -p .wrangler
 vars=".wrangler/signin.vars"
 umask 077
 printf 'OAUTH_CLIENT_ID=%s\nOAUTH_CLIENT_SECRET=%s\nSESSION_SECRET=%s\nOAUTH_EXTRA_SCOPES=%s\n' \
-  "$(keychain hark-oauth-client-id)" "$(keychain hark-oauth-client-secret)" "$(keychain hark-session-secret)" "${HARK_LOCAL_SCOPES:-all}" > "$vars"
+  "$(keychain hark-oauth-client-id)" "$(keychain hark-oauth-client-secret)" "$(keychain hark-session-secret)" "${HARK_LOCAL_SCOPES:-$(cat scripts/demo-scopes.txt)}" > "$vars"
 mkdir -p .wrangler/logs
 node scripts/with-local-image.mjs
 npx wrangler dev --config wrangler.local.jsonc --port "${PORT:-8790}" --ip 127.0.0.1 --env-file "$vars" > ".wrangler/logs/dev-${PORT:-8790}.log" 2>&1 &
