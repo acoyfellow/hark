@@ -62,6 +62,7 @@ export const voicesFor = (engine: SpeechEngine): readonly string[] =>
   engine === 'aura-1' ? FAST_VOICES : RICH_VOICES;
 
 export const BRAINS = [
+  { id: '@cf/daily-co/phonellm-mini-alpha-2', label: 'PhoneLLM Mini', note: 'Workers AI. Pipecat tuned it for voice agents: fast, and calls tools without thinking.' },
   { id: 'gateway/openai/gpt-6-luna', label: 'GPT-6 Luna', note: 'OpenAI through your AI Gateway. Fast and sharp.' },
   { id: 'gateway/openai/gpt-6-sol', label: 'GPT-6 Sol', note: 'OpenAI through your AI Gateway.' },
   { id: 'gateway/anthropic/claude-sonnet-5-5', label: 'Claude Sonnet 5.5', note: 'Anthropic through your AI Gateway.' },
@@ -81,7 +82,7 @@ export const Brain = Schema.Literals(BRAINS.map((brain) => brain.id));
 
 export type Brain = typeof Brain.Type;
 
-export const DEFAULT_BRAIN: Brain = 'gateway/openai/gpt-6-luna';
+export const DEFAULT_BRAIN: Brain = '@cf/daily-co/phonellm-mini-alpha-2';
 
 export const GATEWAY_BRAIN_PREFIX = 'gateway/';
 

@@ -93,6 +93,10 @@ const thinkingOptions = (brain: Brain): Record<string, unknown> =>
       ? {}
       : { chat_template_kwargs: { enable_thinking: false } };
 
+const STEADY_BRAINS: readonly Brain[] = ['@cf/daily-co/phonellm-mini-alpha-2'];
+
+const temperatureFor = (brain: Brain) => (STEADY_BRAINS.includes(brain) ? 0 : 0.7);
+
 const SIGNED_OUT = /sign-in expired/u;
 
 const replyTokenBudget = (brain: Brain) => (isGatewayBrain(brain) ? 4000 : THINKS_BEFORE_TOOLS.includes(brain) ? 2400 : 2000);
@@ -302,7 +306,7 @@ export class Hark extends VoiceAgent<Env> {
     ];
 
     try {
-      const stream = await live.chat({ model: input.brain, messages, tools: toolSchemas(), stream: true, max_tokens: replyTokenBudget(input.brain), temperature: 0.7, ...thinkingOptions(input.brain) }, AbortSignal.timeout(90_000));
+      const stream = await live.chat({ model: input.brain, messages, tools: toolSchemas(), stream: true, max_tokens: replyTokenBudget(input.brain), temperature: temperatureFor(input.brain), ...thinkingOptions(input.brain) }, AbortSignal.timeout(90_000));
       const raw = await new Response(stream).text();
       const argumentText = [...raw.matchAll(/"arguments"\s*:\s*"((?:[^"\\]|\\.)*)"/gu)].map((match) => JSON.parse(`"${match[1] ?? ''}"`) as string).join('');
       const said = [...raw.matchAll(/"content"\s*:\s*"((?:[^"\\]|\\.)*)"/gu)].map((match) => JSON.parse(`"${match[1] ?? ''}"`) as string).join('');
@@ -788,7 +792,7 @@ export class Hark extends VoiceAgent<Env> {
     const ports: ReplyPorts = {
       chat: async (messages, signal) => {
         const ask = (brain: Brain) =>
-          live.chat({ model: brain, messages, tools: toolSchemas(), stream: true, max_tokens: replyTokenBudget(brain), temperature: 0.7, ...thinkingOptions(brain) }, signal);
+          live.chat({ model: brain, messages, tools: toolSchemas(), stream: true, max_tokens: replyTokenBudget(brain), temperature: temperatureFor(brain), ...thinkingOptions(brain) }, signal);
         const chosen = this.brainInUse();
 
         try {

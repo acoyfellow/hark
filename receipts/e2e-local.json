@@ -2,28 +2,28 @@
   "kind": "hark.e2e",
   "target": "local",
   "base": "http://127.0.0.1:8796",
-  "at": "2026-10-16T03:24:32.280Z",
+  "at": "2026-10-16T06:52:53.546Z",
   "passed": 21,
   "total": 21,
   "speech": {
-    "count": 1607,
-    "bytes": 2649600
+    "count": 1576,
+    "bytes": 2599200
   },
   "results": [
     {
       "name": "the page renders asleep with the ear and no chat box",
       "ok": true,
-      "ms": 3592
+      "ms": 3744
     },
     {
       "name": "tapping the ear opens the line to the account and starts listening",
       "ok": true,
-      "ms": 1080,
+      "ms": 1589,
       "detail": {
         "account": "Local account",
         "settings": {
           "voice": "asteria",
-          "brain": "gateway/openai/gpt-6-luna",
+          "brain": "@cf/daily-co/phonellm-mini-alpha-2",
           "engine": "aura-1"
         }
       }
@@ -31,16 +31,16 @@
     {
       "name": "a spoken question gets a tool call, an article card, and a spoken answer",
       "ok": true,
-      "ms": 5826,
+      "ms": 4680,
       "detail": {
         "latency": {
           "total": 0,
-          "model": 128,
-          "speech": 67,
+          "model": 137,
+          "speech": 68,
           "eager": true,
-          "leadMs": 334
+          "leadMs": 329
         },
-        "firstSpeechMs": 3623,
+        "firstSpeechMs": 3188,
         "packets": 137
       }
     },
@@ -52,16 +52,16 @@
     {
       "name": "remember stores a fact and shows it",
       "ok": true,
-      "ms": 5535
+      "ms": 5922
     },
     {
       "name": "show_form plays a two-beat particle movie (3D heart, then a drawing), with no card",
       "ok": true,
-      "ms": 2786,
+      "ms": 2027,
       "detail": {
         "form": {
           "_tag": "Form",
-          "id": "112294ec-0632-4cb0-b31c-7bc0d605f11c",
+          "id": "2af1a772-91de-4376-8830-34fb03dd3e78",
           "beats": [
             {
               "kind": "solid",
@@ -82,77 +82,76 @@
     {
       "name": "paint forms the picture in the swarm first, then hands it to a card",
       "ok": true,
-      "ms": 9387
+      "ms": 9584
     },
     {
       "name": "talking over a long answer interrupts it (barge-in)",
       "ok": true,
-      "ms": 11923,
+      "ms": 12312,
       "detail": {
-        "interruptedAfterMs": 7144
+        "interruptedAfterMs": 7190
       }
     },
     {
       "name": "a timer counts down and hark announces it when it ends (Durable Object alarm)",
       "ok": true,
-      "ms": 4432,
+      "ms": 4977,
       "detail": {
-        "announcedAfterMs": 2645
+        "announcedAfterMs": 3522
       }
     },
     {
       "name": "with the camera on, asking about it takes one frame and looks",
       "ok": true,
-      "ms": 7545
+      "ms": 6769
     },
     {
       "name": "saying goodbye puts hark to sleep and closes the microphone",
       "ok": true,
-      "ms": 6487
+      "ms": 6466
     },
     {
       "name": "one tap wakes it again after it slept, and it listens",
       "ok": true,
-      "ms": 1628
+      "ms": 1128
     },
     {
       "name": "report and alert widgets appear beside the swarm",
       "ok": true,
-      "ms": 5081
+      "ms": 2459
     },
     {
       "name": "a 3D model beat sculpts an object in the swarm",
       "ok": true,
-      "ms": 2600
+      "ms": 2271
     },
     {
       "name": "the durable computer runs a command and shows a terminal card",
       "ok": true,
-      "ms": 2612,
+      "ms": 2110,
       "detail": {
-        "output": "$ cd /workspace && ls -la && node -v\ntotal 8\ndrwxr-xr-x 2 root root 4096 Oct 16 02:29 .\ndrwxr-xr-x 1 root root 4096 Oct 16 03:24 ..\nv22.23.3"
+        "output": "$ cd /workspace && ls -la && node -v\ntotal 8\ndrwxr-xr-x 1 root root 4096 Oct 16 02:29 .\ndrwxr-xr-x 1 root root 4096 Oct 16 06:52 ..\nv22.23.3"
       }
     },
     {
       "name": "the settings sheet shows the stack, voices, and brains",
       "ok": true,
-      "ms": 2584
+      "ms": 1851
     },
     {
       "name": "every upstream call went straight to Workers AI with the account token",
       "ok": true,
-      "ms": 3,
+      "ms": 2,
       "detail": {
-        "calls": 64,
+        "calls": 57,
         "kinds": [
           "listen",
-          "gateways",
           "completions",
           "aura-1",
           "flux-2-klein-4b"
         ],
         "brains": [
-          "@cf/zai-org/glm-5.3",
+          "@cf/daily-co/phonellm-mini-alpha-2",
           "@cf/google/gemma-4-26b-a4b-it"
         ]
       }
@@ -160,7 +159,7 @@
     {
       "name": "the desktop layout keeps cards off the ear and nothing overflows",
       "ok": true,
-      "ms": 1,
+      "ms": 75,
       "detail": {
         "overflowX": false,
         "cardsOverOrb": 0,
@@ -180,7 +179,7 @@
     {
       "name": "the phone layout renders asleep, then talks and shows a card",
       "ok": true,
-      "ms": 12605,
+      "ms": 9436,
       "detail": {
         "overflowX": false,
         "cardsOverOrb": 0,
@@ -200,7 +199,7 @@
     {
       "name": "the landing page offers Sign in with Cloudflare on desktop and phone",
       "ok": true,
-      "ms": 3775
+      "ms": 3637
     },
     {
       "name": "no uncaught page errors",

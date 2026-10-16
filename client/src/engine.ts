@@ -1,3 +1,4 @@
+import { heldMic } from './held-mic';
 import { VoiceClient } from 'agents/voice/client';
 import { type ClientFrame, encodeClientFrame, ServerFrame, type ServerFrame as Frame } from '../../shared/protocol';
 import { Schema } from 'effect';
@@ -52,7 +53,8 @@ const opened = (client: VoiceClient) =>
   });
 
 export const startEngine = async (hooks: EngineHooks, camera: boolean): Promise<Engine> => {
-  const client = new VoiceClient({ agent: 'Hark', name: 'me', preferredFormat: 'pcm16', interruptMode: 'duck', interruptThreshold: MIC_LEVEL_NEVER_REACHED });
+  const mic = heldMic();
+  const client = new VoiceClient({ agent: 'Hark', name: 'me', preferredFormat: 'pcm16', interruptMode: 'duck', interruptThreshold: MIC_LEVEL_NEVER_REACHED, audioInput: mic });
   let stopped = false;
   let status: string = 'idle';
 
@@ -125,8 +127,11 @@ export const startEngine = async (hooks: EngineHooks, camera: boolean): Promise<
   send({ _tag: 'Hello', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, locale: navigator.language, camera });
 
   try {
+    await mic.start();
+    mic.stop();
     await client.startCall();
   } catch (cause) {
+    mic.release();
     client.disconnect();
     throw new MicrophoneRefused(
       cause instanceof DOMException && cause.name === 'NotAllowedError'
@@ -156,6 +161,7 @@ export const startEngine = async (hooks: EngineHooks, camera: boolean): Promise<
 
       client.endCall();
       client.disconnect();
+      mic.release();
       meter.mic = 0;
       meter.speech = 0;
     },
