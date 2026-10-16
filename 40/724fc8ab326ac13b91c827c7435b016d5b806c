@@ -1,0 +1,45 @@
+public/brand/hark-mark.svg
+  s_ea178a5ab7ff56::t_3ddbff9c0f79d4 1
+public/brand/hark-wordmark-on-light.svg
+  s_ea178a5ab7ff56::t_afdb9a34d72776 1
+public/brand/hark-wordmark.svg
+  s_ea178a5ab7ff56::t_601c95310d7cdc 1
+public/icons/favicon.svg
+  s_ea178a5ab7ff56::t_2891ebc3d62fa5 1
+public/manifest.webmanifest
+  s_ea178a5ab7ff56::t_11863fd4a2ef0e 6,8-9
+src/auth/sign-in-page.ts
+  s_ea178a5ab7ff56::t_b67c350e9b3b90 4-5,41,50,59-60,64,164,189-190,193,209,221
+src/index.ts
+  s_ea178a5ab7ff56::t_9313e033b69e50 12,125-131,153
+src/site/brand-page.ts
+  s_ea178a5ab7ff56::t_384a10a88bb260 1-3,57-90,97-103,115,117-119,126-127,142,145,176
+src/site/docs-page.ts
+  s_ea178a5ab7ff56::t_a1f302db9c0b03 1-3,33,63,65-132,138,150,166,173
+src/site/duotone.ts
+  s_ea178a5ab7ff56::t_e31d5319a6031f 1-44
+src/site/layout.ts
+  s_ea178a5ab7ff56::t_f9316909280c16 1,19-23,31,34
+src/site/not-found-page.ts
+  s_ea178a5ab7ff56::t_a618839d35f314 1-2,11-13,16
+src/site/tokens.ts
+  s_ea178a5ab7ff56::t_d007f433c5f061 2,35
+src/ui/page.ts
+  s_ea178a5ab7ff56::t_7f96614c92dca5 6-10,19,23-25,29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "40724fc8ab326ac13b91c827c7435b016d5b806c",
+  "prompts": {},
+  "sessions": {
+    "s_ea178a5ab7ff56": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a14446-f4ef-749e-8408-b0c86e1608dd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
