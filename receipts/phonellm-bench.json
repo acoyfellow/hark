@@ -1,0 +1,153 @@
+{
+  "rows": [
+    {
+      "brain": "@cf/daily-co/phonellm-mini-alpha-2",
+      "kind": "shape",
+      "firstSignalMs": null,
+      "ms": 3210,
+      "tools": [],
+      "toolTextSpoken": false,
+      "said": "",
+      "error": "Thinking failed (401): {\"result\":null,\"success\":false,\"errors\":[{\"code\":10000,\"message\":\"Authentication error\"}],\"messages\":[]}"
+    },
+    {
+      "brain": "gateway/openai/gpt-6-luna",
+      "kind": "shape",
+      "firstSignalMs": 3263,
+      "ms": 6627,
+      "tools": [
+        "show_form"
+      ],
+      "toolTextSpoken": false,
+      "said": ""
+    },
+    {
+      "brain": "@cf/daily-co/phonellm-mini-alpha-2",
+      "kind": "account",
+      "firstSignalMs": 1684,
+      "ms": 1986,
+      "tools": [
+        "cloudflare"
+      ],
+      "toolTextSpoken": false,
+      "said": "Let me check that for you.\n\n"
+    },
+    {
+      "brain": "gateway/openai/gpt-6-luna",
+      "kind": "account",
+      "firstSignalMs": 2584,
+      "ms": 2853,
+      "tools": [
+        "cloudflare"
+      ],
+      "toolTextSpoken": false,
+      "said": ""
+    },
+    {
+      "brain": "@cf/daily-co/phonellm-mini-alpha-2",
+      "kind": "shape",
+      "firstSignalMs": 573,
+      "ms": 1423,
+      "tools": [
+        "model"
+      ],
+      "toolTextSpoken": false,
+      "said": "Let me build you a little rocket, ember by ember.\n\n"
+    },
+    {
+      "brain": "gateway/openai/gpt-6-luna",
+      "kind": "shape",
+      "firstSignalMs": 1321,
+      "ms": 5913,
+      "tools": [
+        "show_form"
+      ],
+      "toolTextSpoken": false,
+      "said": ""
+    },
+    {
+      "brain": "@cf/daily-co/phonellm-mini-alpha-2",
+      "kind": "account",
+      "firstSignalMs": 490,
+      "ms": 621,
+      "tools": [
+        "cloudflare"
+      ],
+      "toolTextSpoken": false,
+      "said": "Let me check that for you.\n\n"
+    },
+    {
+      "brain": "gateway/openai/gpt-6-luna",
+      "kind": "account",
+      "firstSignalMs": 1564,
+      "ms": 1776,
+      "tools": [
+        "cloudflare"
+      ],
+      "toolTextSpoken": false,
+      "said": ""
+    },
+    {
+      "brain": "@cf/daily-co/phonellm-mini-alpha-2",
+      "kind": "shape",
+      "firstSignalMs": 390,
+      "ms": 1242,
+      "tools": [
+        "model"
+      ],
+      "toolTextSpoken": false,
+      "said": "Let me build you a little rocket, ember by ember.\n\n"
+    },
+    {
+      "brain": "gateway/openai/gpt-6-luna",
+      "kind": "shape",
+      "firstSignalMs": 1269,
+      "ms": 4011,
+      "tools": [
+        "show_form"
+      ],
+      "toolTextSpoken": false,
+      "said": ""
+    },
+    {
+      "brain": "@cf/daily-co/phonellm-mini-alpha-2",
+      "kind": "account",
+      "firstSignalMs": 817,
+      "ms": 1193,
+      "tools": [
+        "cloudflare"
+      ],
+      "toolTextSpoken": false,
+      "said": "Let me check that for you.\n\n"
+    },
+    {
+      "brain": "gateway/openai/gpt-6-luna",
+      "kind": "account",
+      "firstSignalMs": 1303,
+      "ms": 1458,
+      "tools": [
+        "cloudflare"
+      ],
+      "toolTextSpoken": false,
+      "said": ""
+    }
+  ],
+  "summary": [
+    {
+      "brain": "@cf/daily-co/phonellm-mini-alpha-2",
+      "medianFirstSignalMs": 573,
+      "medianTotalMs": 1423,
+      "toolCalls": 5,
+      "runs": 6,
+      "toolTextSpoken": 0
+    },
+    {
+      "brain": "gateway/openai/gpt-6-luna",
+      "medianFirstSignalMs": 1564,
+      "medianTotalMs": 4011,
+      "toolCalls": 6,
+      "runs": 6,
+      "toolTextSpoken": 0
+    }
+  ]
+}

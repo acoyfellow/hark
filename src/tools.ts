@@ -1,3 +1,4 @@
+import { shapeToolCall } from './tool-call-shape';
 import { modelProblem } from '../shared/model-parts';
 import { isEmptyWidget, widgetOf } from '../shared/widget-parse';
 import { WIDGET_KINDS, WIDGET_TONES, type Beat, FAST_VOICES, FORM_ICONS, FORM_KINDS, FORM_MOTIONS, FORM_SOLIDS, RICH_VOICES, VOICES, type FormKind, type FormMotion, type Visual, type Voice } from '../shared/protocol';
@@ -276,7 +277,7 @@ type BeatProblem = { readonly problem: string };
 const beatOf = (raw: unknown): Beat | BeatProblem => {
   const item = rec(raw);
   const kind = str(item.kind);
-  const value = str(item.value);
+  const value = typeof item.value === 'object' && item.value !== null ? JSON.stringify(item.value) : str(item.value);
   const motion = str(item.motion, 'still');
   const seconds = Math.min(12, Math.max(1, Number.isFinite(num(item.seconds)) ? num(item.seconds) : 4));
 
@@ -650,14 +651,20 @@ export const parseArguments = (raw: string): Record<string, unknown> => {
   }
 };
 
-export const toolLabel = (name: string, args: Record<string, unknown>): string =>
-  TOOLS.find((tool) => tool.name === name)?.label(args) ?? 'Working on it';
+const TOOL_NAMES = (): readonly string[] => TOOLS.map((tool) => tool.name);
+
+export const toolLabel = (calledName: string, calledArgs: Record<string, unknown>): string => {
+  const { name, args } = shapeToolCall(calledName, calledArgs, TOOL_NAMES());
+
+  return TOOLS.find((tool) => tool.name === name)?.label(args) ?? 'Working on it';
+};
 
 export const runTool = async (
-  name: string,
-  args: Record<string, unknown>,
+  calledName: string,
+  calledArgs: Record<string, unknown>,
   host: ToolHost,
 ): Promise<ToolOutcome> => {
+  const { name, args } = shapeToolCall(calledName, calledArgs, TOOL_NAMES());
   const tool = TOOLS.find((each) => each.name === name);
 
   if (tool === undefined) return { content: `There is no tool called ${name}.` };

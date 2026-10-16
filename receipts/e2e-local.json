@@ -2,7 +2,7 @@
   "kind": "hark.e2e",
   "target": "local",
   "base": "http://127.0.0.1:8796",
-  "at": "2026-10-16T06:52:53.546Z",
+  "at": "2026-10-16T07:00:54.812Z",
   "passed": 21,
   "total": 21,
   "speech": {
@@ -13,12 +13,12 @@
     {
       "name": "the page renders asleep with the ear and no chat box",
       "ok": true,
-      "ms": 3744
+      "ms": 3017
     },
     {
       "name": "tapping the ear opens the line to the account and starts listening",
       "ok": true,
-      "ms": 1589,
+      "ms": 1292,
       "detail": {
         "account": "Local account",
         "settings": {
@@ -31,16 +31,16 @@
     {
       "name": "a spoken question gets a tool call, an article card, and a spoken answer",
       "ok": true,
-      "ms": 4680,
+      "ms": 4627,
       "detail": {
         "latency": {
           "total": 0,
-          "model": 137,
-          "speech": 68,
+          "model": 134,
+          "speech": 67,
           "eager": true,
-          "leadMs": 329
+          "leadMs": 295
         },
-        "firstSpeechMs": 3188,
+        "firstSpeechMs": 2931,
         "packets": 137
       }
     },
@@ -52,16 +52,16 @@
     {
       "name": "remember stores a fact and shows it",
       "ok": true,
-      "ms": 5922
+      "ms": 5693
     },
     {
       "name": "show_form plays a two-beat particle movie (3D heart, then a drawing), with no card",
       "ok": true,
-      "ms": 2027,
+      "ms": 1995,
       "detail": {
         "form": {
           "_tag": "Form",
-          "id": "2af1a772-91de-4376-8830-34fb03dd3e78",
+          "id": "6621bee6-650b-4e17-898c-a88933f19409",
           "beats": [
             {
               "kind": "solid",
@@ -82,68 +82,68 @@
     {
       "name": "paint forms the picture in the swarm first, then hands it to a card",
       "ok": true,
-      "ms": 9584
+      "ms": 9858
     },
     {
       "name": "talking over a long answer interrupts it (barge-in)",
       "ok": true,
-      "ms": 12312,
+      "ms": 12363,
       "detail": {
-        "interruptedAfterMs": 7190
+        "interruptedAfterMs": 7285
       }
     },
     {
       "name": "a timer counts down and hark announces it when it ends (Durable Object alarm)",
       "ok": true,
-      "ms": 4977,
+      "ms": 4450,
       "detail": {
-        "announcedAfterMs": 3522
+        "announcedAfterMs": 2755
       }
     },
     {
       "name": "with the camera on, asking about it takes one frame and looks",
       "ok": true,
-      "ms": 6769
+      "ms": 6846
     },
     {
       "name": "saying goodbye puts hark to sleep and closes the microphone",
       "ok": true,
-      "ms": 6466
+      "ms": 7057
     },
     {
       "name": "one tap wakes it again after it slept, and it listens",
       "ok": true,
-      "ms": 1128
+      "ms": 1640
     },
     {
       "name": "report and alert widgets appear beside the swarm",
       "ok": true,
-      "ms": 2459
+      "ms": 3118
     },
     {
       "name": "a 3D model beat sculpts an object in the swarm",
       "ok": true,
-      "ms": 2271
+      "ms": 2201
     },
     {
       "name": "the durable computer runs a command and shows a terminal card",
       "ok": true,
-      "ms": 2110,
+      "ms": 2113,
       "detail": {
-        "output": "$ cd /workspace && ls -la && node -v\ntotal 8\ndrwxr-xr-x 1 root root 4096 Oct 16 02:29 .\ndrwxr-xr-x 1 root root 4096 Oct 16 06:52 ..\nv22.23.3"
+        "output": "$ cd /workspace && ls -la && node -v\ntotal 8\ndrwxr-xr-x 1 root root 4096 Oct 16 02:29 .\ndrwxr-xr-x 1 root root 4096 Oct 16 07:00 ..\nv22.23.3"
       }
     },
     {
       "name": "the settings sheet shows the stack, voices, and brains",
       "ok": true,
-      "ms": 1851
+      "ms": 1795
     },
     {
       "name": "every upstream call went straight to Workers AI with the account token",
       "ok": true,
       "ms": 2,
       "detail": {
-        "calls": 57,
+        "calls": 133,
         "kinds": [
           "listen",
           "completions",
@@ -159,7 +159,7 @@
     {
       "name": "the desktop layout keeps cards off the ear and nothing overflows",
       "ok": true,
-      "ms": 75,
+      "ms": 5,
       "detail": {
         "overflowX": false,
         "cardsOverOrb": 0,
@@ -179,7 +179,7 @@
     {
       "name": "the phone layout renders asleep, then talks and shows a card",
       "ok": true,
-      "ms": 9436,
+      "ms": 9899,
       "detail": {
         "overflowX": false,
         "cardsOverOrb": 0,
@@ -199,7 +199,7 @@
     {
       "name": "the landing page offers Sign in with Cloudflare on desktop and phone",
       "ok": true,
-      "ms": 3637
+      "ms": 3514
     },
     {
       "name": "no uncaught page errors",
