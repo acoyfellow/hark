@@ -1,0 +1,25 @@
+scripts/ship.sh
+  s_ca5a6532cca4b3::t_8b8d260b00757f 40-42
+src/auth/every-scope.ts
+  s_ca5a6532cca4b3::t_f4fe29bee73fed 1-386
+src/auth/oauth.ts
+  s_ca5a6532cca4b3::t_22c60e7ac130df 1-2,33
+test/unit/scopes.test.ts
+  s_ca5a6532cca4b3::t_fe44779be905bd 29-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "16d89640d6df39ec01d56cffee126add0e7c16bc",
+  "prompts": {},
+  "sessions": {
+    "s_ca5a6532cca4b3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a13c32-5367-7000-8a26-f0799dfcdedc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
