@@ -76,7 +76,7 @@ export const modelDots = (value: string): Dot[] => {
   const areas = parts.map(areaOf);
   const total = areas.reduce((sum, area) => sum + area, 0);
   const extent = Math.max(0.3, ...parts.map((part) => Math.max(...part.at.map(Math.abs)) + Math.max(...part.size.map(Math.abs))));
-  const fit = 0.5 / extent;
+  const fit = 0.36 / extent;
 
   return parts.flatMap((part, index) => {
     const share = Math.max(60, Math.round((areas[index]! / total) * MODEL_DOTS));

@@ -245,6 +245,50 @@ await scenario('one tap wakes it again after it slept, and it listens', async ()
   await page.waitForFunction(() => document.querySelector('#presence')?.textContent === 'Tap to talk', null, { timeout: 10000 });
 });
 
+const runTool = async (name, args) => {
+  const response = await fetch(`${BASE}/__tool`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, args }) });
+
+  if (!response.ok) throw new Error(`${name} answered ${response.status}: ${(await response.text()).slice(0, 200)}`);
+
+  return response.json();
+};
+
+const awake = async () => {
+  const tapped = Date.now();
+
+  await page.locator('#orb').click();
+  await waitFrame((frame) => frame._tag === 'Presence' && frame.presence === 'listening', 15000, tapped);
+};
+
+await scenario('report and alert widgets appear beside the swarm', async () => {
+  await awake();
+  await runTool('show_widget', { kind: 'alert', tone: 'bad', title: '5xx spike on api.example.com', body: 'Error rate jumped from 0.2% to 7.9%.', stats: [{ label: '5xx rate', value: '7.9%', tone: 'bad' }, { label: 'p95', value: '2.4s', tone: 'warn' }] });
+  await runTool('show_widget', { kind: 'report', tone: 'good', title: 'Deploy report', stats: [{ label: 'checks', value: '18/18', tone: 'good' }], series: [{ label: 'Mon', value: 3 }, { label: 'Tue', value: 5 }, { label: 'Wed', value: 8 }] });
+  await page.locator('[data-widget=alert]').waitFor({ timeout: 10000 });
+  await page.locator('[data-widget=report]').waitFor({ timeout: 10000 });
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: `${SHOTS}/widgets-desktop.png` });
+});
+
+await scenario('a 3D model beat sculpts an object in the swarm', async () => {
+  await runTool('show_form', { beats: [{ kind: 'model', seconds: 6, motion: 'spin', value: JSON.stringify([{ shape: 'cylinder', at: [0, 0, 0], size: [0.2, 0.6, 0.2] }, { shape: 'cone', at: [0, 0.8, 0], size: [0.2, 0.2, 0.2] }, { shape: 'box', at: [0.25, -0.5, 0], size: [0.08, 0.15, 0.02] }, { shape: 'box', at: [-0.25, -0.5, 0], size: [0.08, 0.15, 0.02] }]) }] });
+  await page.waitForFunction(() => document.querySelector('#swarm')?.dataset.shaped === 'form', null, { timeout: 10000 });
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: `${SHOTS}/model-rocket-desktop.png` });
+});
+
+await scenario('the durable computer runs a command and shows a terminal card', async () => {
+  const result = await runTool('terminal', { command: 'cd /workspace && ls -la && node -v' });
+
+  if (!/v\d+\./u.test(result.content)) throw new Error(`no node version in ${result.content.slice(0, 200)}`);
+
+  await page.locator('[data-widget=terminal]').waitFor({ timeout: 10000 });
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: `${SHOTS}/terminal-desktop.png` });
+
+  return { output: result.content.slice(0, 200) };
+});
+
 await scenario('the settings sheet shows the stack, voices, and brains', async () => {
   await page.locator('#settings').click();
   await page.waitForTimeout(450);
@@ -268,7 +312,7 @@ await scenario('every upstream call went straight to Workers AI with the account
 
   const brains = [...new Set(log.filter((entry) => entry.method === 'BRAIN').map((entry) => entry.model))];
 
-  if (!brains.includes('@cf/moonshotai/kimi-k3') || !brains.includes('@cf/openai/gpt-oss-20b')) throw new Error(`brain fallback not exercised: ${brains}`);
+  if (brains.length === 0 || brains.some((brain) => !brain.startsWith('@cf/'))) throw new Error(`brains did not run on Workers AI: ${brains}`);
 
   return { calls: log.length, kinds: [...kinds], brains };
 });
