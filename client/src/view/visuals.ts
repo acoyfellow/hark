@@ -3,6 +3,7 @@ import type { Visual } from '../../../shared/protocol';
 import { Message } from '../message';
 import type { Model } from '../model';
 import { type IconName, icon } from './icons';
+import { widgetCard } from './widget';
 
 type H = HtmlBuilder<Message>;
 
@@ -106,6 +107,8 @@ const card = (h: H, model: Model, visual: Visual): Html => {
       );
     case 'Form':
       return h.empty;
+    case 'Widget':
+      return widgetCard(h, visual.widget, CARD, dismiss(h, visual.id));
     case 'Glimpse':
       return h.article(
         [h.Class(`${CARD} group`), h.DataAttribute('visual', 'glimpse')],

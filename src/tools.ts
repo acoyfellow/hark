@@ -1,5 +1,6 @@
 import { modelProblem } from '../shared/model-parts';
-import { type Beat, FAST_VOICES, FORM_ICONS, FORM_KINDS, FORM_MOTIONS, FORM_SOLIDS, RICH_VOICES, VOICES, type FormKind, type FormMotion, type Visual, type Voice } from '../shared/protocol';
+import { isEmptyWidget, widgetOf } from '../shared/widget-parse';
+import { WIDGET_KINDS, WIDGET_TONES, type Beat, FAST_VOICES, FORM_ICONS, FORM_KINDS, FORM_MOTIONS, FORM_SOLIDS, RICH_VOICES, VOICES, type FormKind, type FormMotion, type Visual, type Voice } from '../shared/protocol';
 
 export type ToolOutcome = {
   readonly content: string;
@@ -469,6 +470,41 @@ const rest: Definition = {
   run: async () => ({ content: 'Say a very short goodbye. The microphone closes after it.', sleep: true }),
 };
 
+const showWidget: Definition = {
+  name: 'show_widget',
+  label: () => 'Putting it on screen',
+  description: [
+    'Put a small live card beside the swarm for things words cannot carry: a report, an alert, a table, a chart, terminal output, a browser screenshot, a file list, or sources.',
+    'Use it for status reports, incident alerts, comparisons, numbers, logs and results of work you did. Keep it short and scannable. Speak the headline, never read the card aloud.',
+    'kind: report | alert | table | chart | terminal | browser | files | sources. tone: neutral | good | warn | bad (alerts usually warn or bad).',
+    'Fill only what helps: title, body (a few lines), stats [{label,value,tone}], columns + rows for a table, series [{label,value}] for a bar chart, code for terminal or file text, image (a URL or data URL), links [{title,url,note}] for sources.',
+  ].join('\n'),
+  parameters: object(
+    {
+      kind: { type: 'string', enum: [...WIDGET_KINDS] },
+      tone: { type: 'string', enum: [...WIDGET_TONES] },
+      title: { type: 'string' },
+      body: { type: 'string' },
+      stats: { type: 'array', items: { type: 'object', properties: { label: { type: 'string' }, value: { type: 'string' }, tone: { type: 'string', enum: [...WIDGET_TONES] } } } },
+      columns: { type: 'array', items: { type: 'string' } },
+      rows: { type: 'array', items: { type: 'array', items: { type: 'string' } } },
+      series: { type: 'array', items: { type: 'object', properties: { label: { type: 'string' }, value: { type: 'number' } } } },
+      code: { type: 'string' },
+      image: { type: 'string' },
+      links: { type: 'array', items: { type: 'object', properties: { title: { type: 'string' }, url: { type: 'string' }, note: { type: 'string' } } } },
+    },
+    ['kind', 'title'],
+  ),
+  run: async (args, host) => {
+    const id = host.id();
+    const widget = widgetOf(id, args);
+
+    if (isEmptyWidget(widget)) return { content: 'Nothing was shown: the card was empty. Give it a title and some content, then call show_widget again.' };
+
+    return { content: 'It is on their screen. Say the headline in one sentence; do not read the card.', visual: { _tag: 'Widget', id, widget } };
+  },
+};
+
 export const TOOLS: readonly Definition[] = [
   lookUp,
   setTimer,
@@ -479,6 +515,7 @@ export const TOOLS: readonly Definition[] = [
   imagine,
   changeVoice,
   showForm,
+  showWidget,
   mcp,
   runCode,
   rest,

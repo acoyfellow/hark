@@ -246,3 +246,16 @@
     transition: none !important;
   }
 }
+
+.widget-good {
+  border-color: rgba(110, 231, 183, 0.35);
+}
+
+.widget-warn {
+  border-color: rgba(252, 211, 77, 0.4);
+}
+
+.widget-bad {
+  border-color: rgba(252, 165, 165, 0.45);
+  animation: ring 1.6s ease-in-out 2;
+}

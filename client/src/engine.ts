@@ -8,6 +8,10 @@ export const meter = { mic: 0, speech: 0 };
 
 const MIC_LEVEL_NEVER_REACHED = 2;
 
+const MAX_REDIALS = 20;
+
+const isLostTranscriber = (message: string) => message.toLowerCase().includes('speech recognition connection was lost');
+
 export class MicrophoneRefused extends Error {}
 
 export type Engine = {
@@ -88,8 +92,18 @@ export const startEngine = async (hooks: EngineHooks, camera: boolean): Promise<
       },
     });
   });
+  let redials = 0;
+
   client.addEventListener('voiceerror', (error) => {
-    trace('voice-error', { message: error.message });
+    trace('voice-error', { message: error.message, redials });
+
+    if (isLostTranscriber(error.message) && !stopped && redials < MAX_REDIALS) {
+      redials += 1;
+      void client.startCall().catch(() => hooks.frame({ _tag: 'Fault', reason: error.message, fatal: false }));
+
+      return;
+    }
+
     hooks.frame({ _tag: 'Fault', reason: error.message, fatal: false });
   });
   client.addEventListener('connectionchange', (connected) => {

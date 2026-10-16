@@ -28,6 +28,7 @@
     "dev:signin": "bash scripts/local-signin.sh"
   },
   "dependencies": {
+    "@cloudflare/sandbox": "1.0.0",
     "@effect/platform-browser": "4.0.0",
     "agents": "file:./vendor/agents-0.28.1-voice-93aa507-continuous.tgz",
     "effect": "4.0.0",

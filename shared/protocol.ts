@@ -116,6 +116,35 @@ export const Beat = Schema.Struct({ kind: FormKind, value: Schema.String, second
 
 export type Beat = typeof Beat.Type;
 
+export const WIDGET_KINDS = ['report', 'alert', 'table', 'chart', 'terminal', 'browser', 'files', 'sources'] as const;
+
+export const WidgetKind = Schema.Literals(WIDGET_KINDS);
+
+export const WIDGET_TONES = ['neutral', 'good', 'warn', 'bad'] as const;
+
+export const WidgetTone = Schema.Literals(WIDGET_TONES);
+
+export const WidgetStat = Schema.Struct({ label: Schema.String, value: Schema.String, tone: WidgetTone });
+
+export const WidgetLink = Schema.Struct({ title: Schema.String, url: Schema.String, note: Schema.String });
+
+export const Widget = Schema.Struct({
+  id: Schema.String,
+  kind: WidgetKind,
+  tone: WidgetTone,
+  title: Schema.String,
+  body: Schema.String,
+  stats: Schema.Array(WidgetStat),
+  columns: Schema.Array(Schema.String),
+  rows: Schema.Array(Schema.Array(Schema.String)),
+  series: Schema.Array(Schema.Struct({ label: Schema.String, value: Schema.Number })),
+  code: Schema.String,
+  image: Schema.NullOr(Schema.String),
+  links: Schema.Array(WidgetLink),
+});
+
+export type Widget = typeof Widget.Type;
+
 export const Visual = Schema.Union([
   Schema.TaggedStruct('Image', { id: Schema.String, prompt: Schema.String, src: Schema.String }),
   Schema.TaggedStruct('Article', {
@@ -133,6 +162,7 @@ export const Visual = Schema.Union([
   Schema.TaggedStruct('Memory', { id: Schema.String, text: Schema.String, forgotten: Schema.Boolean }),
   Schema.TaggedStruct('Glimpse', { id: Schema.String, src: Schema.String }),
   Schema.TaggedStruct('Form', { id: Schema.String, beats: Schema.Array(Beat) }),
+  Schema.TaggedStruct('Widget', { id: Schema.String, widget: Widget }),
 ]);
 
 export type Visual = typeof Visual.Type;
