@@ -78,6 +78,10 @@ const isBrainRefused = (cause: unknown, brain: Brain) =>
   cause instanceof UpstreamFailed &&
   (isGatewayBrain(brain) ? cause.status >= 400 && cause.status !== 401 : cause.status === 403 || cause.status === 404 || (cause.status === 400 && NOT_ALLOWED.test(cause.message)));
 
+const WORKSPACE_CHUNK = 900_000;
+
+const isLostComputer = (cause: unknown) => ['not running', 'Network connection lost', 'not been started'].some((sign) => String(cause).includes(sign));
+
 const THINKS_BEFORE_TOOLS: readonly Brain[] = ['@cf/moonshotai/kimi-k3'];
 
 const thinkingOptions = (brain: Brain): Record<string, unknown> =>
@@ -126,6 +130,7 @@ export class Hark extends VoiceAgent<Env> {
     this.sql`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS missed (label TEXT NOT NULL, at INTEGER NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS files (path TEXT PRIMARY KEY, content TEXT NOT NULL, at INTEGER NOT NULL)`;
+    this.sql`CREATE TABLE IF NOT EXISTS workspace_chunks (part INTEGER PRIMARY KEY, data TEXT NOT NULL)`;
   }
 
   override onConnect(connection: Connection, context: ConnectionContext) {
@@ -378,16 +383,40 @@ export class Hark extends VoiceAgent<Env> {
     throw new Error(`no capability ${name}`);
   }
 
-  private async bootedComputer(): Promise<Computer> {
+  private async bootedComputer(fresh = false): Promise<Computer> {
     const container = this.ctx.container;
 
     if (container === undefined) throw new Error('This hark has no computer attached');
 
     const computer = sandboxComputer(container, container.images[COMPUTER_IMAGE] ?? COMPUTER_IMAGE);
+    const wasRunning = !fresh && computer.running();
 
-    await computer.boot({});
+    await computer.boot({}, fresh);
+
+    if (!wasRunning) {
+      const saved = this.savedWorkspace();
+
+      if (saved !== null) await computer.restore(saved).catch(() => undefined);
+    }
 
     return computer;
+  }
+
+  private savedWorkspace(): string | null {
+    const parts = this.sql<{ data: string }>`SELECT data FROM workspace_chunks ORDER BY part`;
+
+    return parts.length === 0 ? null : parts.map((part) => part.data).join('');
+  }
+
+  private async saveWorkspace(computer: Computer) {
+    const archive = await computer.snapshot().catch(() => null);
+
+    if (archive === null) return;
+
+    this.sql`DELETE FROM workspace_chunks`;
+
+    for (let index = 0; index * WORKSPACE_CHUNK < archive.length; index += 1)
+      this.sql`INSERT INTO workspace_chunks (part, data) VALUES (${index}, ${archive.slice(index * WORKSPACE_CHUNK, (index + 1) * WORKSPACE_CHUNK)})`;
   }
 
   private idleBeats(): Beat[] {
@@ -658,8 +687,15 @@ export class Hark extends VoiceAgent<Env> {
       runCode: async (code) => JSON.stringify(await runOnBench(this.env, this.name, code)),
       terminal: async (command) => {
         const computer = await this.bootedComputer();
+        const result = await computer.shell(command).catch(async (cause: unknown) => {
+          if (!isLostComputer(cause)) throw cause;
 
-        return computer.shell(command);
+          return (await this.bootedComputer(true)).shell(command);
+        });
+
+        this.ctx.waitUntil(this.saveWorkspace(computer));
+
+        return result;
       },
       files: async (action, path, content) => {
         const computer = await this.bootedComputer();
@@ -668,6 +704,7 @@ export class Hark extends VoiceAgent<Env> {
 
         if (action === 'write') {
           await computer.writeFile(path, content);
+          this.ctx.waitUntil(this.saveWorkspace(computer));
 
           return `Wrote ${content.length} characters to ${path}.`;
         }

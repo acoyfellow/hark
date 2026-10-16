@@ -29,9 +29,17 @@ export type ExecResult = { readonly exitCode: number; readonly stdout: string; r
 
 export type Entry = { readonly name: string; readonly type: string };
 
+const SNAPSHOT_COMMAND = `cd ${WORKSPACE} && tar --exclude=node_modules --exclude=.git/objects/pack -czf - . 2>/dev/null | base64 -w0`;
+
+const ARCHIVE_PATH = ['', 'tmp', 'workspace.tgz.b64'].join('/');
+
+const MAX_SNAPSHOT_CHARS = 8 * 1024 * 1024;
+
 export type Computer = {
   readonly running: () => boolean;
-  readonly boot: (secrets: Record<string, string>) => Promise<void>;
+  readonly snapshot: () => Promise<string | null>;
+  readonly restore: (archive: string) => Promise<void>;
+  readonly boot: (secrets: Record<string, string>, fresh?: boolean) => Promise<void>;
   readonly shell: (command: string) => Promise<ExecResult>;
   readonly readFile: (path: string) => Promise<string>;
   readonly writeFile: (path: string, content: string) => Promise<void>;
@@ -65,12 +73,26 @@ export const sandboxComputer = (container: Container, image: string): Computer =
   const files = new Files(container);
   let env: Record<string, string> = SHELL_ENV;
 
+  const run = async (argv: readonly string[]) => (await untilStarted(() => container.exec([...argv], { cwd: WORKSPACE, env }))).output();
+
   return {
     running: () => container.running,
-    boot: async (secrets) => {
+    snapshot: async () => {
+      const output = await run(['bash', '-lc', SNAPSHOT_COMMAND]);
+      const archive = decode(output.stdout).trim();
+
+      return output.exitCode === 0 && archive.length > 0 && archive.length <= MAX_SNAPSHOT_CHARS ? archive : null;
+    },
+    restore: async (archive) => {
+      await files.writeFile(ARCHIVE_PATH, archive);
+      await run(['bash', '-lc', `mkdir -p ${WORKSPACE} && base64 -d ${ARCHIVE_PATH} | tar -xzf - -C ${WORKSPACE} && rm -f ${ARCHIVE_PATH}`]);
+    },
+    boot: async (secrets, fresh = false) => {
       env = { ...SHELL_ENV, ...secrets };
 
-      if (container.running) return;
+      if (container.running && !fresh) return;
+
+      if (container.running) await container.destroy().catch(() => undefined);
 
       container.start({ enableInternet: true, image, labels: { app: 'hark' } } as ContainerStartupOptions);
       await untilStarted(() => container.setInactivityTimeout(INACTIVITY_MS));
