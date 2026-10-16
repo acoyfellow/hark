@@ -1,7 +1,7 @@
 import { WELCOME_ENTRY } from '../ui/app.generated';
 import { FEATURES, type FeatureGroup } from '../../shared/features';
 import { TOOL_CATALOG, TOOL_GROUPS, type ToolGroup } from '../../shared/tool-catalog';
-import { CLOUDFLARE_MARK, mark } from '../site/duotone';
+import { CLOUDFLARE_MARK, livingMark } from '../site/duotone';
 import { accent, siteLayout } from '../site/layout';
 
 const escapeHtml = (value: string) =>
@@ -187,7 +187,7 @@ const socialMeta = (origin: string) => `<link rel="canonical" href="${escapeHtml
 <link rel="manifest" href="/manifest.webmanifest">`;
 
 const signInCard = (error: string | undefined) => `<div class="relative"><section class="tile relative p-6.5 backdrop-blur-2xl md:p-9" aria-label="Sign in">
-<div class="mt-1 mb-5.5 flex justify-center text-text">${mark(96, 'hark')}</div>
+<div class="mt-1 mb-5.5 flex justify-center text-text">${livingMark(96, 'hark')}</div>
 <p class="mx-auto mb-7 max-w-[22em] text-center text-sm text-muted">Pick the Cloudflare account hark thinks with. Your token stays in your own Durable Object.</p>
 ${error === undefined ? '' : alert(error)}
 <a class="pill h-14 w-full justify-center text-[15.5px]" id="sign-in" href="/oauth/login">Sign in with Cloudflare</a>

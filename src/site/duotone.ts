@@ -1,22 +1,14 @@
-const MARK_ARC = (radius: number, width: number, color: string) =>
-  `<path d="M ${24 + radius * Math.cos(-0.9)} ${32 + radius * Math.sin(-0.9)} A ${radius} ${radius} 0 0 1 ${24 + radius * Math.cos(0.9)} ${32 + radius * Math.sin(0.9)}" fill="none" stroke="${color}" stroke-width="${width}"/>`;
+import { blockShapes, blockSvg, LIVE_MARK_STYLE, liveMark, pagePalette } from './blocks';
 
-let markCount = 0;
+export const mark = (size: number, label = '') => blockSvg(size, pagePalette(), undefined, label);
 
-const markShapes = () => {
-  markCount += 1;
-  const id = `hark-mark-${markCount}`;
-  return `<defs><mask id="${id}"><rect width="64" height="64" fill="#fff"/>${MARK_ARC(11, 4.5, '#000')}</mask></defs><circle cx="24" cy="32" r="18" fill="var(--color-signal)" mask="url(#${id})"/>${MARK_ARC(25, 5, 'currentColor')}`;
-};
-
-export const mark = (size: number, label = '') =>
-  `<svg viewBox="3 6 52 52" width="${size}" height="${size}" ${label === '' ? 'aria-hidden="true"' : `role="img" aria-label="${label}"`}>${markShapes()}</svg>`;
+export const livingMark = liveMark;
 
 const WORDMARK_LETTERS =
   '<g transform="translate(64 2)" fill="none" stroke="currentColor" stroke-width="7.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6V58"/><path d="M6 40a16 16 0 0 1 32 0V58"/><circle cx="68" cy="41.5" r="16"/><path d="M84 26V58"/><path d="M102 58V27"/><path d="M102 43a17 17 0 0 1 24-15.5"/><path d="M140 6V58"/><path d="M170 27 142.5 47.5"/><path d="M153 40 171 58"/></g>';
 
 export const wordmark = (height: number) =>
-  `<svg viewBox="0 0 248 64" height="${height}" width="${Math.round((height * 248) / 64)}" role="img" aria-label="hark"><g transform="translate(0 4) scale(0.875)">${markShapes()}</g>${WORDMARK_LETTERS}</svg>`;
+  `<svg viewBox="0 0 248 64" height="${height}" width="${Math.round((height * 248) / 64)}" role="img" aria-label="hark"><svg x="0" y="0" width="64" height="64" viewBox="0 0 64 64">${blockShapes(pagePalette())}</svg>${WORDMARK_LETTERS}</svg>`;
 
 export const DUOTONE_STYLE = `<style>
 body.brand-duo{--color-ink:#0b0b0b;--color-layer:#151515;--color-layer-2:#1c1c1c;--color-text:#f2f2f2;--color-muted:#9a9a9a;--color-faint:#6b6b6b;--color-line:rgba(255,255,255,.09);--color-line-2:rgba(255,255,255,.2);--color-amber:#ff5a1f;--color-signal:#ff5200;--color-rust:#d93d00;--color-on-signal:#fff;--color-night:#0b0b0b;--color-paper:#fff;--color-cream:#f2f2f2;--shadow-tile:none;background:#0b0b0b;color:#f2f2f2}
@@ -27,6 +19,7 @@ body.brand-duo .pill:hover{color:#fff}
 body.brand-duo .welcome-swarm{filter:brightness(.7) contrast(1.8);mix-blend-mode:screen;opacity:.9}
 :root[data-theme='light'] body.brand-duo .welcome-swarm{filter:grayscale(1) invert(1) contrast(1.6);mix-blend-mode:multiply;opacity:.35}
 body.brand-duo .cf-neon{filter:drop-shadow(0 0 6px rgba(255,95,8,.55)) drop-shadow(0 0 18px rgba(255,82,0,.35))}body.brand-duo .pill{box-shadow:0 0 0 1px rgba(255,120,40,.35),0 0 18px rgba(255,82,0,.45),0 0 48px -8px rgba(255,82,0,.55)}body.brand-duo .dragon svg{fill:#f2f2f2;filter:drop-shadow(0 0 4px rgba(255,82,0,.5))}:root[data-theme='light'] body.brand-duo .dragon svg{fill:#111;filter:none}body.brand-duo .dragon .belly{fill:#ff5200}body.brand-duo .dragon .eye{fill:#ff5200}body.brand-duo .dragon .fire rect{fill:#ff5200;filter:drop-shadow(0 0 3px #ff5200)}body.brand-duo .dragon .fire .hot{fill:#ffb37a}body.brand-duo .peek .astronaut{filter:saturate(1.15) contrast(1.05)}
+${LIVE_MARK_STYLE}
 body.brand-duo .duo-button{padding:0 22px;white-space:nowrap}
 </style>`;
 

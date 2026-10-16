@@ -1,4 +1,6 @@
-import { mark, wordmark } from './duotone';
+import { blockSvg, LIQUID_MORPH, type Morph, HARK_MORPH, pagePalette, SUMMON_MORPH } from './blocks';
+import { livingMark, mark, wordmark } from './duotone';
+import { TYPE_PACK_FONTS, TYPE_PACKS } from './type-packs';
 import { accent, siteFooter, siteLayout, tile } from './layout';
 import type { Swatch } from './tokens';
 
@@ -16,21 +18,6 @@ const PRINCIPLES: readonly Principle[] = [
 
 const principle = ({ title, line }: Principle, index: number) =>
   `<li>${tile(`0${index + 1}`, `<div class="p-4.5"><h3 class="mb-1.5 text-[15.5px] font-semibold tracking-tight">${title}</h3><p class="text-sm text-muted">${line}</p></div>`, 'h-full')}</li>`;
-
-type TypeSample = { readonly label: string; readonly className: string; readonly sample: string; readonly spec: string };
-
-const TYPE: readonly TypeSample[] = [
-  { label: '52 / Display', className: 'text-4xl sm:text-[52px] leading-none font-bold tracking-[-0.045em]', sample: 'A voice agent <span class="font-serif font-normal italic tracking-normal text-amber">that stays.</span>', spec: 'Inter 700 · -0.045em · one serif italic accent' },
-  { label: '28 / Section', className: 'text-[28px] leading-tight font-semibold tracking-[-0.03em]', sample: 'Answers before you finish', spec: 'Inter 600 · 1.1 · -0.03em' },
-  { label: '15 / Body', className: 'text-muted', sample: 'Tap the ear and talk. hark listens, thinks and answers out loud.', spec: 'Inter 400 · 1.6 · muted' },
-  { label: '11 / System', className: 'font-mono text-[11px] font-medium tracking-[0.12em] text-amber uppercase', sample: 'turn_024 · listening · your account', spec: 'IBM Plex Mono 500 · 0.12em · uppercase' },
-  { label: 'Number', className: 'font-mono text-[32px] font-medium tabular-nums', sample: '1,269 ms', spec: 'IBM Plex Mono 500 · tabular figures' },
-];
-
-const SPEC = 'font-mono text-xs text-faint';
-
-const typeRow = ({ label, className, sample, spec }: TypeSample) =>
-  `<div class="grid items-baseline gap-2 border-t border-line py-5 first:border-t-0 first:pt-1 md:grid-cols-[120px_1fr_280px] md:gap-6"><span class="${SPEC}">${label}</span><div class="${className}">${sample}</div><span class="${SPEC}">${spec}</span></div>`;
 
 type Rule = { readonly say: string; readonly not: string };
 
@@ -78,45 +65,51 @@ const sampleButton = (style: string) => `<a href="#buttons" class="${BUTTON_SHAP
 const buttonOption = ({ name, ratio, note, dark, light }: ButtonOption) =>
   `<li class="tile"><div class="tile-bar"><i></i><i></i><span class="ml-1.5">${name}</span><span class="ml-auto">${ratio}</span></div><div class="grid gap-2 p-2"><div class="flex items-center justify-center rounded-lg" style="padding:28px 16px;background:#0b0b0b">${sampleButton(dark)}</div><div class="flex items-center justify-center rounded-lg" style="padding:28px 16px;background:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)">${sampleButton(light)}</div><p class="px-2 pb-2 font-mono text-[11px] tracking-[0.04em] text-muted uppercase">${note}</p></div></li>`;
 
-type Concept = { readonly name: string; readonly idea: string; readonly shapes: string };
+const LOGO_STAGE = 'grid place-items-center rounded-lg';
 
-const SIGNAL_FILL = 'var(--color-signal)';
+const markStage = (art: string, dark: boolean) =>
+  `<div class="${LOGO_STAGE}" style="padding:24px 16px;${dark ? 'background:#0b0b0b;color:#f2f2f2;--color-ink:#0b0b0b;--color-signal:#ff5200' : 'background:#fff;color:#111;--color-ink:#fff;--color-signal:#d93d00;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)'}">${art}</div>`;
 
-const CONCEPTS: readonly Concept[] = [
-  {
-    name: 'C1 · Cube',
-    idea: 'A Durable Object, drawn as one: a solid block that stays. The lit face is the one orange thing.',
-    shapes: `<path d="M32 6 54.5 19 32 32 9.5 19Z" fill="${SIGNAL_FILL}"/><path d="M9.5 19 32 32V58L9.5 45Z" fill="currentColor"/><path d="M32 32 54.5 19V45L32 58Z" fill="currentColor" opacity=".55"/>`,
-  },
-  {
-    name: 'C1A · Cut',
-    idea: 'One orange hexagon. The cube edges are cut out of it, so the page draws the block.',
-    shapes: `<defs><mask id="cube-cut"><rect width="64" height="64" fill="#fff"/><path d="M32 32V60M32 32 8 18M32 32 56 18" stroke="#000" stroke-width="4.5"/></mask></defs><path d="M32 6 54.5 19V45L32 58 9.5 45V19Z" fill="${SIGNAL_FILL}" mask="url(#cube-cut)"/>`,
-  },
-  {
-    name: 'C1B · Open',
-    idea: 'The lid lifts off. The orange top floats over an ink box: something lives inside.',
-    shapes: `<path d="M32 3 54.5 16 32 29 9.5 16Z" fill="${SIGNAL_FILL}"/><path d="M9.5 23 32 36V60L9.5 47Z" fill="currentColor"/><path d="M32 36 54.5 23V47L32 60Z" fill="currentColor" opacity=".55"/>`,
-  },
-  {
-    name: 'C1C · Stack',
-    idea: 'A small orange cube sits on a big ink one. Memory on top of the object that keeps it.',
-    shapes: `<path d="M32 28 52 39.5 32 51 12 39.5Z" fill="currentColor" opacity=".3"/><path d="M12 39.5 32 51V62L12 50.5Z" fill="currentColor"/><path d="M32 51 52 39.5V50.5L32 62Z" fill="currentColor" opacity=".55"/><path d="M32 8 44 15 32 22 20 15Z" fill="${SIGNAL_FILL}"/><path d="M20 15 32 22V36L20 29Z" fill="${SIGNAL_FILL}" opacity=".8"/><path d="M32 22 44 15V29L32 36Z" fill="${SIGNAL_FILL}" opacity=".6"/>`,
-  },
-  {
-    name: 'C1D · Wire',
-    idea: 'A line drawing of the cube. Only the top face is filled. Lighter, more technical.',
-    shapes: `<path d="M32 6 54.5 19 32 32 9.5 19Z" fill="${SIGNAL_FILL}"/><path d="M32 6 54.5 19V45L32 58 9.5 45V19ZM9.5 19 32 32 54.5 19M32 32V58" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>`,
-  },
+const sizes = (morph?: Morph) => `<div class="flex items-end gap-3">${[40, 24, 16].map((size) => blockSvg(size, pagePalette(), morph)).join('')}</div>`;
+
+const logoTile = (label: string, morph: Morph | undefined, note: string) =>
+  tile(label, `<div class="grid gap-2 p-2">${[true, false].map((dark) => markStage(`${blockSvg(150, pagePalette(), morph)}<div class="mt-4">${sizes(morph)}</div>`, dark)).join('')}<p class="px-2 pb-2 font-mono text-[11px] tracking-[0.04em] text-muted uppercase">${note}</p></div>`);
+
+type Variant = { readonly name: string; readonly art: string };
+
+type Asset = { readonly path: string; readonly use: string; readonly ground: 'dark' | 'light' | 'check' };
+
+const ASSETS: readonly Asset[] = [
+  { path: '/brand/hark-mark.svg', use: 'Mark, moving', ground: 'dark' },
+  { path: '/brand/hark-mark-still.svg', use: 'Mark, at rest', ground: 'dark' },
+  { path: '/brand/hark-wordmark.svg', use: 'Wordmark on dark', ground: 'dark' },
+  { path: '/brand/hark-wordmark-on-light.svg', use: 'Wordmark on light', ground: 'light' },
+  { path: '/icons/favicon.svg', use: 'Favicon', ground: 'check' },
+  { path: '/icons/favicon-32.png', use: 'Favicon, 32 px', ground: 'check' },
+  { path: '/icons/apple-touch-icon.png', use: 'Apple touch icon', ground: 'check' },
+  { path: '/icons/icon-192.png', use: 'App icon 192', ground: 'check' },
+  { path: '/icons/icon-512.png', use: 'App icon 512', ground: 'check' },
+  { path: '/icons/maskable-512.png', use: 'Maskable icon', ground: 'check' },
+  { path: '/brand/hark-social.png', use: 'Social card', ground: 'dark' },
+  { path: '/brand/astronaut-peek.webp', use: 'Sign-in astronaut', ground: 'dark' },
+  { path: '/brand/hark-field.jpg', use: 'Field art', ground: 'dark' },
+  { path: '/brand/cloudflare-cloud.svg', use: 'Cloudflare cloud', ground: 'dark' },
+  { path: '/brand/cloudflare-logo.svg', use: 'Cloudflare logo on dark', ground: 'dark' },
+  { path: '/brand/cloudflare-logo-on-light.svg', use: 'Cloudflare logo on light', ground: 'light' },
 ];
 
-const conceptSvg = (shapes: string, size: number) => `<svg viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true">${shapes}</svg>`;
+const GROUNDS = { dark: 'background:#0b0b0b', light: 'background:#fff', check: 'background:repeating-conic-gradient(#1c1c1c 0 25%,#262626 0 50%) 0 0/16px 16px' } as const;
 
-const conceptStage = (shapes: string, background: string, ink: string) =>
-  `<div class="grid place-items-center rounded-lg" style="padding:28px 16px;background:${background};color:${ink}">${conceptSvg(shapes, 96)}<div class="mt-5 flex items-end gap-3">${conceptSvg(shapes, 40)}${conceptSvg(shapes, 24)}${conceptSvg(shapes, 16)}</div></div>`;
+const asset = ({ path, use, ground }: Asset) =>
+  `<li class="overflow-hidden rounded-xl border border-line bg-layer"><a href="${path}" class="grid place-items-center" style="height:132px;padding:16px;${GROUNDS[ground]}"><img src="${path}" alt="${use}" loading="lazy" style="max-height:100px;max-width:100%;width:auto;height:auto;object-fit:contain"></a><div class="px-3 py-2.5"><strong class="block text-[13px]">${use}</strong><code class="font-mono text-[10.5px] text-faint">${path}</code></div></li>`;
 
-const concept = ({ name, idea, shapes }: Concept) =>
-  `<li>${tile(name, `<div class="grid gap-2 p-2">${conceptStage(shapes, '#0b0b0b', '#f2f2f2')}${conceptStage(shapes, '#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)', '#111')}<p class="px-2 pb-2 font-mono text-[11px] tracking-[0.04em] text-muted uppercase">${idea}</p></div>`)}</li>`;
+const VARIANTS: readonly Variant[] = [
+  { name: 'G1 · Summon', art: blockSvg(64, pagePalette(), SUMMON_MORPH) },
+  { name: 'G1 · Liquid', art: blockSvg(64, pagePalette(), LIQUID_MORPH) },
+];
+
+const variant = ({ name, art }: Variant) =>
+  `<li class="flex items-center gap-4 rounded-xl border border-line bg-layer p-3.5">${art}<span class="font-mono text-[11px] tracking-[0.08em] text-muted uppercase">${name}</span></li>`;
 
 const DUOTONE: readonly Swatch[] = [
   { token: 'signal', name: 'Signal', dark: '#ff5200', light: '#d93d00', use: 'Actions, the live dot, the ear. Nothing else.' },
@@ -135,11 +128,11 @@ type Chapter = { readonly id: string; readonly number: string; readonly title: s
 
 const CHAPTERS: readonly Chapter[] = [
   {
-    id: 'concepts',
-    number: 'C0',
-    title: 'Mark concepts',
-    line: 'The cube, then four takes on it. One orange, ink, and the page. Each at 96, 40, 24 and 16 px on dark and on light.',
-    body: `<ul class="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">${CONCEPTS.map(concept).join('')}</ul>`,
+    id: 'assets',
+    number: 'A0',
+    title: 'Assets',
+    line: 'Every file the product ships, at a glance. Click one to open it.',
+    body: `<ul class="grid gap-3.5" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">${ASSETS.map(asset).join('')}</ul>`,
   },
   {
     id: 'buttons',
@@ -159,11 +152,15 @@ const CHAPTERS: readonly Chapter[] = [
     id: 'mark',
     number: '02',
     title: 'Mark',
-    line: 'Use the wordmark in headers and the mark alone where it must be small. Never recolor it or put it on orange. The mark is an orange helmet with one arc cut through it and one outside.',
+    line: 'Eight blocks. Seven grey, one orange. At rest the orange block waits over its slot. When you call hark the blocks flow apart, listen, melt, roll and stack to speak, then pour back. In motion it may be loose and imperfect. At rest it is exact.',
     body: `<div class="grid gap-3.5 md:grid-cols-3">
-${tile('Wordmark · dark', `<div class="${STAGE}" style="background:#0b0b0b;color:#f2f2f2">${wordmark(52)}</div>`)}
-${tile('Wordmark · light', `<div class="${STAGE}" style="background:#fff;color:#111">${wordmark(52)}</div>`)}
-${tile('Mark · 16 · 32 · 96', `<div class="${STAGE} items-end text-text">${mark(16)}${mark(32)}${mark(96, 'hark mark')}</div>`)}
+${logoTile('Rest · the logo', undefined, 'Exact. Favicon, app icon, anything 32 px or less, and reduced motion.')}
+${logoTile('Called · alive', HARK_MORPH, 'Rest, listen, melt, wave, speak, rest. 11 s, pure SVG.')}
+<div class="grid gap-3.5 content-start">
+${tile('Wordmark · dark', `<div class="${STAGE}" style="background:#0b0b0b;color:#f2f2f2;--color-ink:#0b0b0b;--color-signal:#ff5200">${wordmark(44)}</div>`)}
+${tile('Wordmark · light', `<div class="${STAGE}" style="background:#fff;color:#111;--color-ink:#fff;--color-signal:#d93d00">${wordmark(44)}</div>`)}
+${tile('Variants', `<ul class="grid gap-2 p-2">${VARIANTS.map(variant).join('')}</ul>`)}
+</div>
 </div>`,
   },
   {
@@ -177,8 +174,8 @@ ${tile('Mark · 16 · 32 · 96', `<div class="${STAGE} items-end text-text">${ma
     id: 'type',
     number: '04',
     title: 'Type',
-    line: 'Inter for everything people read. IBM Plex Mono for machine state, numbers and labels. One Instrument Serif italic phrase per page, never more.',
-    body: tile('Scale', `<div class="p-4.5">${TYPE.map(typeRow).join('')}</div>`),
+    line: 'Four packs on the same five lines. Pick one. The arrows and the dots switch packs, no script.',
+    body: TYPE_PACKS,
   },
   {
     id: 'parts',
@@ -220,8 +217,8 @@ const chapter = ({ id, number, title, line, body }: Chapter) =>
   `<section id="${id}" class="scroll-mt-6 pt-18"><div class="mb-6.5 grid gap-2.5 md:grid-cols-[260px_1fr] md:gap-8"><p class="index">${number} / ${title}</p><p class="max-w-[40em] text-muted">${line}</p></div>${body}</section>`;
 
 const HERO = `<div class="mt-16 mb-2 grid gap-10 md:grid-cols-[1.25fr_1fr] md:items-end">
-<h1 class="text-[clamp(44px,7vw,96px)] leading-[0.92] font-bold tracking-[-0.05em]">Ember, ${accent('hung like art.')}</h1>
-<p class="max-w-[30em] text-[17px] text-muted">Cloudflare orange in a gallery: one glowing object, room around it, mono labels, and calm hairline panels for the few things that need a screen. It holds up in light and in dark.</p>
+<h1 class="text-[clamp(44px,7vw,96px)] leading-[0.92] font-bold tracking-[-0.05em]">Blocks, ${accent('called to life.')}</h1>
+<div class="flex items-end gap-6"><span class="text-text">${livingMark(132, 'hark')}</span><p class="max-w-[24em] text-[15px] text-muted">One orange, black, white and greys. A mark that rests exact and moves loose. Mono labels, hairline panels.</p></div>
 </div>`;
 
 export const brandPage = () =>
@@ -229,6 +226,7 @@ export const brandPage = () =>
     title: 'hark · brand',
     description: 'How hark looks, moves and talks, in light and dark.',
     current: '/brand',
+    head: TYPE_PACK_FONTS,
     body: `${HERO}
 <nav class="mt-10 flex flex-wrap gap-1.5" aria-label="Chapters">${CHAPTERS.map(({ id, number, title }) => `<a class="rounded-md border border-line bg-layer px-2.5 py-2 font-mono text-[11px] leading-none tracking-[0.08em] text-muted uppercase hover:border-line-2 hover:text-text" href="#${id}">${number} ${title}</a>`).join('')}</nav>
 ${CHAPTERS.map(chapter).join('')}`,
