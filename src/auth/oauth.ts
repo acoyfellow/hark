@@ -1,3 +1,5 @@
+import { EVERY_SCOPE } from './every-scope';
+
 export const CLOUDFLARE_OAUTH = {
   authorize: 'https://dash.cloudflare.com/oauth2/auth',
   token: 'https://dash.cloudflare.com/oauth2/token',
@@ -28,7 +30,7 @@ export type OAuthClient = {
 const SCOPE_NAME = /^[a-z][a-z0-9_-]*(\.[a-z_]+)?$/u;
 
 export const extraScopesFrom = (raw: string | undefined): string[] =>
-  (raw ?? '')
+  raw?.trim() === 'all' ? [...EVERY_SCOPE] : (raw ?? '')
     .split(/[\s,]+/u)
     .map((scope) => scope.trim())
     .filter((scope) => scope !== '' && SCOPE_NAME.test(scope));

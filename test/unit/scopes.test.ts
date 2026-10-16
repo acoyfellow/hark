@@ -26,3 +26,13 @@ describe('sign-in asks for everything the client allows, and needs only Workers 
     expect(hasRequiredScopes('offline_access zone.read')).toBe(false);
   });
 });
+
+describe('asking for every scope', () => {
+  it('turns "all" into every scope the hark client allows, and still asks for the built-in ones', () => {
+    const scopes = requestedScopes({ clientId: 'c', clientSecret: 's', redirectUri: 'https://x/cb', extraScopes: extraScopesFrom('all') });
+
+    expect(scopes.length).toBeGreaterThanOrEqual(384);
+    expect(scopes).toEqual(expect.arrayContaining(['offline_access', 'ai.read', 'ai.write', 'workers-scripts.edit', 'd1.write', 'containers.write']));
+    expect(new Set(scopes).size).toBe(scopes.length);
+  });
+});
