@@ -1,10 +1,10 @@
 import { Option } from 'effect';
 import type { Document, Html, HtmlBuilder } from 'foldkit/html';
-import { BRAINS, DEFAULT_BRAIN, DEFAULT_ENGINE, DEFAULT_VOICE, ENGINES, voicesFor } from '../../../shared/protocol';
 import { Message } from '../message';
 import type { Look, Model } from '../model';
 import { Preview } from '../orb';
 import { Swarm } from '../swarm';
+import { commandSheet } from './command';
 import { icon } from './icons';
 import { visuals } from './visuals';
 
@@ -147,98 +147,6 @@ const fault = (h: H, model: Model): Html =>
       ),
   });
 
-const option = (h: H, selected: boolean, label: Html | string, message: Message, extra = ''): Html =>
-  h.button(
-    [h.Type('button'), h.AriaPressed(String(selected)), h.Class(`rounded-xl border px-3 py-2.5 text-left text-[13px] transition ${selected ? 'border-ember/60 bg-ember/10 text-white' : 'border-white/10 bg-white/[0.02] text-white/65 hover:border-white/20 hover:text-white'} ${extra}`), h.OnClick(message)],
-    [label],
-  );
-
-const row = (h: H, label: string, value: string): Html =>
-  h.div(
-    [h.Class('flex items-center justify-between gap-4 py-2 text-[13px]')],
-    [h.span([h.Class('text-white/45')], [label]), h.span([h.Class('truncate font-mono text-[12px] text-white/80')], [value])],
-  );
-
-const sheet = (h: H, model: Model): Html => {
-  const settings = Option.getOrElse(model.settings, () => ({ voice: DEFAULT_VOICE, brain: DEFAULT_BRAIN, engine: DEFAULT_ENGINE }));
-
-  return h.div(
-    [h.Class(`fixed inset-0 z-50 ${model.sheet ? '' : 'pointer-events-none'}`), h.AriaHidden(!model.sheet)],
-    [
-      h.div([h.Class(`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity ${model.sheet ? 'opacity-100' : 'opacity-0'}`), h.OnClick(Message.ClosedSheet())], []),
-      h.aside(
-        [
-          h.Role('dialog'),
-          h.AriaModal(true),
-          h.AriaLabel('Settings'),
-          h.Inert(!model.sheet),
-          h.Class(`absolute right-0 bottom-0 left-0 max-h-[88dvh] own-scroll rounded-t-3xl border-t border-white/10 bg-zinc-950/95 p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-xl transition-transform duration-300 md:top-0 md:left-auto md:max-h-none md:w-[400px] md:rounded-none md:border-t-0 md:border-l ${model.sheet ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-x-full md:translate-y-0'}`),
-        ],
-        [
-          h.div(
-            [h.Class('flex items-center justify-between')],
-            [
-              h.h2([h.Class('text-[17px] font-medium tracking-tight')], ['Settings']),
-              h.button([h.Type('button'), h.AriaLabel('Close'), h.Class('grid size-9 place-items-center rounded-full text-white/60 hover:bg-white/[0.06] hover:text-white'), h.OnClick(Message.ClosedSheet())], [icon(h, 'close', 'size-4')]),
-            ],
-          ),
-          h.h3([h.Class('mt-7 mb-3 font-mono text-[10.5px] tracking-[0.14em] text-white/40 uppercase')], ['Voice · Deepgram Aura']),
-          h.div(
-            [h.Class('mb-2 grid grid-cols-2 gap-2')],
-            ENGINES.map((engine) =>
-              option(
-                h,
-                settings.engine === engine.id,
-                h.span([h.Class('flex flex-col gap-0.5')], [h.span([h.Class('font-medium')], [engine.label]), h.span([h.Class('text-[12px] text-white/45')], [engine.note])]),
-                Message.PickedEngine({ engine: engine.id }),
-              ),
-            ),
-          ),
-          h.div(
-            [h.Class('grid grid-cols-3 gap-2')],
-            voicesFor(settings.engine).map((voice) =>
-              option(h, settings.voice === voice, voice, Message.PickedVoice({ voice: voice as typeof settings.voice }), 'capitalize'),
-            ),
-          ),
-          h.h3([h.Class('mt-7 mb-3 font-mono text-[10.5px] tracking-[0.14em] text-white/40 uppercase')], ['Brain · Workers AI']),
-          h.div(
-            [h.Class('grid gap-2')],
-            BRAINS.map((brain) =>
-              option(
-                h,
-                settings.brain === brain.id,
-                h.span([h.Class('flex flex-col gap-0.5')], [h.span([h.Class('font-medium')], [brain.label]), h.span([h.Class('text-[12px] text-white/45')], [brain.note])]),
-                Message.PickedBrain({ brain: brain.id }),
-              ),
-            ),
-          ),
-          h.h3([h.Class('mt-7 mb-1 font-mono text-[10.5px] tracking-[0.14em] text-white/40 uppercase')], ['Running on your Cloudflare']),
-          h.div(
-            [h.Class('divide-y divide-white/[0.06]')],
-            [
-              row(h, 'Account', Option.getOrElse(model.account, () => 'connects when you wake hark')),
-              row(h, 'Route', 'Workers AI, your account'),
-              row(h, 'Ears', 'Deepgram Flux'),
-              row(h, 'Voice', settings.engine === 'aura-1' ? 'Deepgram Aura 1' : 'Deepgram Aura 2'),
-              row(h, 'Pictures', 'FLUX.2 klein'),
-              row(h, 'Memories', String(model.memories)),
-            ],
-          ),
-          h.p([h.Class('mt-4 text-[12px] leading-relaxed text-white/40')], ['Every word is heard, thought, and spoken by models on your own Cloudflare account with Workers AI. Ask hark to forget something and it will.']),
-          ...(model.local
-            ? []
-            : [
-                h.button(
-                  [h.Type('button'), h.Id('sign-out'), h.Class('mt-6 flex items-center gap-2 text-[13px] text-white/50 hover:text-white'), h.OnClick(Message.ClickedSignOut())],
-                  [icon(h, 'logout', 'size-4'), 'Sign out'],
-                ),
-              ]),
-        ],
-      ),
-    ],
-  );
-};
-
 const latestOf = <T extends Model['visuals'][number]['_tag']>(model: Model, tag: T) =>
   model.visuals.toReversed().find((visual): visual is Extract<Model['visuals'][number], { _tag: T }> => visual._tag === tag);
 
@@ -288,6 +196,6 @@ export const view = (model: Model, h: H): Document => ({
   title: model.look === 'asleep' ? 'hark' : `hark · ${LABELS[model.look].toLowerCase()}`,
   body: h.div(
     [h.Class(`app look-${model.look} relative flex h-dvh flex-col overflow-hidden`)],
-    [swarm(h, model), header(h, model), toast(h, model), preview(h, model), fault(h, model), stage(h, model), dock(h, model), sheet(h, model)],
+    [swarm(h, model), header(h, model), toast(h, model), preview(h, model), fault(h, model), stage(h, model), dock(h, model), commandSheet(h, model)],
   ),
 });

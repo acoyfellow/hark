@@ -1,9 +1,21 @@
 import { Schema } from 'effect';
-import { Latency, Presence, Settings, Visual, Beat } from '../../shared/protocol';
+import { Latency, McpServer, Presence, Settings, Visual, Beat } from '../../shared/protocol';
 
 export const Look = Schema.Union([Schema.Literal('asleep'), Presence]);
 
 export type Look = typeof Look.Type;
+
+export const SettingsTab = Schema.Literals(['account', 'voice', 'brain', 'tools']);
+
+export type SettingsTab = typeof SettingsTab.Type;
+
+export const PushState = Schema.Literals(['unsupported', 'default', 'granted', 'denied']);
+
+export type PushState = typeof PushState.Type;
+
+export const ServerDraft = Schema.Struct({ url: Schema.String, token: Schema.String, pending: Schema.Boolean, note: Schema.Option(Schema.String), authUrl: Schema.Option(Schema.String) });
+
+export type ServerDraft = typeof ServerDraft.Type;
 
 export const Model = Schema.Struct({
   local: Schema.Boolean,
@@ -23,6 +35,11 @@ export const Model = Schema.Struct({
   cameraLive: Schema.Boolean,
   idle: Schema.Array(Beat),
   sheet: Schema.Boolean,
+  tab: SettingsTab,
+  query: Schema.String,
+  servers: Schema.Array(McpServer),
+  draft: ServerDraft,
+  push: PushState,
   now: Schema.Number,
 });
 

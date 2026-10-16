@@ -81,9 +81,22 @@ const isTyping = (target: EventTarget | null) =>
 
 const isButton = (target: EventTarget | null) => target instanceof HTMLElement && target.tagName === 'BUTTON';
 
-const keys: Stream.Stream<Message> = Stream.fromEventListener<KeyboardEvent>(document, 'keydown').pipe(
-  Stream.filter((event) => !event.repeat && !isTyping(event.target)),
-  Stream.filter((event) => event.key === 'Escape' || (event.code === 'Space' && !isButton(event.target))),
+const isCommandK = (event: KeyboardEvent) => (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k';
+
+const sheetOpen = () => document.querySelector('[data-sheet-open="true"]') !== null;
+
+const commandKeys: Stream.Stream<Message> = Stream.fromEventListener<KeyboardEvent>(document, 'keydown').pipe(
+  Stream.filter((event) => isCommandK(event) || (sheetOpen() && (event.key === 'ArrowDown' || event.key === 'ArrowUp') && !isTyping(event.target))),
+  Stream.map((event): Message => {
+    event.preventDefault();
+
+    return isCommandK(event) ? Message.PressedCommandK() : Message.SteppedTab({ by: event.key === 'ArrowDown' ? 1 : -1 });
+  }),
+);
+
+const plainKeys: Stream.Stream<Message> = Stream.fromEventListener<KeyboardEvent>(document, 'keydown').pipe(
+  Stream.filter((event) => !event.repeat && (event.key === 'Escape' || !isTyping(event.target))),
+  Stream.filter((event) => event.key === 'Escape' || (event.code === 'Space' && !isButton(event.target) && !sheetOpen())),
   Stream.map((event): Message => {
     if (event.key === 'Escape') return Message.PressedEscape();
 
@@ -124,5 +137,5 @@ export const subscriptions = Subscription.make<Model, Message, Resources>()((ent
           : Stream.empty,
     },
   ),
-  keys: entry({ on: Schema.Boolean }, { modelToDependencies: () => ({ on: true }), dependenciesToStream: () => keys }),
+  keys: entry({ on: Schema.Boolean }, { modelToDependencies: () => ({ on: true }), dependenciesToStream: () => Stream.merge(plainKeys, commandKeys) }),
 }));

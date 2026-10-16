@@ -36,6 +36,11 @@ export const initialModel = ({ local, now }: Flags): Model => ({
   cameraLive: false,
   idle: [],
   sheet: false,
+  tab: 'account',
+  query: '',
+  servers: [],
+  draft: { url: '', token: '', pending: false, note: Option.none(), authUrl: Option.none() },
+  push: typeof Notification === 'undefined' ? 'unsupported' : Notification.permission,
   now,
 });
 

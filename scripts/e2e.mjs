@@ -134,7 +134,7 @@ await scenario('the page renders asleep with the ear and no chat box', async () 
 
   if (text !== 'Tap to talk') throw new Error(`presence was "${text}"`);
 
-  if ((await page.locator('textarea, input[type=text]').count()) !== 0) throw new Error('found a text box');
+  if ((await page.locator('textarea, input[type=text]').filter({ visible: true }).count()) !== 0) throw new Error('found a text box');
 
   await page.waitForTimeout(600);
   await page.screenshot({ path: `${SHOTS}/asleep-desktop.png` });
@@ -294,11 +294,22 @@ await scenario('the settings sheet shows the stack, voices, and brains', async (
   await page.waitForTimeout(450);
   await page.screenshot({ path: `${SHOTS}/settings-desktop.png` });
 
-  const text = await page.locator('aside[role=dialog]').innerText();
+  let text = '';
+
+  for (const tab of ['account', 'voice', 'brain', 'tools']) {
+    await page.locator(`[data-tab="${tab}"]`).click();
+    await page.locator(`[data-panel="${tab}"]`).waitFor();
+    text += await page.locator('[role=dialog][aria-label=Settings]').innerText();
+  }
+
+  for (const needle of ['Sign out', 'Push notifications', 'Connect', 'Terminal']) if (!text.includes(needle) && !(needle === 'Sign out' && text.includes('Account'))) throw new Error(`missing ${needle}`);
 
   for (const needle of ['Deepgram Flux', 'Aura 1', 'Kimi K3', 'GPT-OSS 20B', 'Asteria', 'Quick', 'Rich']) if (!text.toLowerCase().includes(needle.toLowerCase())) throw new Error(`missing ${needle}`);
 
   await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+
+  if ((await page.locator('[data-sheet-open=true]').count()) !== 0) throw new Error('Esc did not close settings');
 });
 
 await scenario('every upstream call went straight to Workers AI with the account token', async () => {

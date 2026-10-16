@@ -41,3 +41,16 @@ export const SendHome = Command.define('SendHome', {
   messages: [Message.CompletedSignOut],
   execute: Navigation.load('/').pipe(Effect.as(Message.CompletedSignOut())),
 });
+
+const askForPush = async () => {
+  if (typeof Notification === 'undefined') return 'unsupported' as const;
+
+  const answer = await Notification.requestPermission();
+
+  return answer === 'granted' || answer === 'denied' ? answer : ('default' as const);
+};
+
+export const AskPush = Command.define('AskPush', {
+  messages: [Message.ChangedPush],
+  execute: Effect.promise(askForPush).pipe(Effect.map((push) => Message.ChangedPush({ push }))),
+});

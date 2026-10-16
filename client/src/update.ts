@@ -2,9 +2,9 @@ import { Match, Option } from 'effect';
 import type { Command, Update } from 'foldkit';
 import { modifyFields } from 'foldkit/struct';
 import { DEFAULT_BRAIN, DEFAULT_ENGINE, DEFAULT_VOICE, type ServerFrame, type Settings, type Visual, voicesFor } from '../../shared/protocol';
-import { SendHome, Send, SignOut, Snap } from './command';
+import { AskPush, SendHome, Send, SignOut, Snap } from './command';
 import { Message } from './message';
-import { MAX_VISUALS, type Model } from './model';
+import { MAX_VISUALS, type Model, type SettingsTab } from './model';
 import type { Resources } from './resources';
 
 type Return = Update.Return<Model, Message, Resources>;
@@ -12,6 +12,17 @@ type Return = Update.Return<Model, Message, Resources>;
 type AnyCommand = Command.Command<Message, never, Resources>;
 
 const TIMER_GRACE_MS = 12_000;
+
+const TABS: readonly SettingsTab[] = ['account', 'voice', 'brain', 'tools'];
+
+const stepTab = (tab: SettingsTab, by: number): SettingsTab => TABS[(TABS.indexOf(tab) + by + TABS.length) % TABS.length]!;
+
+const openSheet = (model: Model): Return => ({
+  model: modifyFields(model, { sheet: () => true, query: () => '' }),
+  commands: model.connected ? [Send({ frame: { _tag: 'ListServers' } })] : [],
+});
+
+const emptyDraft = { url: '', token: '', pending: false, note: Option.none<string>(), authUrl: Option.none<string>() };
 
 const withVisual = (visuals: readonly Visual[], visual: Visual): Visual[] =>
   [...visuals.filter((each) => each.id !== visual.id), visual].slice(-MAX_VISUALS);
@@ -102,8 +113,12 @@ const onFrame = (model: Model, frame: ServerFrame): Return =>
       }),
       Sleep: ({ reason }): Return => ({ model: sleep(model, Option.some(reason)) }),
       Idle: ({ beats }): Return => ({ model: modifyFields(model, { idle: () => beats }) }),
-      Servers: (): Return => ({ model }),
-      ServerNote: ({ note }): Return => ({ model: modifyFields(model, { fault: () => Option.some(note) }) }),
+      Servers: ({ servers }): Return => ({ model: modifyFields(model, { servers: () => servers }) }),
+      ServerNote: ({ note, authUrl }): Return => ({
+        model: modifyFields(model, {
+          draft: (draft) => ({ ...draft, pending: false, note: Option.some(note), authUrl: Option.fromNullishOr(authUrl) }),
+        }),
+      }),
     }),
   );
 
@@ -120,7 +135,26 @@ export const update = (model: Model, message: Message): Return =>
       model: modifyFields(model, { camera: (on) => !on }),
       commands: model.connected ? [Send({ frame: { _tag: 'Camera', on: !model.camera } })] : [],
     }),
-    ClickedSheet: () => ({ model: modifyFields(model, { sheet: (open) => !open }) }),
+    ClickedSheet: () => (model.sheet ? { model: modifyFields(model, { sheet: () => false }) } : openSheet(model)),
+    PressedCommandK: () => (model.sheet ? { model: modifyFields(model, { sheet: () => false }) } : openSheet(model)),
+    PickedTab: ({ tab }) => ({ model: modifyFields(model, { tab: () => tab, query: () => '' }) }),
+    SteppedTab: ({ by }) => ({ model: modifyFields(model, { tab: (tab) => stepTab(tab, by) }) }),
+    TypedQuery: ({ query }) => ({ model: modifyFields(model, { query: () => query }) }),
+    TypedServerUrl: ({ url }) => ({ model: modifyFields(model, { draft: (draft) => ({ ...draft, url, note: Option.none() }) }) }),
+    TypedServerToken: ({ token }) => ({ model: modifyFields(model, { draft: (draft) => ({ ...draft, token }) }) }),
+    SubmittedServer: () =>
+      model.draft.url.trim() === '' || !model.connected
+        ? { model: modifyFields(model, { draft: (draft) => ({ ...draft, note: Option.some(model.connected ? 'Paste the server URL first.' : 'Wake hark first, then add a server.') }) }) }
+        : {
+            model: modifyFields(model, { draft: () => ({ ...emptyDraft, pending: true, url: model.draft.url }) }),
+            commands: [Send({ frame: { _tag: 'AddServer', name: '', url: model.draft.url.trim(), token: model.draft.token.trim() } })],
+          },
+    ClickedEnablePush: () => ({ model, commands: [AskPush()] }),
+    ChangedPush: ({ push }) => ({ model: modifyFields(model, { push: () => push }) }),
+    ClickedRemoveServer: ({ id }) => ({
+      model: modifyFields(model, { servers: (servers) => servers.filter((server) => server.id !== id) }),
+      commands: model.connected ? [Send({ frame: { _tag: 'RemoveServer', id } })] : [],
+    }),
     ClosedSheet: () => ({ model: modifyFields(model, { sheet: () => false }) }),
     PickedVoice: ({ voice }) => configure(model, { ...settingsOf(model), voice }),
     PickedBrain: ({ brain }) => configure(model, { ...settingsOf(model), brain }),

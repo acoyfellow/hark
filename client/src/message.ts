@@ -1,6 +1,7 @@
 import { Schema } from 'effect';
 import { defineMessageUnion } from 'foldkit/message';
 import { Brain, ServerFrame, SpeechEngine, Voice } from '../../shared/protocol';
+import { PushState, SettingsTab } from './model';
 
 export const Message = defineMessageUnion({
   ClickedOrb: {},
@@ -9,6 +10,16 @@ export const Message = defineMessageUnion({
   ClickedCamera: {},
   ClickedSheet: {},
   ClosedSheet: {},
+  PressedCommandK: {},
+  PickedTab: { tab: SettingsTab },
+  SteppedTab: { by: Schema.Number },
+  TypedQuery: { query: Schema.String },
+  TypedServerUrl: { url: Schema.String },
+  TypedServerToken: { token: Schema.String },
+  SubmittedServer: {},
+  ClickedRemoveServer: { id: Schema.String },
+  ClickedEnablePush: {},
+  ChangedPush: { push: PushState },
   PickedVoice: { voice: Voice },
   PickedBrain: { brain: Brain },
   PickedEngine: { engine: SpeechEngine },
