@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it } from 'vitest';
 import { extraScopesFrom, hasRequiredScopes, REQUIRED_SCOPES, requestedScopes, SCOPES } from '../../src/auth/oauth';
 
 const client = { clientId: 'c', clientSecret: 's', redirectUri: 'https://hark.example/oauth/callback' };
