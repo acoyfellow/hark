@@ -37,12 +37,14 @@ sed "s/\"name\": \"hark\"/\"name\": \"hark-$instance\"/" wrangler.jsonc \
 
 vars=(--var "OAUTH_CLIENT_ID:$HARK_OAUTH_CLIENT_ID")
 
-if [ "${HARK_ALL_SCOPES:-1}" = 1 ]; then
+if [ "${HARK_ALL_SCOPES:-0}" = 1 ]; then
   vars+=(--var "OAUTH_EXTRA_SCOPES:all")
 elif [ -n "${HARK_EXTRA_SCOPES_FILE:-}" ]; then
   extra=$(grep "^hark-$instance: \|^${HARK_SCOPES_CLIENT:-hark}: " "$HARK_EXTRA_SCOPES_FILE" | head -1 | cut -d' ' -f2-)
   [ -n "$extra" ] || { echo "no scopes for ${HARK_SCOPES_CLIENT:-hark} in $HARK_EXTRA_SCOPES_FILE" >&2; exit 2; }
   vars+=(--var "OAUTH_EXTRA_SCOPES:$extra")
+else
+  vars+=(--var "OAUTH_EXTRA_SCOPES:$(tr -s ' \n' ' ' < scripts/demo-scopes.txt | sed 's/ $//')")
 fi
 
 if [ "${HARK_DEPLOY_AS:-domain}" = route ]; then
