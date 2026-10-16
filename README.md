@@ -64,6 +64,12 @@ mic ─▶ AudioWorklet: 16 kHz PCM, 80 ms frames ─▶ WebSocket ─▶ your D
 | "Paint me a lighthouse in a storm" | The picture appears on your screen | FLUX.2 klein, your account |
 | "Talk like a man" / "Use the Orion voice" | It switches voice mid-conversation | Aura, your account |
 | "Thanks, that's all" | It says goodbye and closes the microphone | |
+| "Scaffold a node project and run it" | It works in your own durable Linux computer and shows a terminal card. `/workspace` survives restarts | Containers, on your Durable Object |
+| "Search the web for what's new in Workers" | A sources card and a short spoken answer | Web search from your computer |
+| "Open example.com" | A browser card with a screenshot or the page text | Browser Rendering on your token, or your computer |
+| "Give me a status report on my account" | It calls the Cloudflare API with your sign-in and shows a report card. It asks before it deletes or changes anything | Cloudflare API, your token |
+| "Build me a 3D rocket" | It sculpts the object from parts in the embers and spins it | Your browser |
+| "Make that your resting shape" | The swarm loops it whenever nothing else is showing | Durable Object SQLite |
 
 ## Built on Cloudflare
 
@@ -86,6 +92,7 @@ The same shape as coil's `cloudflare` mode, ported module for module (`src/auth/
 2. `/oauth/callback` exchanges the code, reads your user and your first granted account, and picks an AI Gateway **with authentication on** (`HARK_USER_GATEWAY` first if set, then `default`). If there is none, it tells you how to turn one on.
 3. The grant (account, gateway, access and refresh tokens) goes into the `Directory` Durable Object. Your browser gets only an HMAC-signed `__Host-hark_session` cookie.
 4. Your `Hark` Durable Object reads the grant when it wakes and refreshes the token a minute before it expires. Signing out revokes it at Cloudflare.
+5. Workers AI (`offline_access ai.read ai.write`) is the only thing hark needs. Set `OAUTH_EXTRA_SCOPES` to ask for more, for example `workers_scripts.write zone.read browser.write`, so the agent can do real work on your account. Your OAuth client must allow each scope first (dashboard, Manage account, OAuth clients). A product that refuses the token does not sign you out.
 
 ## Deploy
 
