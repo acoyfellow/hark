@@ -4,6 +4,10 @@ import { type Env, LOCAL_HEADER, LOCAL_OWNER, OWNER_HEADER, TRACE_HEADER } from 
 import { signInPage } from './auth/sign-in-page';
 import { appPage } from './ui/page';
 import { MCP_CALLBACK_PATH } from './mcp-servers';
+import { brandPage } from './site/brand-page';
+import { docsPage } from './site/docs-page';
+import { notFoundResponse } from './site/not-found-page';
+import { htmlResponse } from './site/tokens';
 
 export { Directory } from './directory';
 export { Hark } from './hark';
@@ -12,6 +16,20 @@ export { HarkBridge } from './workbench';
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 
 const PUBLIC = /^\/(brand|icons|audio|app)\/|^\/(manifest\.webmanifest|robots\.txt|favicon\.ico)$/u;
+
+const SITE_PAGES: Record<string, () => string> = { '/docs': docsPage, '/brand': brandPage };
+
+const sitePage = (request: Request) => {
+  const page = request.method === 'GET' ? SITE_PAGES[new URL(request.url).pathname.replace(/\/$/u, '')] : undefined;
+
+  return page === undefined ? null : htmlResponse(page());
+};
+
+const KNOWN_ROUTES = /^\/(|oauth\/(login|callback|logout|me)|mcp\/callback|__[a-z]+)$/u;
+
+const isKnownRoute = (pathname: string) => KNOWN_ROUTES.test(pathname) || AGENT_PATH.test(pathname);
+
+const orNotFound = (response: Response) => (response.status === 404 ? notFoundResponse() : response);
 
 const isLoopback = (request: Request) => LOCAL_HOSTS.has(new URL(request.url).hostname);
 
@@ -101,21 +119,24 @@ const route = async (request: Request, env: Env, owner: string, local: boolean):
     return agent.finishServerSignIn(request);
   }
 
+  if (local && pathname === '/' && new URL(request.url).searchParams.has('signed-out')) return htmlResponse(signInPage({ origin: new URL(request.url).origin }));
+
   if (pathname === '/' && request.method === 'GET') return appPage(new URL(request.url).origin, local);
 
-  if (local && pathname === '/welcome')
-    return new Response(signInPage({ origin: new URL(request.url).origin }), {
-      headers: { 'content-type': 'text/html; charset=utf-8' },
-    });
-
-  return env.ASSETS.fetch(request);
+  return orNotFound(await env.ASSETS.fetch(request));
 };
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const { pathname } = new URL(request.url);
 
-    if (PUBLIC.test(pathname)) return secured(await env.ASSETS.fetch(request));
+    if (PUBLIC.test(pathname)) return secured(orNotFound(await env.ASSETS.fetch(request)));
+
+    const site = sitePage(request);
+
+    if (site !== null) return secured(site);
+
+    if (!isKnownRoute(pathname)) return secured(notFoundResponse());
 
     if (isLocalDev(request, env)) return secured(await route(request, env, LOCAL_OWNER, true));
 

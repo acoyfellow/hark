@@ -63,6 +63,7 @@ export const FEATURES: readonly FeatureGroup[] = [
     features: [
       { name: 'Remembers', line: 'Facts you share stay between calls.', status: 'tested' },
       { name: 'Timers', line: 'Durable alarms that speak when they end.', status: 'tested' },
+      { name: 'Push notifications', line: 'A timer or a finished job reaches your phone, even with hark closed.', status: 'todo' },
       { name: 'Looks through your camera', line: 'One frame, only when you ask.', status: 'tested' },
       { name: 'Your own MCP servers', line: '"Connect my server" and its tools are yours by voice.', status: 'works' },
       { name: 'See all your tools', line: 'A list on the side, so you know what to ask for.', status: 'todo' },

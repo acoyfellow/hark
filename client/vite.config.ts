@@ -14,6 +14,7 @@ export default defineConfig({
       input: {
         entry: fileURLToPath(new URL('./src/entry.ts', import.meta.url)),
         welcome: fileURLToPath(new URL('./src/welcome.ts', import.meta.url)),
+        site: fileURLToPath(new URL('./src/site.css', import.meta.url)),
       },
     },
   },

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 248 64" fill="none" role="img" aria-label="hark">
+  <defs>
+    <radialGradient id="core" cx="0.38" cy="0.36" r="0.75"><stop offset="0" stop-color="#fff4e3"/><stop offset="0.45" stop-color="#fbad41"/><stop offset="1" stop-color="#f38020"/></radialGradient>
+    <linearGradient id="arc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbad41"/><stop offset="1" stop-color="#f38020"/></linearGradient>
+  </defs>
+  <circle cx="16" cy="36" r="7.5" fill="url(#core)"/>
+  <path d="M26.5 25.5a14.8 14.8 0 0 1 0 21" stroke="url(#arc)" stroke-width="4.4" stroke-linecap="round"/>
+  <path d="M33.8 18.2a25 25 0 0 1 0 35.6" stroke="url(#arc)" stroke-width="4.4" stroke-linecap="round" opacity="0.6"/>
+  <g transform="translate(56 2)" stroke="#1c140e" stroke-width="7.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 6V58"/>
+    <path d="M6 40a16 16 0 0 1 32 0V58"/>
+    <circle cx="68" cy="41.5" r="16"/>
+    <path d="M84 26V58"/>
+    <path d="M102 58V27"/>
+    <path d="M102 43a17 17 0 0 1 24-15.5"/>
+    <path d="M140 6V58"/>
+    <path d="M170 27 142.5 47.5"/>
+    <path d="M153 40 171 58"/>
+  </g>
+</svg>

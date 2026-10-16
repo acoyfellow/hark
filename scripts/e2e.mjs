@@ -422,11 +422,11 @@ await scenario('the phone never zooms or scrolls: double tap, pinch and swipe le
 await scenario('the landing page offers Sign in with Cloudflare on desktop and phone', async () => {
   const landing = await context.newPage();
 
-  await landing.goto(`${BASE}/welcome`);
+  await landing.goto(`${BASE}/?signed-out`);
   await landing.locator('#sign-in').waitFor();
   await landing.waitForTimeout(800);
   await landing.screenshot({ path: `${SHOTS}/landing-desktop.png` });
-  await mobile.goto(`${BASE}/welcome`);
+  await mobile.goto(`${BASE}/?signed-out`);
   await mobile.locator('#sign-in').waitFor();
   await mobile.waitForTimeout(800);
   await mobile.screenshot({ path: `${SHOTS}/landing-phone.png`, fullPage: true });

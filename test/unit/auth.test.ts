@@ -41,7 +41,7 @@ describe('Sign in with Cloudflare (same shape as coil)', () => {
     const signed = await sign(SECRET, JSON.stringify({ owner: 'cf:1', expires: Date.now() + 1000, id: 'x' }));
 
     expect(parseSession(await unsign(SECRET, signed))?.owner).toBe('cf:1');
-    expect(await unsign(SECRET, `${signed.slice(0, -2)}00`)).toBeNull();
+    expect(await unsign(SECRET, `${signed.slice(0, -6)}${signed.slice(-6) === 'AAAAAA' ? 'BBBBBB' : 'AAAAAA'}`)).toBeNull();
     expect(await unsign('b'.repeat(40), signed)).toBeNull();
     expect(readCookie(new Request('https://x', { headers: { cookie: 'a=1; __Host-hark_session=v%3D' } }), '__Host-hark_session')).toBe('v=');
   });

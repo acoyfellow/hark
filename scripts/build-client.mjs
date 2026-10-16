@@ -13,11 +13,14 @@ const welcome = entryNamed('welcome');
 if (!entry || !welcome) throw new Error('vite did not produce both the app and welcome entries');
 
 const css = entry.css?.[0];
+const site = Object.values(manifest).find((chunk) => chunk.isEntry && chunk.src?.endsWith('site.css'));
+
+if (!site) throw new Error('vite produced no site stylesheet');
 
 if (!css) throw new Error('vite produced no stylesheet');
 
 writeFileSync(
   'src/ui/app.generated.ts',
-  `export const APP_ENTRY = ${JSON.stringify(`/app/${entry.file}`)};\nexport const APP_CSS = ${JSON.stringify(`/app/${css}`)};\nexport const WELCOME_ENTRY = ${JSON.stringify(`/app/${welcome.file}`)};\n`,
+  `export const APP_ENTRY = ${JSON.stringify(`/app/${entry.file}`)};\nexport const APP_CSS = ${JSON.stringify(`/app/${css}`)};\nexport const WELCOME_ENTRY = ${JSON.stringify(`/app/${welcome.file}`)};\nexport const SITE_CSS = ${JSON.stringify(`/app/${site.file}`)};\n`,
 );
 console.log(`client /app/${entry.file} /app/${css}`);
