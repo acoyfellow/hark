@@ -32,7 +32,7 @@ import { CLOUDFLARE_ORIGINS, type Credentials, type Origins, type Upstream, Upst
 import { userAI } from './user-ai';
 import { judgeQuestion, type McpPort } from './tools';
 import { MAX_FILE_BYTES, runOnBench } from './workbench';
-import { describeScene, recognised, type Scene, SIGHT_MODEL, sceneKey, sceneOf, sightLine, sightQuestions, type Taught, taughtExamples, withRecognised } from './scene';
+import { describeScene, type Scene, SIGHT_MODEL, SIGHT_QUESTIONS, sceneKey, sceneOf, sightLine } from './scene';
 import { EchoGatedTranscriber, SpokenRecord } from './echo-gate';
 
 const HISTORY_KEEP = 24;
@@ -115,7 +115,6 @@ export class Hark extends VoiceAgent<Env> {
     this.sql`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS missed (label TEXT NOT NULL, at INTEGER NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS files (path TEXT PRIMARY KEY, content TEXT NOT NULL, at INTEGER NOT NULL)`;
-    this.sql`CREATE TABLE IF NOT EXISTS sight_labels (label TEXT PRIMARY KEY, description TEXT NOT NULL, example TEXT, at INTEGER NOT NULL)`;
   }
 
   override onConnect(connection: Connection, context: ConnectionContext) {
@@ -266,13 +265,6 @@ export class Hark extends VoiceAgent<Env> {
     };
   }
 
-  async teachProbe(input: { label: string; description: string; example: string | null; forget?: boolean }) {
-    if (input.forget === true) this.sql`DELETE FROM sight_labels WHERE label = ${input.label}`;
-    else this.sql`INSERT INTO sight_labels (label, description, example, at) VALUES (${input.label}, ${input.description}, ${input.example}, ${Date.now()}) ON CONFLICT(label) DO UPDATE SET description = excluded.description, example = excluded.example, at = excluded.at`;
-
-    return { taught: this.taught().map((each) => each.label) };
-  }
-
   async glanceProbe(owner: string, src: string) {
     const caller: Caller = { owner, local: owner === LOCAL_OWNER, traced: false, timeZone: 'UTC', locale: 'en-US', camera: true, firstTurn: false };
     const grant = await this.grantFor(caller);
@@ -280,9 +272,8 @@ export class Hark extends VoiceAgent<Env> {
     if (grant === null) return { error: 'not signed in' };
 
     const started = Date.now();
-    const raw = await upstream(this.credentials(caller, grant), this.origins(caller)).judge(this.sightRequest(src), AbortSignal.timeout(6000), SIGHT_MODEL);
-    const base = sceneOf(raw, Date.now());
-    const scene = base === null ? null : withRecognised(base, recognised(raw, this.taught()));
+    const raw = await upstream(this.credentials(caller, grant), this.origins(caller)).judge({ images: [src], state: { task: 'what the camera sees right now' }, questions: SIGHT_QUESTIONS }, AbortSignal.timeout(6000), SIGHT_MODEL);
+    const scene = sceneOf(raw, Date.now());
 
     return { ms: Date.now() - started, scene, prompt: sightLine(scene, Date.now()) };
   }
@@ -295,9 +286,8 @@ export class Hark extends VoiceAgent<Env> {
     const started = Date.now();
 
     try {
-      const raw = await this.live.judge(this.sightRequest(src), AbortSignal.timeout(4000), SIGHT_MODEL);
-      const base = sceneOf(raw, Date.now());
-      const scene = base === null ? null : withRecognised(base, recognised(raw, this.taught()));
+      const raw = await this.live.judge({ images: [src], state: { task: 'what the camera sees right now' }, questions: SIGHT_QUESTIONS }, AbortSignal.timeout(4000), SIGHT_MODEL);
+      const scene = sceneOf(raw, Date.now());
 
       if (scene === null) return;
 
@@ -414,16 +404,6 @@ export class Hark extends VoiceAgent<Env> {
     if (name === 'mcp_call') return port.call(text('server'), text('tool'), typeof args.args === 'object' && args.args !== null ? (args.args as Record<string, unknown>) : {});
 
     throw new Error(`no capability ${name}`);
-  }
-
-  private taught(): Taught[] {
-    return this.sql<{ label: string; description: string; example: string | null }>`SELECT label, description, example FROM sight_labels ORDER BY at`;
-  }
-
-  private sightRequest(src: string) {
-    const taught = this.taught();
-
-    return { images: [src, ...taughtExamples(taught).map((each) => each.example ?? '')], state: { task: 'what the camera sees right now' }, questions: sightQuestions(taught) };
   }
 
   private sightMessages(caller: Caller): ChatMessage[] {
@@ -608,19 +588,6 @@ export class Hark extends VoiceAgent<Env> {
       judge: (request) => this.requireLive().judge(request, AbortSignal.timeout(20_000)),
       mcp: this.mcpPort(),
       runCode: async (code) => JSON.stringify(await runOnBench(this.env, this.name, code)),
-      teach: (label, description, example) => {
-        this.sql`INSERT INTO sight_labels (label, description, example, at) VALUES (${label}, ${description}, ${example}, ${Date.now()}) ON CONFLICT(label) DO UPDATE SET description = excluded.description, example = COALESCE(excluded.example, sight_labels.example), at = excluded.at`;
-
-        return this.taught().length;
-      },
-      unteach: (label) => {
-        const before = this.taught().length;
-
-        this.sql`DELETE FROM sight_labels WHERE label = ${label}`;
-
-        return before - this.taught().length;
-      },
-      taught: () => this.taught().map((each) => each.label),
       setVoice: (voice) => {
         const current = this.settings();
         const engine = voicesFor(current.engine).includes(voice) ? current.engine : current.engine === 'aura-1' ? 'aura-2' : 'aura-1';

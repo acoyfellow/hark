@@ -14,51 +14,6 @@ const GESTURES = ['none', 'wave', 'thumbs up', 'thumbs down', 'pointing', 'peace
 
 const PLACES = ['desk or office', 'kitchen', 'living room', 'bedroom', 'outdoors', 'car', 'screen or webpage', 'dark or covered', 'other'] as const;
 
-export type Taught = { readonly label: string; readonly description: string; readonly example: string | null };
-
-export const MAX_TAUGHT_EXAMPLES = 3;
-
-export const taughtExamples = (taught: readonly Taught[]) => taught.filter((each) => each.example !== null).slice(-MAX_TAUGHT_EXAMPLES);
-
-const exampleNote = (taught: readonly Taught[]) => {
-  const shown = taughtExamples(taught);
-
-  return shown.length === 0 ? '' : ` Image 1 is the live camera. ${shown.map((each, index) => `Image ${index + 2} is the person's own example of "${each.label}".`).join(' ')}`;
-};
-
-export const TAUGHT_MIN_P = 0.7;
-
-const taughtId = (index: number) => `taught_${index}`;
-
-export const sightQuestions = (taught: readonly Taught[]) => {
-  const shown = taughtExamples(taught);
-  const imageOf = (each: Taught) => shown.indexOf(each);
-
-  return {
-    ...SIGHT_QUESTIONS,
-    ...Object.fromEntries(
-      taught.map((each, index) => [
-        taughtId(index),
-        {
-          type: 'noul',
-          instructions:
-            imageOf(each) === -1
-              ? `Is "${each.label}" (${each.description || each.label}) visible in image 1, the live camera?`
-              : `Image ${imageOf(each) + 2} is the person's own example of "${each.label}" (${each.description || each.label}). Is ${each.label}, or an item that looks like it, visible in image 1?`,
-        },
-      ]),
-    ),
-  };
-};
-
-export const recognised = (raw: unknown, taught: readonly Taught[]): { readonly label: string; readonly p: number } | null => {
-  const answers = record(record(raw).answers) as Record<string, Answer>;
-  const scored = taught.map((each, index) => ({ label: each.label, p: answers[taughtId(index)]?.noul ?? 0 })).toSorted((a, b) => b.p - a.p);
-  const best = scored[0];
-
-  return best !== undefined && best.p >= TAUGHT_MIN_P ? best : null;
-};
-
 export const SIGHT_QUESTIONS = {
   person: { type: 'noul', instructions: 'Is a person visible in the camera view?' },
   holding: { type: 'choice', instructions: 'What is the main object the person holds up or shows to the camera, or the main object in the center?', criteria: options(OBJECTS) },
@@ -87,9 +42,6 @@ const choiceOf = (answer: Answer | undefined, fallback: string) => {
 
   return { choice, p: answer?.probabilities?.[choice] ?? 0 };
 };
-
-export const withRecognised = (scene: Scene, known: { readonly label: string; readonly p: number } | null): Scene =>
-  known === null ? scene : { ...scene, holding: known.label, confidence: { ...scene.confidence, holding: known.p } };
 
 export const sceneOf = (raw: unknown, at: number): Scene | null => {
   const answers = record(record(raw).answers) as Record<string, Answer>;
@@ -120,7 +72,6 @@ export const describeScene = (scene: Scene): string => {
   parts.push(scene.person >= 0.5 ? 'a person is in view' : 'no person is in view');
 
   if (sure(scene, 'holding') && scene.holding !== 'nothing in particular') parts.push(`they are showing ${scene.holding}`);
-
 
   if (scene.person >= 0.5 && sure(scene, 'mood') && scene.mood !== 'no face') parts.push(`they look ${scene.mood}`);
 

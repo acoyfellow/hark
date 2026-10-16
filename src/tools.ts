@@ -19,9 +19,6 @@ export type ToolHost = {
   readonly judge: (request: Record<string, unknown>) => Promise<unknown>;
   readonly mcp: McpPort;
   readonly runCode: (code: string) => Promise<string>;
-  readonly teach: (label: string, description: string, example: string | null) => number;
-  readonly unteach: (label: string) => number;
-  readonly taught: () => readonly string[];
   readonly setVoice: (voice: Voice) => void;
   readonly fetch: typeof fetch;
   readonly id: () => string;
@@ -530,45 +527,6 @@ const runCode: Definition = {
   run: async (args, host) => ({ content: (await host.runCode(str(args.code))).slice(0, MCP_RESULT_LIMIT) }),
 };
 
-const MAX_LABEL = 40;
-
-const teachSight: Definition = {
-  name: 'teach_sight',
-  label: (args) => `Learning ${str(args.label, 'that')}`,
-  description: [
-    'Teach your live camera vision a new thing, for this person only. Use it when they say "this is my ...", "remember what this is", "learn this", or correct you ("no, that is a ...").',
-    'It saves the label, a short visual description, and the current camera frame as an example. From then on your live vision recognises it.',
-    'action "teach" (default) needs label and description. action "forget" removes a label. action "list" shows what you have learned.',
-  ].join('\n'),
-  parameters: object(
-    {
-      action: { type: 'string', enum: ['teach', 'forget', 'list'] },
-      label: { type: 'string', description: `Short name, up to ${MAX_LABEL} characters, like "my blue mug" or "Biscuit the dog".` },
-      description: { type: 'string', description: 'What it looks like, in a few words, so it can be told apart.' },
-    },
-    [],
-  ),
-  run: async (args, host) => {
-    const action = str(args.action, 'teach');
-    const label = str(args.label).slice(0, MAX_LABEL);
-
-    if (action === 'list') {
-      const known = host.taught();
-
-      return { content: known.length === 0 ? 'You have not learned anything yet.' : `You have learned: ${known.join(', ')}.` };
-    }
-
-    if (label === '') return { content: 'Give it a label.' };
-
-    if (action === 'forget') return { content: host.unteach(label) > 0 ? `Forgot ${label}.` : `You did not know ${label}.` };
-
-    const example = await host.look();
-    const count = host.teach(label, str(args.description).slice(0, 200), example);
-
-    return { content: `Learned ${label}${example === null ? ' from the description only, since the camera is off' : ' with this camera frame as an example'}. You now know ${count} things. Say so briefly.` };
-  },
-};
-
 const rest: Definition = {
   name: 'rest',
   label: () => 'Going quiet',
@@ -591,7 +549,6 @@ export const TOOLS: readonly Definition[] = [
   judge,
   mcp,
   runCode,
-  teachSight,
   rest,
 ];
 

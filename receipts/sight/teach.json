@@ -1,9 +1,0 @@
-{
-  "measuredAgainst": "real Workers AI clef-flash on the signed-in account, local dev, generated webcam-style frames",
-  "before": { "test-otto": "toy 0.60", "test-duck": "toy 0.72" },
-  "afterTeachingOtto": { "test-otto": "Otto the octopus 0.92", "test-duck": "toy (Otto rejected)", "mug": "toy (Otto rejected)" },
-  "afterTeachingOttoAndQuackers": { "test-otto": "Otto the octopus 0.91", "test-duck-2": "Quackers 0.92", "mug": "neither" },
-  "rawSameItemProbability": { "clef-flash": { "otto": 0.93, "duck": 0.03, "mug": 0.02 }, "clef": { "otto": 0.98, "duck": 0.02, "mug": 0.01 } },
-  "glanceMs": [553, 606, 612, 675, 914],
-  "brainCallsTeach": { "gpt-6-luna": "teach_sight label my hand, 3.2s", "claude-sonnet-5-5": "teach_sight label my hand plus a hand emoji, 4.0s" }
-}

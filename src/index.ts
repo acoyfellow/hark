@@ -75,12 +75,6 @@ const route = async (request: Request, env: Env, owner: string, local: boolean):
 
   if (isLoopback(request) && pathname === '/__trace' && request.method === 'POST') return browserTrace(request);
 
-  if (isLoopback(request) && pathname === '/__teach' && request.method === 'POST') {
-    const agent = await getAgentByName(env.HARK, owner);
-
-    return Response.json(await agent.teachProbe(await request.json()));
-  }
-
   if (isLoopback(request) && pathname === '/__glance' && request.method === 'POST') {
     const agent = await getAgentByName(env.HARK, owner);
 
