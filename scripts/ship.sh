@@ -32,7 +32,8 @@ config="wrangler.$instance.local.jsonc"
 [ "${HARK_SKIP_CHECK:-0}" = 1 ] || bash scripts/check.sh
 [ "${HARK_SKIP_CHECK:-0}" != 1 ] || node scripts/build-client.mjs
 
-sed "s/\"name\": \"hark\"/\"name\": \"hark-$instance\"/" wrangler.jsonc > "$config"
+sed "s/\"name\": \"hark\"/\"name\": \"hark-$instance\"/" wrangler.jsonc \
+  | sed "s#\"dockerfile\": \"./computer/Dockerfile\" }#\"dockerfile\": \"./computer/Dockerfile\", \"build_vars\": { \"APK_PLAIN_HTTP\": \"${HARK_APK_PLAIN_HTTP:-1}\" } }#" > "$config"
 
 vars=(--var "OAUTH_CLIENT_ID:$HARK_OAUTH_CLIENT_ID")
 
