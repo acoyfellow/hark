@@ -1,0 +1,21 @@
+client/src/view/command.ts
+  s_ca5a6532cca4b3::t_abfc01f04bb2b2 123-131
+scripts/local-signin.sh
+  s_ca5a6532cca4b3::t_f45af44def2af5 8-9,12,14,20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "8d27db62785a2ab80e2e06b34f46e2351ef43055",
+  "prompts": {},
+  "sessions": {
+    "s_ca5a6532cca4b3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a13c32-5367-7000-8a26-f0799dfcdedc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
