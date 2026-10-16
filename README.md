@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="docs/brand/hark-mark.svg" width="96" alt="">
+</p>
+
+<p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/brand/hark-wordmark.svg">
     <img src="docs/brand/hark-wordmark-dark.svg" width="230" alt="hark">
@@ -109,6 +113,25 @@ bun run e2e    # real Chromium, fake microphone, the whole conversation
 - Echo cancellation depends on your browser and speakers.
 - One tab at a time. No wake word.
 - It keeps the last 24 messages as text. It never stores audio or camera frames.
+
+## Brand
+
+<img src="docs/brand/hark-social.png" alt="The hark social card: the wordmark, Talk to it. It talks back., and the eight-block mark.">
+
+- **The mark is eight blocks.** Seven grey, one orange. At rest the orange block waits over its slot. Call hark and the blocks flow apart, listen, melt, roll, stack to speak, then pour back.
+- **At rest it is exact. In motion it may be loose.** Icons, the favicon and anything 32 px or smaller use the rest shape. With reduced motion on, the page shows only the rest shape.
+- **Duotone.** One orange (`#ff5200` on dark, `#d93d00` on light), black `#0b0b0b`, white, and a few greys. Nothing else.
+- **Pure SVG.** The motion is SMIL inside the file, so `hark-mark.svg` moves as an `<img>` with no script.
+- **See every asset in one place** at [`/brand`](https://hark.coey.dev/brand).
+
+| File | Use |
+| --- | --- |
+| [`docs/brand/hark-mark.svg`](docs/brand/hark-mark.svg) | The mark, moving |
+| [`public/brand/hark-mark-still.svg`](public/brand/hark-mark-still.svg) | The mark at rest |
+| [`docs/brand/hark-wordmark.svg`](docs/brand/hark-wordmark.svg), [`-dark.svg`](docs/brand/hark-wordmark-dark.svg) | Wordmark for dark and for light backgrounds |
+| [`docs/brand/hark-icon.svg`](docs/brand/hark-icon.svg), [`-maskable.svg`](docs/brand/hark-icon-maskable.svg) | Sources for the PWA icons |
+| [`public/icons/`](public/icons) | Favicon, app icons, apple-touch icon |
+| [`src/site/blocks.ts`](src/site/blocks.ts) | The code that draws the mark. Change it, then run `bun scripts/build-mark.ts && node scripts/build-icons.mjs && node scripts/build-social.mjs` |
 
 ## Where things live
 
