@@ -21,7 +21,6 @@ export const Model = Schema.Struct({
   note: Schema.Option(Schema.String),
   camera: Schema.Boolean,
   cameraLive: Schema.Boolean,
-  sight: Schema.Option(Schema.String),
   sheet: Schema.Boolean,
   now: Schema.Number,
 });

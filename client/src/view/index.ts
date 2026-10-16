@@ -112,13 +112,7 @@ const preview = (h: H, model: Model): Html =>
   model.cameraLive
     ? h.div(
         [h.Class('preview-in absolute top-[max(5rem,calc(env(safe-area-inset-top)+4rem))] left-5 z-20 w-28 overflow-hidden rounded-2xl border border-white/15 shadow-2xl md:left-8 md:w-44')],
-        [
-          h.video([h.Muted(true), h.Autoplay(true), h.Playsinline(true), h.Class('aspect-[3/4] w-full object-cover md:aspect-video'), h.OnMount(Preview())], []),
-          Option.match(model.sight, {
-            onNone: () => h.empty,
-            onSome: (summary) => h.p([h.Id('sight'), h.Class('bg-black/55 px-2 py-1 font-mono text-[9px] leading-tight text-[var(--e5)]/80')], [summary]),
-          }),
-        ],
+        [h.video([h.Muted(true), h.Autoplay(true), h.Playsinline(true), h.Class('aspect-[3/4] w-full object-cover md:aspect-video'), h.OnMount(Preview())], [])],
       )
     : h.empty;
 

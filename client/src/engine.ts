@@ -107,8 +107,6 @@ export const startEngine = async (hooks: EngineHooks, camera: boolean): Promise<
 
   send({ _tag: 'Hello', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, locale: navigator.language, camera });
 
-  const stopGlancing = startGlancing(send);
-
   try {
     await client.startCall();
   } catch (cause) {
@@ -139,7 +137,6 @@ export const startEngine = async (hooks: EngineHooks, camera: boolean): Promise<
           client.addEventListener('statuschange', onChange);
         });
 
-      stopGlancing();
       client.endCall();
       client.disconnect();
       meter.mic = 0;
@@ -167,55 +164,6 @@ export const stopCamera = (stream: MediaStream) => {
   for (const track of stream.getTracks()) track.stop();
 
   if (cameraStream === stream) cameraStream = null;
-};
-
-const GLANCE_EVERY_MS = 1500;
-
-const GLANCE_SIZE = 384;
-
-export const glanceFrame = (video: HTMLVideoElement): string | null => {
-  if (video.videoWidth === 0) return null;
-
-  const scale = Math.min(1, GLANCE_SIZE / Math.max(video.videoWidth, video.videoHeight));
-  const canvas = document.createElement('canvas');
-
-  canvas.width = Math.round(video.videoWidth * scale);
-  canvas.height = Math.round(video.videoHeight * scale);
-  canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-  return canvas.toDataURL('image/jpeg', 0.6);
-};
-
-const startGlancing = (send: (frame: ClientFrame) => void) => {
-  const video = document.createElement('video');
-  let watching: MediaStream | null = null;
-
-  video.muted = true;
-  video.playsInline = true;
-
-  const timer = setInterval(() => {
-    if (cameraStream === null) {
-      watching = null;
-      video.srcObject = null;
-      return;
-    }
-
-    if (watching !== cameraStream) {
-      watching = cameraStream;
-      video.srcObject = cameraStream;
-      void video.play().catch(() => undefined);
-      return;
-    }
-
-    const src = glanceFrame(video);
-
-    if (src !== null) send({ _tag: 'Glance', src });
-  }, GLANCE_EVERY_MS);
-
-  return () => {
-    clearInterval(timer);
-    video.srcObject = null;
-  };
 };
 
 export const snapshot = async (): Promise<string | null> => {

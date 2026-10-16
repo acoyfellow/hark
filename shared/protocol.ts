@@ -166,7 +166,6 @@ export const ServerFrame = Schema.Union([
   Schema.TaggedStruct('Measured', { latency: Latency }),
   Schema.TaggedStruct('Fault', { reason: Schema.String, fatal: Schema.Boolean }),
   Schema.TaggedStruct('Sleep', { reason: Schema.String }),
-  Schema.TaggedStruct('Sight', { summary: Schema.String, holding: Schema.String, mood: Schema.String, gesture: Schema.String, person: Schema.Boolean, ms: Schema.Number }),
 ]);
 
 export type ServerFrame = typeof ServerFrame.Type;
@@ -181,7 +180,6 @@ export const ClientFrame = Schema.Union([
   Schema.TaggedStruct('Snapped', { id: Schema.String, src: Schema.NullOr(Schema.String) }),
   Schema.TaggedStruct('Configure', { settings: Settings }),
   Schema.TaggedStruct('Camera', { on: Schema.Boolean }),
-  Schema.TaggedStruct('Glance', { src: Schema.String }),
   Schema.TaggedStruct('Hush', {}),
 ]);
 
