@@ -1,7 +1,8 @@
 import { WELCOME_ENTRY } from '../ui/app.generated';
 import { FEATURES, type FeatureGroup } from '../../shared/features';
 import { TOOL_CATALOG, TOOL_GROUPS, type ToolGroup } from '../../shared/tool-catalog';
-import { siteLayout } from '../site/layout';
+import { CLOUDFLARE_MARK, mark } from '../site/duotone';
+import { accent, siteLayout } from '../site/layout';
 
 const escapeHtml = (value: string) =>
   value
@@ -10,10 +11,6 @@ const escapeHtml = (value: string) =>
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;');
 
-const CLOUDFLARE_CLOUD = '<img class="block h-[22px] w-auto flex-none" src="/brand/cloudflare-cloud.svg" alt="" width="44" height="20">';
-
-const CLOUDFLARE_FULL =
-  '<img class="on-dark h-[30px] w-auto flex-none opacity-90" src="/brand/cloudflare-logo.svg" alt="Cloudflare" width="96" height="32"><img class="on-light h-[30px] w-auto flex-none" src="/brand/cloudflare-logo-on-light.svg" alt="Cloudflare" width="96" height="32">';
 
 type Point = { readonly icon: string; readonly title: string; readonly body: string };
 
@@ -41,7 +38,7 @@ const POINTS: readonly Point[] = [
 ];
 
 const point = ({ icon, title, body }: Point) =>
-  `<li class="tile grid grid-cols-[40px_1fr] items-start gap-3.5 p-4 transition-colors hover:border-line-2"><span class="grid size-10 place-items-center rounded-xl border border-line bg-layer-2"><svg class="size-[19px] fill-none stroke-amber stroke-[1.7] [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24" aria-hidden="true"><path d="${icon}"/></svg></span><div><strong class="mt-px mb-0.5 block text-[14.5px] font-semibold">${title}</strong><span class="text-[13.5px] text-muted">${body}</span></div></li>`;
+  `<li class="tile grid grid-cols-[40px_1fr] items-start gap-3.5 p-4 transition-colors hover:border-line-2"><span class="grid size-10 place-items-center rounded-xl border border-line bg-layer-2"><svg class="size-[19px] fill-none stroke-current text-text stroke-[1.7] [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24" aria-hidden="true"><path d="${icon}"/></svg></span><div><strong class="mt-px mb-0.5 block text-[14.5px] font-semibold">${title}</strong><span class="text-[13.5px] text-muted">${body}</span></div></li>`;
 
 const STEPS: readonly string[] = [
   'Pick an account on Cloudflare&rsquo;s consent screen.',
@@ -50,7 +47,7 @@ const STEPS: readonly string[] = [
 ];
 
 const step = (text: string, index: number) =>
-  `<li class="grid grid-cols-[24px_1fr] items-center gap-3 text-[13.5px] text-muted"><span class="grid size-6 place-items-center rounded-full border border-line font-mono text-[11px] font-semibold text-amber">${index + 1}</span><span>${text}</span></li>`;
+  `<li class="grid grid-cols-[24px_1fr] items-center gap-3 text-[13.5px] text-muted"><span class="grid size-6 place-items-center rounded-full border border-line font-mono text-[11px] font-semibold text-text">${index + 1}</span><span>${text}</span></li>`;
 
 const BILLING_NOTE = 'Uses your account&rsquo;s Workers AI. Most of it fits the free allocation.';
 
@@ -59,12 +56,12 @@ const alert = (error: string) =>
 
 const SECTION = 'relative z-[2] border-t border-line py-18';
 
-const sectionHead = (index: string, id: string, title: string, accent: string) =>
-  `<p class="index">${index}</p><h2 id="${id}" class="mt-4.5 mb-9 text-[clamp(30px,4vw,46px)] leading-[1.05] font-semibold tracking-[-0.03em]">${title} <span class="font-serif font-normal italic tracking-normal text-amber">${accent}</span></h2>`;
+const sectionHead = (index: string, id: string, title: string, subtitle: string) =>
+  `<p class="index">${index}</p><h2 id="${id}" class="mt-4.5 mb-9 text-[clamp(30px,4vw,46px)] leading-[1.05] font-semibold tracking-[-0.03em]">${title} ${accent(subtitle)}</h2>`;
 
 const LIST_TILE = 'tile px-5.5 pt-5.5 pb-2.5';
 
-const LIST_HEAD = 'mt-0 mb-3.5 font-mono text-[11.5px] leading-none font-medium tracking-[0.1em] text-amber uppercase';
+const LIST_HEAD = 'mt-0 mb-3.5 font-mono text-[11.5px] leading-none font-medium tracking-[0.1em] text-faint uppercase';
 
 const definition = (name: string, line: string, status: string) =>
   `<div class="border-t border-line py-2.5 first:border-t-0 first:pt-0" data-status="${status}"><dt class="text-[14.5px] font-semibold text-text">${name}</dt><dd class="mt-0.5 ml-0 text-[13.5px] leading-snug text-muted">${line}</dd></div>`;
@@ -164,8 +161,7 @@ const ASTRONAUT = '<div class="peek" aria-hidden="true"><img class="astronaut" s
 const PEEK_SCRIPT = `<script>(()=>{const p=document.querySelector('.peek');if(!p)return;const f=()=>{const r=p.getBoundingClientRect(),v=innerHeight,t=Math.min(1,Math.max(0,(v-r.bottom+40)/(r.height+40))),end=innerHeight+scrollY>=document.documentElement.scrollHeight-4;p.style.setProperty('--peek',String(end?1:t));p.classList.toggle('settled',end)};addEventListener('scroll',f,{passive:true});addEventListener('resize',f);f()})()</script>`;
 
 const BACKDROP = `<div id="welcome-swarm" class="welcome-swarm" data-look="listening" aria-hidden="true"></div>
-<span id="orb" class="pointer-events-none fixed top-[46%] right-[22%] size-0.5 max-lg:top-[18%] max-lg:right-1/2" aria-hidden="true"></span>
-<div class="ember-glow pointer-events-none fixed inset-0 z-[1]" aria-hidden="true"></div>`;
+<span id="orb" class="pointer-events-none fixed top-[46%] right-[22%] size-0.5 max-lg:top-[18%] max-lg:right-1/2" aria-hidden="true"></span>`;
 
 export type SignInPage = { readonly origin: string; readonly error?: string };
 
@@ -190,11 +186,11 @@ const socialMeta = (origin: string) => `<link rel="canonical" href="${escapeHtml
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">`;
 
-const signInCard = (error: string | undefined) => `<div class="relative"><section class="tile relative rounded-[28px] p-6.5 backdrop-blur-2xl md:p-9" aria-label="Sign in">
-<img class="mx-auto mt-1 mb-5.5 block size-24" src="/brand/hark-mark.svg" alt="hark" width="96" height="96">
+const signInCard = (error: string | undefined) => `<div class="relative"><section class="tile relative p-6.5 backdrop-blur-2xl md:p-9" aria-label="Sign in">
+<div class="mt-1 mb-5.5 flex justify-center text-text">${mark(96, 'hark')}</div>
 <p class="mx-auto mb-7 max-w-[22em] text-center text-sm text-muted">Pick the Cloudflare account hark thinks with. Your token stays in your own Durable Object.</p>
 ${error === undefined ? '' : alert(error)}
-<a class="pill h-15 w-full justify-center rounded-2xl text-[15.5px]" id="sign-in" href="/oauth/login" aria-label="Sign in with Cloudflare"><span>Sign in with Cloudflare</span>${CLOUDFLARE_CLOUD}</a>
+<a class="pill h-14 w-full justify-center text-[15.5px]" id="sign-in" href="/oauth/login">Sign in with Cloudflare</a>
 <p class="mt-3 mb-0 text-center text-[12.5px] text-faint">${BILLING_NOTE}</p>
 <ol class="m-0 mt-6 grid list-none gap-3 border-t border-line p-0 pt-5.5">${STEPS.map(step).join('')}</ol>
 </section></div>`;
@@ -210,7 +206,7 @@ export const signInPage = ({ origin, error }: SignInPage) =>
     shell: 'relative z-[2] mx-auto grid min-h-screen max-w-[1200px] grid-rows-[auto_1fr_auto] px-5 py-5 lg:px-10 lg:py-7',
     body: `<main class="grid items-center gap-9 py-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(380px,0.85fr)] lg:gap-20 lg:py-14">
 <section>
-<h1 class="mt-0 mb-6.5 text-[clamp(46px,6vw,80px)] leading-[0.96] font-bold tracking-[-0.05em]">A voice agent<br><span class="ember-text">that stays.</span></h1>
+<h1 class="mt-0 mb-6.5 text-[clamp(46px,6vw,80px)] leading-[0.96] font-bold tracking-[-0.05em]">A voice agent<br>${accent('that stays.')}</h1>
 <p class="mt-0 mb-7 max-w-[31em] text-[17px] leading-relaxed text-muted lg:mb-11 lg:text-[18.5px]">Tap the ear and talk. hark listens, thinks and answers out loud, and it remembers you the next time. There is no chat box. Every word is heard, thought and spoken on <b class="font-medium text-text">your own</b> Cloudflare account.</p>
 <ul class="m-0 grid max-w-[42em] list-none gap-3.5 p-0 sm:grid-cols-2">${POINTS.map(point).join('')}</ul>
 </section>
@@ -222,7 +218,7 @@ ${PUSH}
 ${FEATURE_MATRIX}`,
     footer: `<footer class="relative z-[3] flex flex-wrap items-center justify-between gap-x-5 gap-y-2 border-t border-line pt-3 text-[12.5px] text-faint">
 ${ASTRONAUT}
-<div class="flex max-w-[440px] items-center gap-3.5">${CLOUDFLARE_FULL}<p class="m-0 leading-snug"><b class="font-semibold text-muted">OSS experiment, not officially endorsed by Cloudflare.</b> Here be dragons. ${DRAGON_FIRE}</p></div>
+<div class="flex max-w-[440px] items-center gap-3.5">${CLOUDFLARE_MARK}<p class="m-0 leading-snug"><b class="font-semibold text-muted">OSS experiment, not officially endorsed by Cloudflare.</b> Here be dragons. ${DRAGON_FIRE}</p></div>
 <span class="font-mono text-[11px] tracking-[0.04em]">Built on Workers, Durable Objects and Workers AI</span>
 </footer>`,
     scripts: `${PEEK_SCRIPT}

@@ -1,8 +1,6 @@
-import { siteFooter, siteLayout } from './layout';
-import {SIGNAL, SURFACE, type Swatch } from './tokens';
-
-const tile = (label: string, body: string, extra = '') =>
-  `<div class="tile ${extra}"><div class="tile-bar"><i></i><i></i><span class="ml-1.5">${label}</span></div>${body}</div>`;
+import { mark, wordmark } from './duotone';
+import { accent, siteFooter, siteLayout, tile } from './layout';
+import type { Swatch } from './tokens';
 
 const swatch = ({ token, name, dark, light, use }: Swatch) =>
   `<li class="grid grid-cols-[72px_1fr] gap-3.5 rounded-xl border border-line bg-layer p-3.5"><div class="grid h-[72px] grid-rows-2 overflow-hidden rounded-[10px] border border-line"><span style="background:${dark}"></span><span style="background:${light}"></span></div><div><strong class="block text-[14.5px]">${name}</strong><code class="code text-[11px]">${token}</code><p class="mt-1 font-mono text-[11px] text-faint">dark ${dark} · light ${light}</p><p class="mt-1 text-[13px] text-muted">${use}</p></div></li>`;
@@ -56,14 +54,53 @@ const ROWS: readonly (readonly [string, string])[] = [
 const row = ([name, value]: readonly [string, string]) =>
   `<li class="flex items-center gap-3 py-2 text-sm"><span>${name}</span><span class="flex-1 border-t border-line"></span><span class="font-mono text-[13px] text-muted">${value}</span></li>`;
 
-const EAR =
-  '<div class="size-[46px] rounded-full bg-[radial-gradient(circle_at_38%_34%,#fff8ee,#ffe7c4_18%,#ffb35c_42%,#f6821f_70%,#a8420f)] shadow-[0_0_40px_4px_rgba(246,130,31,0.6)]"></div>';
+
+type ButtonOption = { readonly name: string; readonly ratio: string; readonly note: string; readonly dark: string; readonly light: string };
+
+const SOLID = 'background:#d93d00;color:#fff';
+const SOLID_DEPTH = 'background:linear-gradient(180deg,#ff5a0a,#d93d00);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 6px 16px -8px rgba(217,61,0,.8)';
+const QUIET_DARK = 'background:#f2f2f2;color:#0b0b0b';
+const QUIET_LIGHT = 'background:#111;color:#fff';
+const GHOST_DARK = 'background:transparent;color:#f2f2f2;border:1px solid rgba(255,255,255,.22)';
+const GHOST_LIGHT = 'background:transparent;color:#111;border:1px solid rgba(0,0,0,.18)';
+
+const BUTTON_OPTIONS: readonly ButtonOption[] = [
+  { name: 'A1 · Signal, flat', ratio: '4.6:1', note: 'Duotone orange #d93d00, white text. Passes AA.', dark: SOLID, light: SOLID },
+  { name: 'A2 · Signal, lit', ratio: '4.6:1 base', note: 'Same orange, lit from the top like a pressed metal key.', dark: SOLID_DEPTH, light: SOLID_DEPTH },
+  { name: 'B · Quiet', ratio: '17:1', note: 'Secondary. White on dark, ink on light. No orange.', dark: QUIET_DARK, light: QUIET_LIGHT },
+  { name: 'C · Ghost', ratio: '17:1', note: 'Tertiary. Hairline only.', dark: GHOST_DARK, light: GHOST_LIGHT },
+];
+
+const BUTTON_SHAPE = 'duo-button inline-flex h-11 items-center rounded-full text-[14.5px] font-medium no-underline';
+
+const sampleButton = (style: string) => `<a href="#buttons" class="${BUTTON_SHAPE}" style="${style}">Sign in with Cloudflare</a>`;
+
+const buttonOption = ({ name, ratio, note, dark, light }: ButtonOption) =>
+  `<li class="tile"><div class="tile-bar"><i></i><i></i><span class="ml-1.5">${name}</span><span class="ml-auto">${ratio}</span></div><div class="grid gap-2 p-2"><div class="flex items-center justify-center rounded-lg" style="padding:28px 16px;background:#0b0b0b">${sampleButton(dark)}</div><div class="flex items-center justify-center rounded-lg" style="padding:28px 16px;background:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)">${sampleButton(light)}</div><p class="px-2 pb-2 font-mono text-[11px] tracking-[0.04em] text-muted uppercase">${note}</p></div></li>`;
+
+const DUOTONE: readonly Swatch[] = [
+  { token: 'signal', name: 'Signal', dark: '#ff5200', light: '#d93d00', use: 'Actions, the live dot, the ear. Nothing else.' },
+  { token: 'ink', name: 'Ink', dark: '#0b0b0b', light: '#ffffff', use: 'The page.' },
+  { token: 'layer', name: 'Layer', dark: '#151515', light: '#f4f4f4', use: 'Tiles and panels.' },
+  { token: 'text', name: 'Text', dark: '#f2f2f2', light: '#111111', use: 'Headings and body.' },
+  { token: 'muted', name: 'Muted', dark: '#9a9a9a', light: '#6b6b6b', use: 'Labels, captions, machine state.' },
+];
+
+
+
 
 const STAGE = 'flex min-h-[190px] items-center justify-center gap-5';
 
 type Chapter = { readonly id: string; readonly number: string; readonly title: string; readonly line: string; readonly body: string };
 
 const CHAPTERS: readonly Chapter[] = [
+  {
+    id: 'buttons',
+    number: 'B0',
+    title: 'Buttons',
+    line: 'Duotone: one orange, black, white, a few greys. Each button is shown on dark and on light with its text contrast.',
+    body: `<ul class="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">${BUTTON_OPTIONS.map(buttonOption).join('')}</ul>`,
+  },
   {
     id: 'principles',
     number: '01',
@@ -75,19 +112,19 @@ const CHAPTERS: readonly Chapter[] = [
     id: 'mark',
     number: '02',
     title: 'Mark',
-    line: 'Use the wordmark in headers and the mark alone where it must be small. Never recolor it or put it on orange. The mark itself is still being explored.',
+    line: 'Use the wordmark in headers and the mark alone where it must be small. Never recolor it or put it on orange. The mark is an orange helmet with one arc cut through it and one outside.',
     body: `<div class="grid gap-3.5 md:grid-cols-3">
-${tile('Wordmark · dark', `<div class="${STAGE} bg-night"><img src="/brand/hark-wordmark.svg" alt="hark wordmark on dark" width="200" height="52"></div>`)}
-${tile('Wordmark · light', `<div class="${STAGE} bg-paper"><img src="/brand/hark-wordmark-on-light.svg" alt="hark wordmark on light" width="200" height="52"></div>`)}
-${tile('Mark · 16 · 32 · 96', `<div class="${STAGE} items-end"><img src="/brand/hark-mark.svg" alt="" width="16" height="16"><img src="/brand/hark-mark.svg" alt="" width="32" height="32"><img src="/brand/hark-mark.svg" alt="hark mark" width="96" height="96"></div>`)}
+${tile('Wordmark · dark', `<div class="${STAGE}" style="background:#0b0b0b;color:#f2f2f2">${wordmark(52)}</div>`)}
+${tile('Wordmark · light', `<div class="${STAGE}" style="background:#fff;color:#111">${wordmark(52)}</div>`)}
+${tile('Mark · 16 · 32 · 96', `<div class="${STAGE} items-end text-text">${mark(16)}${mark(32)}${mark(96, 'hark mark')}</div>`)}
 </div>`,
   },
   {
     id: 'color',
     number: '03',
     title: 'Color',
-    line: 'Orange signals. Horizon blue is atmosphere only. Every surface has a dark and a light value, and the page follows the system until you pick one.',
-    body: `<ul class="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">${SIGNAL.map(swatch).join('')}</ul><div class="my-4.5 h-3 rounded-md bg-[linear-gradient(90deg,#0a0604,#3a1607,#a8420f,#f6821f,#ffb35c,#ffe7c4)]" aria-hidden="true"></div><ul class="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-5">${SURFACE.map(swatch).join('')}</ul>`,
+    line: 'One orange, then black, white and greys. The orange is darker in light mode so white text on it still passes AA.',
+    body: `<ul class="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-5">${DUOTONE.map(swatch).join('')}</ul>`,
   },
   {
     id: 'type',
@@ -102,10 +139,10 @@ ${tile('Mark · 16 · 32 · 96', `<div class="${STAGE} items-end"><img src="/bra
     title: 'Parts',
     line: 'Numbered tiles from the gallery. Flat rows with a hairline leader and a quiet notice with plain actions from good tools.',
     body: `<div class="grid gap-3.5 md:grid-cols-3">
-${tile('000001', `<div class="relative grid aspect-[4/3] place-items-center bg-[radial-gradient(60%_60%_at_50%_50%,rgba(246,130,31,0.25),transparent_70%)]">${EAR}<div class="absolute top-3 right-3.5 text-right font-mono text-[10.5px] leading-normal tracking-[0.08em] uppercase">The ear<span class="block text-faint">Durable Object #01</span></div></div>`)}
+${tile('000001', `<div class="relative grid aspect-[4/3] place-items-center ">${mark(72)}<div class="absolute top-3 right-3.5 text-right font-mono text-[10.5px] leading-normal tracking-[0.08em] uppercase">The ear<span class="block text-faint">Durable Object #01</span></div></div>`)}
 ${tile('Buttons', `<div class="flex min-h-[190px] flex-col justify-center gap-3.5 p-4.5"><div><a class="pill" href="#parts">Sign in with Cloudflare</a></div><div class="flex flex-wrap items-center gap-2.5"><a class="pill-ghost" href="#parts">Read the docs</a><a class="btn" href="#parts">Retry</a><a class="btn-solid" href="#parts">Wake</a></div></div>`)}
 ${tile('State', `<ul class="p-4.5">${ROWS.map(row).join('')}</ul>`)}
-${tile('Notice', `<div class="p-4.5"><div class="rounded-[10px] border border-line bg-layer-2 px-4 py-3.5"><b class="flex items-center gap-2 text-[13.5px]"><span class="size-[7px] rounded-full bg-signal shadow-[0_0_10px_var(--color-signal)]"></span>Workers AI is busy</b><p class="mt-1.5 mb-3 text-sm text-muted">The thinking model returned a 5xx twice. This turn used the fallback brain.</p><div class="flex gap-2.5"><a class="btn" href="#parts">Retry</a><a class="btn-solid" href="#parts">Keep going</a></div></div></div>`, 'md:col-span-2')}
+${tile('Notice', `<div class="p-4.5"><div class="rounded-[10px] border border-line bg-layer-2 px-4 py-3.5"><b class="flex items-center gap-2 text-[13.5px]"><span class="size-[7px] rounded-full bg-signal "></span>Workers AI is busy</b><p class="mt-1.5 mb-3 text-sm text-muted">The thinking model returned a 5xx twice. This turn used the fallback brain.</p><div class="flex gap-2.5"><a class="btn" href="#parts">Retry</a><a class="btn-solid" href="#parts">Keep going</a></div></div></div>`, 'md:col-span-2')}
 ${tile('Code', `<div class="p-4.5"><pre class="pre">bun run ship -- deploy/mine.conf</pre></div>`)}
 </div>`,
   },
@@ -136,7 +173,7 @@ const chapter = ({ id, number, title, line, body }: Chapter) =>
   `<section id="${id}" class="scroll-mt-6 pt-18"><div class="mb-6.5 grid gap-2.5 md:grid-cols-[260px_1fr] md:gap-8"><p class="index">${number} / ${title}</p><p class="max-w-[40em] text-muted">${line}</p></div>${body}</section>`;
 
 const HERO = `<div class="mt-16 mb-2 grid gap-10 md:grid-cols-[1.25fr_1fr] md:items-end">
-<h1 class="text-[clamp(44px,7vw,96px)] leading-[0.92] font-bold tracking-[-0.05em]">Ember, <span class="font-serif font-normal italic tracking-normal text-amber">hung like art.</span></h1>
+<h1 class="text-[clamp(44px,7vw,96px)] leading-[0.92] font-bold tracking-[-0.05em]">Ember, ${accent('hung like art.')}</h1>
 <p class="max-w-[30em] text-[17px] text-muted">Cloudflare orange in a gallery: one glowing object, room around it, mono labels, and calm hairline panels for the few things that need a screen. It holds up in light and in dark.</p>
 </div>`;
 

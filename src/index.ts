@@ -9,6 +9,7 @@ import { brandPage } from './site/brand-page';
 import { docsPage } from './site/docs-page';
 import { notFoundResponse } from './site/not-found-page';
 import { htmlResponse } from './site/tokens';
+import { DUOTONE_APP_SKIN } from './site/duotone';
 
 export { Directory } from './directory';
 export { Hark } from './hark';
@@ -121,6 +122,13 @@ const route = async (request: Request, env: Env, owner: string, local: boolean):
     return Response.json(await agent.thinkProbe(owner, await request.json()));
   }
 
+  if (isLoopback(request) && pathname === '/__api' && request.method === 'POST') {
+    const agent = await getAgentByName(env.HARK, owner);
+    const { method, path, body } = await request.json<{ method: string; path: string; body?: unknown }>();
+
+    return Response.json(await agent.apiProbe(method, path, body));
+  }
+
   if (isLoopback(request) && pathname === '/__tool' && request.method === 'POST') {
     const agent = await getAgentByName(env.HARK, owner);
     const { name, args } = await request.json<{ name: string; args: Record<string, unknown> }>();
@@ -142,7 +150,7 @@ const route = async (request: Request, env: Env, owner: string, local: boolean):
 
   if (local && pathname === '/' && new URL(request.url).searchParams.has('signed-out')) return htmlResponse(signInPage({ origin: new URL(request.url).origin }));
 
-  if (pathname === '/' && request.method === 'GET') return appPage(new URL(request.url).origin, local);
+  if (pathname === '/' && request.method === 'GET') return appPage(new URL(request.url).origin, local, DUOTONE_APP_SKIN);
 
   return orNotFound(await env.ASSETS.fetch(request));
 };

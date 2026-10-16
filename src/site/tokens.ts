@@ -1,4 +1,5 @@
 import { SITE_CSS } from '../ui/app.generated';
+import { wordmark } from './duotone';
 
 export const SITE_FONTS =
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@1&display=swap';
@@ -31,8 +32,7 @@ export const THEME_TOGGLE = `<button class="nav-link ml-1 flex cursor-pointer it
 
 export const THEME_BOOT = `<script>(()=>{const k='hark-theme',r=document.documentElement,m=matchMedia('(prefers-color-scheme: light)');const apply=t=>{r.dataset.theme=t;for(const l of document.querySelectorAll('[data-theme-label]'))l.textContent=t==='light'?'Light':'Dark'};apply(localStorage.getItem(k)||(m.matches?'light':'dark'));m.addEventListener('change',e=>{if(!localStorage.getItem(k))apply(e.matches?'light':'dark')});addEventListener('DOMContentLoaded',()=>{apply(r.dataset.theme);for(const b of document.querySelectorAll('[data-theme-toggle]'))b.addEventListener('click',()=>{const t=r.dataset.theme==='light'?'dark':'light';localStorage.setItem(k,t);apply(t)})})})()</script>`;
 
-export const WORDMARK =
-  '<img class="on-dark h-6" src="/brand/hark-wordmark.svg" alt="hark" width="94" height="24"><img class="on-light h-6" src="/brand/hark-wordmark-on-light.svg" alt="hark" width="94" height="24">';
+export const WORDMARK = `<span class="block text-text">${wordmark(24)}</span>`;
 
 export type SitePath = '/' | '/docs' | '/brand';
 
