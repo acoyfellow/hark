@@ -144,3 +144,22 @@ describe('the cloudflare tool fills in the account however the brain spells the 
     expect(accountPath(path, 'acc123')).toBe('/accounts/acc123/workers/scripts');
   });
 });
+
+describe('a Workers AI 5xx on thinking is retried once before it fails', () => {
+  it('returns the second answer when the first one is a 500', async () => {
+    let calls = 0;
+    const live = upstream(
+      credentials,
+      origins,
+      async () => {
+        calls += 1;
+
+        return calls === 1 ? new Response('{"errors":[{"code":3044}]}', { status: 500 }) : new Response('data: [DONE]\n\n', { status: 200 });
+      },
+    );
+
+    await live.chat({ model: '@cf/daily-co/phonellm-mini-alpha-2', messages: [] }, new AbortController().signal);
+
+    expect(calls).toBe(2);
+  });
+});

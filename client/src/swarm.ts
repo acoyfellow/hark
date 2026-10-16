@@ -125,7 +125,7 @@ const dynamic = (array: Float32Array, size: number) => new BufferAttribute(array
 
 const particleCount = () => (innerWidth < 700 ? 9000 : 16000);
 
-const startSwarm = (host: HTMLElement) => {
+export const startSwarm = (host: HTMLElement) => {
   const renderer = new WebGLRenderer({ antialias: false, powerPreference: 'high-performance', alpha: false });
 
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));

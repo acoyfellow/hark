@@ -6,9 +6,11 @@ execFileSync('npx', ['vite', 'build', '--config', 'client/vite.config.ts', '--lo
 });
 
 const manifest = JSON.parse(readFileSync('public/app/.vite/manifest.json', 'utf8'));
-const entry = Object.values(manifest).find((chunk) => chunk.isEntry);
+const entryNamed = (name) => Object.values(manifest).find((chunk) => chunk.isEntry && chunk.name === name);
+const entry = entryNamed('entry');
+const welcome = entryNamed('welcome');
 
-if (!entry) throw new Error('vite produced no entry chunk');
+if (!entry || !welcome) throw new Error('vite did not produce both the app and welcome entries');
 
 const css = entry.css?.[0];
 
@@ -16,6 +18,6 @@ if (!css) throw new Error('vite produced no stylesheet');
 
 writeFileSync(
   'src/ui/app.generated.ts',
-  `export const APP_ENTRY = ${JSON.stringify(`/app/${entry.file}`)};\nexport const APP_CSS = ${JSON.stringify(`/app/${css}`)};\n`,
+  `export const APP_ENTRY = ${JSON.stringify(`/app/${entry.file}`)};\nexport const APP_CSS = ${JSON.stringify(`/app/${css}`)};\nexport const WELCOME_ENTRY = ${JSON.stringify(`/app/${welcome.file}`)};\n`,
 );
 console.log(`client /app/${entry.file} /app/${css}`);

@@ -79,6 +79,8 @@ const isBrainRefused = (cause: unknown, brain: Brain) =>
   cause instanceof UpstreamFailed &&
   (isGatewayBrain(brain) ? cause.status >= 400 && cause.status !== 401 : cause.status === 403 || cause.status === 404 || (cause.status === 400 && NOT_ALLOWED.test(cause.message)));
 
+const isBrainHiccup = (cause: unknown) => cause instanceof UpstreamFailed && cause.status >= 500;
+
 const WORKSPACE_CHUNK = 900_000;
 
 const isLostComputer = (cause: unknown) => ['not running', 'Network connection lost', 'not been started'].some((sign) => String(cause).includes(sign));
@@ -97,6 +99,9 @@ const thinkingOptions = (brain: Brain): Record<string, unknown> =>
 const STEADY_BRAINS: readonly Brain[] = ['@cf/daily-co/phonellm-mini-alpha-2'];
 
 const temperatureFor = (brain: Brain) => (STEADY_BRAINS.includes(brain) ? 0 : 0.7);
+
+const spokenFault = (reason: string) =>
+  /\((5\d\d)\)/u.test(reason) ? 'Workers AI hiccuped on that one. Say it again.' : reason.replace(/:\s*\{[\s\S]*$/u, '.');
 
 const SIGNED_OUT = /sign-in expired/u;
 
@@ -829,7 +834,15 @@ export class Hark extends VoiceAgent<Env> {
         try {
           return await ask(chosen);
         } catch (cause) {
-          if (chosen === FALLBACK_BRAIN || !isBrainRefused(cause, chosen)) throw cause;
+          if (chosen === FALLBACK_BRAIN) throw cause;
+
+          if (isBrainHiccup(cause)) {
+            trace('brain-hiccup', { brain: chosen, reason: cause instanceof Error ? cause.message.slice(0, 200) : String(cause) });
+
+            return ask(FALLBACK_BRAIN);
+          }
+
+          if (!isBrainRefused(cause, chosen)) throw cause;
 
           this.refusedBrains.add(chosen);
           trace('brain-refused', { brain: chosen, reason: cause instanceof Error ? cause.message.slice(0, 200) : String(cause) });
@@ -856,7 +869,7 @@ export class Hark extends VoiceAgent<Env> {
           return;
         }
 
-        this.send(connection, { _tag: 'Fault', reason, fatal: false });
+        this.send(connection, { _tag: 'Fault', reason: spokenFault(reason), fatal: false });
       },
     };
     const finish = () => {

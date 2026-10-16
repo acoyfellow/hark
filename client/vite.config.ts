@@ -10,6 +10,11 @@ export default defineConfig({
     outDir: '../public/app',
     emptyOutDir: true,
     manifest: true,
-    rollupOptions: { input: fileURLToPath(new URL('./src/entry.ts', import.meta.url)) },
+    rollupOptions: {
+      input: {
+        entry: fileURLToPath(new URL('./src/entry.ts', import.meta.url)),
+        welcome: fileURLToPath(new URL('./src/welcome.ts', import.meta.url)),
+      },
+    },
   },
 });

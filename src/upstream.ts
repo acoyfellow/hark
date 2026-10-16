@@ -227,12 +227,15 @@ export const upstream = (
   chat: async (body, signal) => {
     if (String(body.model).startsWith(GATEWAY_PREFIX)) return gatewayChat(body, signal);
 
-    const response = await send(`${aiBase(origins, credentials)}/v1/chat/completions`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-      signal,
-    });
+    const attempt = () =>
+      send(`${aiBase(origins, credentials)}/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+        signal,
+      });
+    const first = await attempt();
+    const response = first.status >= 500 && !signal.aborted ? await attempt() : first;
 
     if (!response.ok || response.body === null) throw await failure('Thinking', response);
 
