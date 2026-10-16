@@ -1,0 +1,55 @@
+client/src/site.css
+  s_ea178a5ab7ff56::t_fb9af2774dbf4d 1-285
+client/src/theme.css
+  s_ca5a6532cca4b3::t_4446a056100923 1-56
+client/vite.config.ts
+  s_ea178a5ab7ff56::t_59deb469aed330 17
+public/brand/hark-wordmark-on-light.svg
+  s_ea178a5ab7ff56::t_187b084ad06574 1-20
+scripts/build-client.mjs
+  s_ea178a5ab7ff56::t_4523e18c25f708 16-18,24
+scripts/e2e.mjs
+  s_ca5a6532cca4b3::t_171ebbe97f6716 425,429
+shared/features.ts
+  s_ea178a5ab7ff56::t_74826d77360de1 66
+src/auth/sign-in-page.ts
+  s_ca5a6532cca4b3::t_ada4d258e30d0c 3-4,13,15-16,33-34,39,44,48-49,52-53,55,58-70,73-103,106-168,176,191-211,213-215,217,219-230
+src/index.ts
+  s_ca5a6532cca4b3::t_6cc87cc4065376 7-10,20-33,122,124,126,133-139
+src/site/brand-page.ts
+  s_ca5a6532cca4b3::t_3b676ec5f6b4e6 1-152
+src/site/docs-page.ts
+  s_ca5a6532cca4b3::t_5a41e0a560049f 1-109
+src/site/layout.ts
+  s_ca5a6532cca4b3::t_ed1902739178c0 1-36
+src/site/not-found-page.ts
+  s_ca5a6532cca4b3::t_e5a5fb69c94790 1-19
+src/site/tokens.ts
+  s_ca5a6532cca4b3::t_c977b6c0396eda 1-63
+test/unit/auth.test.ts
+  s_ca5a6532cca4b3::t_df334b8fb19870 44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "c1cccf74c0247c9c5072d4a84da051521921832d",
+  "prompts": {},
+  "sessions": {
+    "s_ca5a6532cca4b3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a13c32-5367-7000-8a26-f0799dfcdedc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    },
+    "s_ea178a5ab7ff56": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a14446-f4ef-749e-8408-b0c86e1608dd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
