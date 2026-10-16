@@ -1,0 +1,21 @@
+src/upstream.ts
+  s_ca5a6532cca4b3::t_5286bf45b67061 112-115
+test/unit/upstream.test.ts
+  s_ca5a6532cca4b3::t_673369b48ded1a 2,141-146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "bf320f322930a0b5a16bc41b7c285d0f5c208e83",
+  "prompts": {},
+  "sessions": {
+    "s_ca5a6532cca4b3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a13c32-5367-7000-8a26-f0799dfcdedc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
