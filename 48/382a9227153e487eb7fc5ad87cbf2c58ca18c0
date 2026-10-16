@@ -1,0 +1,101 @@
+.gitignore
+  s_ca5a6532cca4b3::t_d4973201ce10e3 15-16
+AGENTS.md
+  s_ca5a6532cca4b3::t_fb9916883b0373 8,18
+README.md
+  s_ca5a6532cca4b3::t_bcd9a46de4d66c 26,35,82,84-86,90,92-94,96,121,123,127,134,137-138,144-146,148,151,156-161,172,174,176,178,197,199-201
+SPEC.md
+  s_ca5a6532cca4b3::t_a66e88f9dbb43d 13,19
+client/src/engine.ts
+  s_ca5a6532cca4b3::t_7954ede7eda63e 18
+client/src/held-mic.ts
+  s_ca5a6532cca4b3::t_f92f541cab0ecf 37
+client/src/model.ts
+  s_ca5a6532cca4b3::t_4841ca30f3ce96 12,27
+client/src/preview.ts
+  s_ca5a6532cca4b3::t_d5453f448a19e6 3
+client/src/program.ts
+  s_ca5a6532cca4b3::t_f17fefe54f8dad 1
+client/src/resources.ts
+  s_ca5a6532cca4b3::t_f094486a54dcf5 13
+client/src/swarm.ts
+  s_ca5a6532cca4b3::t_816281e60876f2 29
+client/src/trace.ts
+  s_ca5a6532cca4b3::t_945a2b5765c112 9
+client/src/view/icons.ts
+  s_ca5a6532cca4b3::t_1595e5dc49c4ef 6
+client/src/view/index.ts
+  s_ca5a6532cca4b3::t_ea5523be83218e 5
+knip.json
+  s_ca5a6532cca4b3::t_e2c009d2335c2b 1-6
+shared/features.ts
+  s_ca5a6532cca4b3::t_5a8355a955b97b 1,3
+shared/model-parts.ts
+  s_ca5a6532cca4b3::t_ace81815897b46 5
+shared/protocol.ts
+  s_ca5a6532cca4b3::t_2641d3bbe2ad87 83,118,122,124,126,234,236
+src/auth/cloudflare.ts
+  s_ca5a6532cca4b3::t_ecc37853030035 19-20
+src/auth/oauth.ts
+  s_ca5a6532cca4b3::t_3f0ead27890eca 3,63
+src/auth/refresh.ts
+  s_ca5a6532cca4b3::t_116b78599d61bd 6
+src/auth/session.ts
+  s_ca5a6532cca4b3::t_d22331ae8e3435 1,91-107,111,113,115,117
+src/auth/types.ts
+  s_ca5a6532cca4b3::t_dc42ced41c68d5 3
+src/chat.ts
+  s_ca5a6532cca4b3::t_0d508b8eb88f10 1
+src/computer.ts
+  s_ca5a6532cca4b3::t_5628257aeed2d0 28,30,70
+src/echo-gate.ts
+  s_ca5a6532cca4b3::t_d12f2737d4d805 3
+src/leaked-calls.ts
+  s_ca5a6532cca4b3::t_c08f7811113221 37
+src/mcp-oauth.ts
+  s_ca5a6532cca4b3::t_c3b080c74f1259 13
+src/reply.ts
+  s_ca5a6532cca4b3::t_82c307cff4cfc4 20
+src/site/brand-page.ts
+  s_ea178a5ab7ff56::t_2c5f2c8aa42aec 81-120,137-143
+src/site/docs-page.ts
+  s_ca5a6532cca4b3::t_7613bf23ad9438 128
+src/site/not-found-page.ts
+  s_ca5a6532cca4b3::t_4a6ff5df4e7e42 4
+src/site/tokens.ts
+  s_ca5a6532cca4b3::t_539d294382fa04 4,9,16,18,20
+src/tools.ts
+  s_ca5a6532cca4b3::t_9fb7636335292e 319
+src/ui/page.ts
+  s_ca5a6532cca4b3::t_45f8c6fd2f2577 3
+src/upstream.ts
+  s_ca5a6532cca4b3::t_b24a36f26f39db 10,25,27,32,34
+src/workbench.ts
+  s_ca5a6532cca4b3::t_395409cd3c48ec 5,9,19
+test/unit/leaked-calls.test.ts
+  s_ca5a6532cca4b3::t_e14ff52c407242 2-3,6-8,21,23,25,36,38-39,41,44-46,53-103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "48382a9227153e487eb7fc5ad87cbf2c58ca18c0",
+  "prompts": {},
+  "sessions": {
+    "s_ca5a6532cca4b3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a13c32-5367-7000-8a26-f0799dfcdedc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    },
+    "s_ea178a5ab7ff56": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a14446-f4ef-749e-8408-b0c86e1608dd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
