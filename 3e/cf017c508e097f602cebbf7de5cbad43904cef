@@ -1,0 +1,37 @@
+VERIFY.md
+  s_ca5a6532cca4b3::t_cb1b5ff1f22620 1-53
+client/src/workspace-terminal.ts
+  s_ca5a6532cca4b3::t_273454d3bf19d3 52-53
+computer/Dockerfile
+  s_ca5a6532cca4b3::t_e84daf8e8737a2 5
+receipts/demo-verify.json
+  s_ca5a6532cca4b3::t_f5bd3b542a6411 1-28
+scripts/verify-demo.mjs
+  s_ca5a6532cca4b3::t_fb85baffa28833 1-226
+src/computer.ts
+  s_ca5a6532cca4b3::t_58373eaca1f832 7
+src/hark.ts
+  s_ca5a6532cca4b3::t_e98aac4dc0f027 48,420-428
+src/index.ts
+  s_ca5a6532cca4b3::t_8ac9cfd4eb9f61 7,86,88-91
+src/mcp-oauth.ts
+  s_ca5a6532cca4b3::t_f3fafc17658655 29,31
+src/terminal.ts
+  s_ca5a6532cca4b3::t_a05356359cf1f4 1,3,17,19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "3ecf017c508e097f602cebbf7de5cbad43904cef",
+  "prompts": {},
+  "sessions": {
+    "s_ca5a6532cca4b3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a13c32-5367-7000-8a26-f0799dfcdedc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
