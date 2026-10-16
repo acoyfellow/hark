@@ -456,7 +456,7 @@ const runCode: Definition = {
   name: 'run_code',
   label: () => 'Working it out',
   description: [
-    'Run JavaScript on your own durable workbench, a sandbox with no internet. Use it to compute, simulate, generate data, write and keep files, or chain several tools in one go.',
+    'Run JavaScript on hark\'s own scratch workbench: no shell, no require, no internet. Not their computer: for "my computer", commands, node, npm or git use terminal. Use it to compute, simulate, generate data, write and keep files, or chain several tools in one go.',
     'The body is an async function. Return a value. console.log works. await hark.<capability>(input) reaches:',
     '- read_file({path}), write_file({path, content}), list_files({}), delete_file({path}): files that persist between calls and sessions.',
     '- imagine({prompt}): paint an image, returns a data URL.',
@@ -474,7 +474,7 @@ const terminal: Definition = {
   name: 'terminal',
   label: () => 'Working in your computer',
   description: [
-    'Run a shell command on your own durable Linux computer (bash, node 22, npm, git, python3, curl, jq, ripgrep, wrangler). It has the internet. Files in /workspace persist between sessions.',
+    'Their computer. When they say "my computer", "run", "node", "npm", "git" or any shell command, call this right away. Run a shell command on their own durable Linux computer (bash, node 22, npm, git, python3, curl, jq, ripgrep, wrangler). It has the internet. Files in /workspace persist between sessions.',
     'Use it for real coding work: clone a repo, scaffold a project, install packages, run tests, write and run scripts. One command per call; chain with &&. 120 second limit.',
     'The output is shown to them as a terminal card. Then say in one sentence what happened. Never read the output aloud.',
     'It has no Cloudflare token. For anything on their Cloudflare account use the cloudflare tool.',
@@ -518,7 +518,7 @@ const cloudflare: Definition = {
   label: (args) => (DESTRUCTIVE.has(str(args.method).toUpperCase()) ? 'Changing your account' : 'Checking your account'),
   description: [
     'Call the Cloudflare API on their account with their own sign-in. path starts after /client/v4, and {account} is replaced with their account id. Example: GET /accounts/{account}/workers/scripts, GET /zones, GET /accounts/{account}/ai/models/search.',
-    'GET and POST that only reads are fine. DELETE, PUT and PATCH change things: first say exactly what will change and ask. Only after they clearly say yes, call again with confirmed true.',
+    'Reads never need permission: when they ask anything about their account (how many workers, zones, models), call GET right away without asking. DELETE, PUT and PATCH change things: first say exactly what will change and ask. Only after they clearly say yes, call again with confirmed true.',
     'Summarise results out loud in one sentence and use show_widget for tables or reports.',
   ].join('\n'),
   parameters: object(

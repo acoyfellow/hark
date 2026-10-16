@@ -293,7 +293,7 @@ export class Hark extends VoiceAgent<Env> {
     };
   }
 
-  async thinkProbe(owner: string, input: { brain: Brain; say: string }) {
+  async thinkProbe(owner: string, input: { brain: Brain; say: string; history?: readonly { role: 'user' | 'assistant'; content: string }[]; memories?: boolean }) {
     const caller: Caller = { owner, local: owner === LOCAL_OWNER, traced: false, timeZone: 'UTC', locale: 'en-US', camera: false, firstTurn: false };
     const grant = await this.grantFor(caller);
 
@@ -302,7 +302,8 @@ export class Hark extends VoiceAgent<Env> {
     const live = upstream(this.credentials(caller, grant), this.origins(caller));
     const started = Date.now();
     const messages = [
-      { role: 'system', content: systemPrompt({ now: new Date(), timeZone: 'UTC', locale: 'en-US', memories: [], camera: false, firstTurn: false }) },
+      { role: 'system', content: systemPrompt({ now: new Date(), timeZone: 'UTC', locale: 'en-US', memories: input.memories === true ? this.memories() : [], camera: false, firstTurn: false }) },
+      ...(input.history ?? []),
       { role: 'user', content: input.say },
     ];
 
@@ -598,7 +599,22 @@ export class Hark extends VoiceAgent<Env> {
     }
   }
 
+  private sessionStartsAfter = 0;
+
+  override getConversationHistory(limit?: number) {
+    const inThisSession = this.sql<{ count: number }>`SELECT COUNT(*) AS count FROM cf_voice_messages WHERE id > ${this.sessionStartsAfter}`[0]?.count ?? 0;
+    const recent = super.getConversationHistory(limit);
+
+    return inThisSession === 0 ? [] : recent.slice(-inThisSession);
+  }
+
+  private startFreshSession() {
+    this.sessionStartsAfter = this.sql<{ last: number | null }>`SELECT MAX(id) AS last FROM cf_voice_messages`[0]?.last ?? 0;
+  }
+
   override async onCallStart(connection: Connection) {
+    this.startFreshSession();
+
     const missed = this.sql<{ label: string }>`SELECT label FROM missed ORDER BY at`;
 
     if (missed.length === 0) return;

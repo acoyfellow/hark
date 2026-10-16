@@ -16,8 +16,8 @@ export const flattenForBrain = (messages: readonly ChatMessage[]): BrainMessage[
       for (const call of message.tool_calls ?? []) names.set(call.id, call.function.name);
 
       const said = textOf(message.content).trim();
-      const calls = (message.tool_calls ?? []).map((call) => `${call.function.name}(${call.function.arguments || '{}'})`);
-      const content = [said, ...calls.map((call) => `[I called ${call}]`)].filter((part) => part !== '').join(' ');
+      const calls = (message.tool_calls ?? []).map((call) => call.function.name);
+      const content = [said, ...calls.map((name) => `(I used ${name}.)`)].filter((part) => part !== '').join(' ');
 
       if (content !== '') out.push({ role: 'assistant', content });
 

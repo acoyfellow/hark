@@ -63,6 +63,10 @@ const delay = (ms: number, signal: AbortSignal) =>
     signal.addEventListener('abort', () => clearTimeout(timer), { once: true });
   });
 
+const CLOSING_FENCE = /^\s*`{1,3}\s*/u;
+
+const withoutClosingFence = (text: string) => text.replace(CLOSING_FENCE, '');
+
 export async function* reply(
   ports: ReplyPorts,
   history: readonly ChatMessage[],
@@ -128,6 +132,8 @@ export async function* reply(
         calls.length > 0 ? null : markup !== '' ? markupCalls(markup) : held.trim() !== '' ? leakedCalls(held) : null;
 
       if (recovered !== null) calls = recovered;
+
+      parked = withoutClosingFence(parked);
 
       if (parked.trim() !== '') {
         text += parked;

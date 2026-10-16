@@ -16,7 +16,7 @@ describe('tool rounds sent to the brain as plain text (Workers AI gpt-oss reject
     expect(flat).toEqual([
       { role: 'system', content: 'You are hark.' },
       { role: 'user', content: "What's the weather in Lisbon?" },
-      { role: 'assistant', content: 'Let me check. [I called get_weather({"place":"Lisbon"})]' },
+      { role: 'assistant', content: 'Let me check. (I used get_weather.)' },
       { role: 'user', content: '[Result of get_weather, not said by the person] {"now_celsius":21}' },
     ]);
     expect(flat.every((message) => typeof message.content === 'string')).toBe(true);
@@ -30,7 +30,7 @@ describe('tool rounds sent to the brain as plain text (Workers AI gpt-oss reject
     ]);
 
     expect(flat).toEqual([
-      { role: 'assistant', content: '[I called look({})]' },
+      { role: 'assistant', content: '(I used look.)' },
       { role: 'user', content: '[Result of look, not said by the person] The camera shows a mug.' },
     ]);
   });

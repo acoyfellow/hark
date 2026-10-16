@@ -5,7 +5,10 @@ const JSON_START = /^\s*[[{]/u;
 
 const TOOL_NAMES = TOOLS.map((tool) => tool.name).join('|');
 
-const MARKUP_START = new RegExp(`<\\s*(${TOOL_NAMES})\\b|(?:^|\\s)(${TOOL_NAMES})\\s*:\\s*(?=[{[])`, 'iu');
+const MARKUP_START = new RegExp(
+  `<\\s*(${TOOL_NAMES})\\b|(?:^|\\s)(${TOOL_NAMES})\\s*:\\s*(?=[{[])|(?:^|\\s)[*_\`]{1,2}(${TOOL_NAMES})[*_\`]{1,2}\\s*(?:\`{3}[a-z]*)?\\s*(?=[{[])`,
+  'iu',
+);
 
 export const mightBeLeakedCall = (text: string) => JSON_START.test(text);
 
@@ -13,7 +16,7 @@ export const markupStart = (text: string) => text.search(MARKUP_START);
 
 const NAME_PREFIXES = new Set(TOOLS.flatMap((tool) => Array.from({ length: tool.name.length }, (_, end) => tool.name.slice(0, end + 1))));
 
-const TRAILING_WORD = /(?:<\s*([a-z_]*)|(?:^|\s)([a-z_]+)(\s*:\s*)?)$/iu;
+const TRAILING_WORD = /(?:<\s*([a-z_]*)|(?:^|\s)[*_`]{0,2}([a-z_]*)(?:[*_`]{0,2}\s*(?:`{1,3}[a-z]*\s*)?|\s*:\s*)?)$/iu;
 
 export const mightStartWrittenCall = (text: string): RegExpExecArray | null => {
   const match = TRAILING_WORD.exec(text);
@@ -23,6 +26,8 @@ export const mightStartWrittenCall = (text: string): RegExpExecArray | null => {
   const word = (match[1] ?? match[2] ?? '').toLowerCase();
 
   if (match[1] !== undefined) return match;
+
+  if (word === '') return /[*_`]\s*$/u.test(match[0]) ? match : null;
 
   return NAME_PREFIXES.has(word) ? match : null;
 };
@@ -88,10 +93,10 @@ export const markupCalls = (text: string): ToolCall[] => {
 
   if (match === null) return [];
 
-  const name = (match[1] ?? match[2] ?? '').toLowerCase();
+  const name = (match[1] ?? match[2] ?? match[3] ?? '').toLowerCase();
   const rest = text.slice(match.index + match[0].length);
 
-  if (match[2] !== undefined) {
+  if (match[2] !== undefined || match[3] !== undefined) {
     try {
       const parsed = looseJson(balancedJson(rest) ?? '');
 
