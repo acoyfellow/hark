@@ -25,7 +25,7 @@ Sign in with Cloudflare, tap, and talk. It runs on <i>your</i> account, remember
 - **It stays.** Each person gets one Durable Object. Memory, history, timers, and connected tools survive a closed tab.
 - **Its own computer.** A durable Linux container with a file tree and a live terminal.
 - **Any MCP server.** Connect one by URL, with or without OAuth, and hark calls its tools by voice.
-- **Fast and polite.** It starts answering before you finish, and stops when you talk over it.
+- **Fast.** It starts answering before you finish, and stops when you talk over it.
 
 ## What you can ask
 
@@ -123,4 +123,4 @@ bun run e2e    # real Chromium, fake microphone, the whole conversation
 | [`client/src/`](client/src) | The page |
 | [`shared/protocol.ts`](shared/protocol.ts) | Every socket frame, as a Schema |
 
-[Spec](SPEC.md) · [Security](SECURITY.md) · MIT
+[Spec](SPEC.md) · [Security](SECURITY.md) · [Brand](https://hark.coey.dev/brand) · MIT
