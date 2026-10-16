@@ -8,6 +8,7 @@ export type Env = {
   readonly LOADER: WorkerLoader;
   readonly WEBSEARCH?: WebSearch;
   readonly OAUTH_CLIENT_ID?: string;
+  readonly OAUTH_EXTRA_SCOPES?: string;
   readonly OAUTH_CLIENT_SECRET?: string;
   readonly SESSION_SECRET?: string;
   readonly LOCAL_DEV_WITHOUT_AUTH?: string;

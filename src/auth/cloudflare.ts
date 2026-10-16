@@ -3,6 +3,7 @@ import { DIRECTORY_NAME } from '../directory-name';
 import {
   accountsOf,
   authorizeUrl,
+  extraScopesFrom,
   exchangeCode,
   type OAuthClient,
   OAuthFailed,
@@ -29,6 +30,7 @@ export type CloudflareAuthEnv = {
   readonly DIRECTORY: DurableObjectNamespace<Directory>;
   readonly OAUTH_CLIENT_ID?: string;
   readonly OAUTH_CLIENT_SECRET?: string;
+  readonly OAUTH_EXTRA_SCOPES?: string;
   readonly SESSION_SECRET?: string;
 };
 
@@ -98,6 +100,7 @@ export const cloudflareAuth = (env: CloudflareAuthEnv, send: typeof fetch = fetc
     clientId: env.OAUTH_CLIENT_ID ?? '',
     clientSecret: env.OAUTH_CLIENT_SECRET ?? '',
     redirectUri: `${new URL(request.url).origin}/oauth/callback`,
+    extraScopes: extraScopesFrom(env.OAUTH_EXTRA_SCOPES),
   });
 
   const page = (request: Request, error: string | undefined, status: number) => {

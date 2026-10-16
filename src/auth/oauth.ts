@@ -6,6 +6,8 @@ export const CLOUDFLARE_OAUTH = {
   api: 'https://api.cloudflare.com/client/v4',
 } as const;
 
+export const REQUIRED_SCOPES = ['offline_access', 'ai.read', 'ai.write'] as const;
+
 export const SCOPES = [
   'offline_access',
   'user-details.read',
@@ -20,6 +22,23 @@ export type OAuthClient = {
   readonly clientId: string;
   readonly clientSecret: string;
   readonly redirectUri: string;
+  readonly extraScopes?: readonly string[];
+};
+
+const SCOPE_NAME = /^[a-z][a-z0-9_-]*(\.[a-z_]+)?$/u;
+
+export const extraScopesFrom = (raw: string | undefined): string[] =>
+  (raw ?? '')
+    .split(/[\s,]+/u)
+    .map((scope) => scope.trim())
+    .filter((scope) => scope !== '' && SCOPE_NAME.test(scope));
+
+export const requestedScopes = (client: OAuthClient) => [...new Set([...SCOPES, ...(client.extraScopes ?? [])])];
+
+export const hasRequiredScopes = (granted: string) => {
+  const scopes = new Set(granted.split(/\s+/u));
+
+  return granted === '' || REQUIRED_SCOPES.every((scope) => scopes.has(scope));
 };
 
 export type TokenSet = {
@@ -50,7 +69,7 @@ export const authorizeUrl = async (client: OAuthClient, state: string, verifier:
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('client_id', client.clientId);
   url.searchParams.set('redirect_uri', client.redirectUri);
-  url.searchParams.set('scope', SCOPES.join(' '));
+  url.searchParams.set('scope', requestedScopes(client).join(' '));
   url.searchParams.set('state', state);
   url.searchParams.set('code_challenge', await pkceChallenge(verifier));
   url.searchParams.set('code_challenge_method', 'S256');
