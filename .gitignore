@@ -12,3 +12,5 @@ test-results/
 .scratch/
 wrangler.local.jsonc
 computer/certs/*.pem
+.alchemy/
+.guardrail/

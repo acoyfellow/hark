@@ -15,7 +15,7 @@ const REDIAL_DELAY_MS = 300;
 
 const isLostTranscriber = (message: string) => message.toLowerCase().includes('speech recognition connection was lost');
 
-export class MicrophoneRefused extends Error {}
+class MicrophoneRefused extends Error {}
 
 export type Engine = {
   readonly send: (frame: ClientFrame) => void;

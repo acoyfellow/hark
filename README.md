@@ -23,7 +23,7 @@ You open it and tap the ear (or press space). From then on you just talk. hark k
 
 The only things on screen are the ear, which moves with your voice and with its own, and the cards it chooses to show you: the weather, a picture it painted, a timer, what it just remembered. There is no transcript and nowhere to type.
 
-hark is one Cloudflare Worker. Each person gets a [Durable Object](https://developers.cloudflare.com/durable-objects/) that holds their voice line, memory, and timers. You sign in with your Cloudflare account, exactly as with [coil](https://github.com/acoyfellow/coil), and every model call runs on your Workers AI through your own [AI Gateway](https://developers.cloudflare.com/ai-gateway/). hark has no model bill of its own.
+hark is one Cloudflare Worker. Each person gets a [Durable Object](https://developers.cloudflare.com/durable-objects/) that holds their voice line, memory, and timers. You sign in with your Cloudflare account, and every model call runs on your own Workers AI with your own token. hark has no model bill of its own.
 
 <img src="docs/hero-phone.png" width="260" align="right" alt="hark on a phone with a weather card under the ear">
 
@@ -32,7 +32,7 @@ hark is one Cloudflare Worker. Each person gets a [Durable Object](https://devel
 ```
 mic ─▶ AudioWorklet: 16 kHz PCM, 80 ms frames ─▶ WebSocket ─▶ your Durable Object
                                                                    │
-                     ┌─────────────── your AI Gateway ─────────────┤
+                     ┌──────────── your Workers AI, your token ────┤
                      ▼                                             │
      Deepgram Flux (WebSocket)  StartOfTurn · EagerEndOfTurn · TurnResumed · EndOfTurn
                      │
@@ -79,20 +79,21 @@ mic ─▶ AudioWorklet: 16 kHz PCM, 80 ms frames ─▶ WebSocket ─▶ your D
 | [Durable Objects](https://developers.cloudflare.com/durable-objects/) | One per person. It holds the browser socket and the Flux socket, runs each turn as a fiber, keeps memory and history in SQLite, and wakes itself with alarms for timers |
 | [Workers AI](https://developers.cloudflare.com/workers-ai/): [Deepgram Flux](https://developers.cloudflare.com/workers-ai/models/flux/) | Hearing, with turn detection made for voice agents: `StartOfTurn`, `EagerEndOfTurn`, `TurnResumed`, `EndOfTurn` |
 | Workers AI: [Aura 1](https://developers.cloudflare.com/workers-ai/models/aura-1/) and [Aura 2](https://developers.cloudflare.com/workers-ai/models/aura-2-en/) | The voice. Aura 1 by default because it starts talking about 4.7 times sooner; Aura 2 when you want it richer. 18 voices, raw 24 kHz PCM, so nothing gets decoded in the browser |
-| Workers AI: [GPT-OSS 20B](https://developers.cloudflare.com/workers-ai/models/gpt-oss-20b/) and 120B, [Gemma 4](https://developers.cloudflare.com/workers-ai/models/gemma-4-26b-a4b-it/), [Kimi K2.6](https://developers.cloudflare.com/workers-ai/models/kimi-k2.6/) | The brain, streamed with tool calls. GPT-OSS 20B by default: it was the fastest and most reliable in the internal voice benchmark. Gemma 4 also gives hark its eyes |
+| Workers AI: [GPT-OSS 20B](https://developers.cloudflare.com/workers-ai/models/gpt-oss-20b/) and 120B, [Gemma 4](https://developers.cloudflare.com/workers-ai/models/gemma-4-26b-a4b-it/), [Kimi K2.6](https://developers.cloudflare.com/workers-ai/models/kimi-k2.6/) | The brain, streamed with tool calls. GPT-OSS 20B by default: it was the fastest in our benchmark below. Gemma 4 also gives hark its eyes. OpenAI brains are optional and go through your own AI Gateway |
 | Workers AI: [FLUX.2 klein](https://developers.cloudflare.com/workers-ai/models/flux-2-klein-4b/) | Pictures, with FLUX.1 schnell as a fallback |
-| [AI Gateway](https://developers.cloudflare.com/ai-gateway/) | Every model call, including the Flux WebSocket, goes through the person's own authenticated gateway. Their logs, their limits, their analytics |
-| Sign in with Cloudflare (OAuth) | PKCE, the same scopes and grant shape as coil. The token never reaches the browser |
+| [Containers](https://developers.cloudflare.com/containers/) | Your computer: a durable Linux box with a file tree and a live terminal in the page |
+| MCP | Connect any MCP server, with or without OAuth, and hark calls its tools by voice |
+| Sign in with Cloudflare (OAuth) | PKCE. The token never reaches the browser |
 
 ## Sign in
 
-The same shape as coil's `cloudflare` mode, ported module for module (`src/auth/`):
+How it works (`src/auth/`):
 
-1. `/oauth/login` sends you to Cloudflare's consent screen with PKCE and the scopes `offline_access user-details.read account-settings.read ai.read ai.write aig.read aig.run`.
-2. `/oauth/callback` exchanges the code, reads your user and your first granted account, and picks an AI Gateway **with authentication on** (`HARK_USER_GATEWAY` first if set, then `default`). If there is none, it tells you how to turn one on.
-3. The grant (account, gateway, access and refresh tokens) goes into the `Directory` Durable Object. Your browser gets only an HMAC-signed `__Host-hark_session` cookie.
+1. `/oauth/login` sends you to Cloudflare's consent screen with PKCE. hark always asks for `offline_access ai.read ai.write`, plus the scopes in `OAUTH_EXTRA_SCOPES` (`scripts/demo-scopes.txt` lists the 41 that hark.coey.dev asks for).
+2. `/oauth/callback` exchanges the code and reads your user and your first granted account.
+3. The grant (account, access and refresh tokens) goes into the `Directory` Durable Object. Your browser gets only an HMAC-signed `__Host-hark_session` cookie.
 4. Your `Hark` Durable Object reads the grant when it wakes and refreshes the token a minute before it expires. Signing out revokes it at Cloudflare.
-5. Workers AI (`offline_access ai.read ai.write`) is the only thing hark needs. Set `OAUTH_EXTRA_SCOPES` to ask for more, for example `workers_scripts.write zone.read browser.write`, so the agent can do real work on your account. Your OAuth client must allow each scope first (dashboard, Manage account, OAuth clients). A product that refuses the token does not sign you out.
+5. Workers AI is the only thing hark needs. Extra scopes let the agent do real work on your account. Your OAuth client must allow each scope first (dashboard, Manage account, OAuth clients). A product that refuses the token does not sign you out.
 
 ## Deploy
 
@@ -109,8 +110,6 @@ bun run ship -- deploy/mine.conf
 
 `ship` runs the gate, builds the client, and deploys to the hostname. It then checks that the `OAUTH_CLIENT_SECRET` and `SESSION_SECRET` Worker secrets exist, and fails unless the live site serves the landing page, redirects `/oauth/login` to Cloudflare with the AI scopes, and refuses the voice socket to a stranger (`scripts/check-edge.sh`).
 
-People who sign in need an AI Gateway with authentication turned on in their account. That is one toggle in the dashboard, and hark's error message says where it is.
-
 ### Run locally
 
 ```sh
@@ -119,52 +118,47 @@ bun run dev            # hark on http://127.0.0.1:8790 against a fake Cloudflare
 bun run e2e            # real Chromium with a fake microphone, the whole conversation
 ```
 
-`scripts/fake-cloudflare.mjs` stands in for the gateway. It has a Flux that detects speech by energy and emits real Flux events, a scripted brain that streams text and makes tool calls, an Aura that returns PCM, and a FLUX that returns an image. It refuses any call that lacks the token in both auth headers. Weather and Wikipedia stay real.
+`scripts/fake-cloudflare.mjs` stands in for Cloudflare. It has a Flux that detects speech by energy and emits real Flux events, a scripted brain that streams text and makes tool calls, an Aura that returns PCM, and a FLUX that returns an image. It refuses any call that lacks the token. Weather and Wikipedia stay real.
 
-To talk to it with your own Workers AI instead, put `LOCAL_CF_TOKEN` (from `npx wrangler auth token`), `LOCAL_CF_ACCOUNT`, and `LOCAL_CF_GATEWAY` in `.dev.vars` and run `npx wrangler dev --var LOCAL_DEV_WITHOUT_AUTH:1`. All of the local-only switches work only on loopback hosts, and `bun run check` fails if any of them appear in `wrangler.jsonc`.
+To talk to it with your own Workers AI instead, put `LOCAL_CF_TOKEN` (from `npx wrangler auth token`), and `LOCAL_CF_ACCOUNT` in `.dev.vars` and run `npx wrangler dev --var LOCAL_DEV_WITHOUT_AUTH:1`. All of the local-only switches work only on loopback hosts, and `bun run check` fails if any of them appear in `wrangler.jsonc`.
 
 ## Proof
 
-`bun run check` builds the client, typechecks both sides, lints, and runs 46 tests:
-
-| Test | Proves |
-| --- | --- |
-| Sign-in round trip | Login → callback → grant with the authenticated gateway → session admits → sign-out revokes and refuses |
-| Gateway refusal | An account whose gateway does not check tokens is turned away with instructions |
-| Forged state | A callback that did not start here is refused |
-| Upstream | Flux, the brain, and Aura all go to `gateway.ai.cloudflare.com/v1/<account>/<gateway>/workers-ai` with the person's token |
-| Turn: order | Sentences play in order even when later ones synthesize faster |
-| Turn: streaming | Audio reaches the speaker chunk by chunk, with at most three speech requests in flight |
-| Turn: tools | Tool results are fed back and the next round speaks them |
-| Turn: eager gate | Nothing is heard until the turn is confirmed |
-| Turn: barge-in | Interrupting stops the audio and aborts the model request |
-| Turn: filler and recovery | A slow tool gets "One moment.", a fast one gets nothing; a turn that says nothing or fails says so out loud |
-| Speech prep | Acronyms are spelled, quotes and dashes become speech |
-| Client stories | Wake, sleep, hush, faults, visuals, settings that survive a reconnect |
+`bun run check` builds the client, typechecks both sides, lints, and runs 101 tests: sign-in and forged state, token refresh and sign-out, the upstream routes, the turn (order, streaming, tools, eager gate, barge-in, filler and recovery), tool calls a brain writes as text, the echo gate, MCP server URLs, speech prep, and the client stories.
 
 `bun run e2e` drives the real Worker, Durable Object, worklets, and socket in headless Chromium. A synthesized voice plays into the fake microphone. Result ([`receipts/e2e-local.json`](receipts/e2e-local.json)):
 
 ```
 pass  the page renders asleep with the ear and no chat box
 pass  tapping the ear opens the line to the account and starts listening
-pass  a spoken question gets a tool call, a weather card, and a spoken answer
+pass  a spoken question gets a tool call, an article card, and a spoken answer
 pass  the browser plays the whole answer and reports it, then hark listens again
 pass  remember stores a fact and shows it
-pass  paint puts a FLUX picture on the screen
+pass  show_form plays a two-beat particle movie (3D heart, then a drawing), with no card
+pass  paint forms the picture in the swarm first, then hands it to a card
 pass  talking over a long answer interrupts it (barge-in)
 pass  a timer counts down and hark announces it when it ends (Durable Object alarm)
 pass  with the camera on, asking about it takes one frame and looks
 pass  saying goodbye puts hark to sleep and closes the microphone
 pass  one tap wakes it again after it slept, and it listens
+pass  report and alert widgets appear beside the swarm
+pass  a 3D model beat sculpts an object in the swarm
+pass  the durable computer runs a command and shows a terminal card
 pass  the settings sheet shows the stack, voices, and brains
-pass  every upstream call carried the account token through AI Gateway
+pass  every upstream call went straight to Workers AI with the account token
 pass  the desktop layout keeps cards off the ear and nothing overflows
 pass  the phone layout renders asleep, then talks and shows a card
+pass  the phone never zooms or scrolls: double tap, pinch and swipe leave scale 1 and scroll 0
 pass  the landing page offers Sign in with Cloudflare on desktop and phone
 pass  no uncaught page errors
 ```
 
-`scripts/bench.mjs` measures latency on a real account the way the internal Voice Agents Showcase benchmark did: speech end → Flux end of turn → first sentence of text → first audio, per brain and voice engine, with completion rates next to p50 and p95. It writes `receipts/bench-live.json`. The internal baseline to beat is 2,416 ms p50 (Flux + GPT-OSS + Aura-1).
+`node scripts/verify-demo.mjs` proves the workspace and MCP paths against a fake MCP server with OAuth: 12/12 ([`VERIFY.md`](VERIFY.md), [`receipts/demo-verify.json`](receipts/demo-verify.json)).
+
+All of the above runs against the fake. The numbers below were measured against real Workers AI.
+
+
+`scripts/bench.mjs` measures latency on a real account: speech end → Flux end of turn → first sentence of text → first audio, per brain and voice engine, with completion rates next to p50 and p95. It writes `receipts/bench-live.json`.
 
 First live run, from a laptop straight to Workers AI on a real account (`HARK_ROUTE=direct`, 5 runs per pipeline, [`receipts/bench-live-direct.json`](receipts/bench-live-direct.json)):
 
@@ -175,24 +169,18 @@ First live run, from a laptop straight to Workers AI on a real account (`HARK_RO
 | Flux + GPT-OSS 20B + Aura 2 | 4/5 | 1,871 / 1,992 ms | 1,778 ms |
 | Flux + Gemma 4 (thinking off) + Aura 1 | 4/5 | 2,388 / 2,462 ms | 1,731 ms |
 
-These stop at the first audio byte on the laptop, not at playback in a browser, and they skip the gateway because the laptop's wrangler token cannot run an authenticated AI Gateway. The four incomplete runs never got an `EndOfTurn` because the benchmark stopped sending audio too early; the benchmark now keeps sending silence the way hark's microphone does.
+These stop at the first audio byte on the laptop, not at playback in a browser. The four incomplete runs never got an `EndOfTurn` because the benchmark stopped sending audio too early; the benchmark now keeps sending silence the way hark's microphone does.
 
-**In production** ([`receipts/live-signin.json`](receipts/live-signin.json), [`receipts/shots/prod-turn.png`](receipts/shots/prod-turn.png)): a real Sign in with Cloudflare on hark.coey.dev, then a spoken question in Chromium, with the voice coming from macOS `say` through the fake microphone. Five turns went through the signed-in person's own AI Gateway with their OAuth token. All five spoke. The first called the weather tool and showed the card. From Flux's confirmed end of turn to the first audio sent took 188 to 489 ms, because each answer had already started on the eager end of turn. Two problems only production could show were fixed on the way:
+`scripts/probe.mjs` checks the real thing without a browser. Aura says a sentence, Flux hears it back, the brain calls a tool, and FLUX paints, all on a real account. It writes `receipts/live-probe.json`.
 
-- Workers AI's `gpt-oss-20b` rejected `role: tool` messages, so tool results now go to the brain as plain text.
-- The gateway's per-model route refused the OAuth token for Aura, so speech and pictures fall back to Workers AI REST with `cf-aig-gateway-id`. That still goes through the person's gateway. The `hark.turn` log records the route each turn used.
+## What it learned from
 
-`scripts/probe.mjs` checks the real thing without a browser. Aura says a sentence, Flux hears it back over the gateway WebSocket, the brain calls a tool, and FLUX paints, all on a real account through its gateway. It writes `receipts/live-probe.json`.
-
-## What we learned before building it
-
-hark's design follows what My AX's own voice mode, the internal Voice Agents Showcase and its benchmark, and the official voice template already taught us: never stop feeding the recognizer, wait for the browser to finish playing, fill slow tools, default to the pipeline that measured fastest, and log every turn. Each finding, its source, and what hark does about it: [`docs/research/voice-agents.md`](docs/research/voice-agents.md).
+Never stop feeding the recognizer, wait for the browser to finish playing, fill slow tools, default to the pipeline that measured fastest, and log every turn.
 
 ## Limits
 
 - **English only.** Flux and `aura-2-en` are English models.
 - **It bills the account you pick.** Flux is billed per minute of audio streamed while hark is awake (about $0.008 a minute at list price), so it sleeps after two quiet minutes and when you say goodbye. Aura is billed per character spoken.
-- **It needs an authenticated AI Gateway** in your account, the same as coil.
 - **Echo depends on your browser.** hark asks for echo cancellation. Where that is weak (loud speakers, some Bluetooth headsets), it may hear itself. It only ducks on sound, and it stops talking only after real words, so a stray echo dims it without cutting it off.
 - **One tab at a time.** Opening hark somewhere else takes the line over, and the first tab says so.
 - **No wake word.** Tap the ear or press space.
@@ -206,9 +194,11 @@ hark's design follows what My AX's own voice mode, the internal Voice Agents Sho
 | --- | --- |
 | [`src/hark.ts`](src/hark.ts) | The per-person Durable Object: sockets, Flux turn events, eager gate, barge-in, memory, timers |
 | [`src/turn.ts`](src/turn.ts) | One turn as an Effect: stream, chunk, speak in order, tools, interruptible |
-| [`src/upstream.ts`](src/upstream.ts) | Flux, the brain, Aura, and FLUX through the person's AI Gateway |
+| [`src/upstream.ts`](src/upstream.ts) | Every model call: Flux, the brain, Aura, and FLUX on the person's Workers AI |
 | [`src/tools.ts`](src/tools.ts), [`src/prompt.ts`](src/prompt.ts) | What it can do and how it talks |
-| [`src/auth/`](src/auth) | Sign in with Cloudflare, ported from coil |
+| [`src/auth/`](src/auth) | Sign in with Cloudflare |
+| [`src/computer.ts`](src/computer.ts), [`src/terminal.ts`](src/terminal.ts) | Your computer: the container, files, and the terminal |
+| [`src/mcp-servers.ts`](src/mcp-servers.ts), [`src/mcp-oauth.ts`](src/mcp-oauth.ts) | Any MCP server, with OAuth |
 | [`client/src/`](client/src) | The page ([Foldkit](https://foldkit.dev) on Effect, Tailwind 4): the ear, the cards, the dock |
 | [`client/src/engine.ts`](client/src/engine.ts), [`public/audio/`](public/audio) | Microphone, speaker, and the two AudioWorklets |
 | [`shared/protocol.ts`](shared/protocol.ts) | Every frame that crosses the socket, as a Schema |

@@ -17,7 +17,7 @@ export type ReplyPorts = {
 
 export type ReplyResult = { sleep: boolean; tools: string[]; firstTextAt: number | null; error: string | null };
 
-export const FILLER_DELAY_MS = 500;
+const FILLER_DELAY_MS = 500;
 
 export const FILLERS = ['One moment.', 'Let me check on that.', 'Give me a second.'] as const;
 

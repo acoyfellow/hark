@@ -1,3 +1,4 @@
+import { Option, Schema } from 'effect';
 const encoder = new TextEncoder();
 
 const keyFor = (secret: string) =>
@@ -87,34 +88,30 @@ export const cookie = (jar: CookieJar, name: string, value: string, maxAgeMs: nu
 export const clearCookie = (jar: CookieJar, name: string) =>
   `${name}=; ${attributes(jar)}; Max-Age=0`;
 
-export type Session = { readonly owner: string; readonly expires: number; readonly id: string };
+const Expiring = { expires: Schema.Number };
+
+const unexpired =
+  <A extends { readonly expires: number }>(decode: (input: unknown) => Option.Option<A>) =>
+  (raw: string | null, now = Date.now()): A | null => {
+    if (raw === null) return null;
+
+    try {
+      return Option.getOrNull(Option.filter(decode(JSON.parse(raw)), (value) => value.expires > now));
+    } catch {
+      return null;
+    }
+  };
+
+const SessionSchema = Schema.Struct({ owner: Schema.String, id: Schema.String, ...Expiring });
+
+export type Session = typeof SessionSchema.Type;
 
 export const sessionValue = (session: Session) => JSON.stringify(session);
 
-export const parseSession = (raw: string | null, now = Date.now()): Session | null => {
-  if (raw === null) return null;
+export const parseSession = unexpired(Schema.decodeUnknownOption(SessionSchema));
 
-  try {
-    const parsed: unknown = JSON.parse(raw);
+const FlowSchema = Schema.Struct({ state: Schema.String, verifier: Schema.String, ...Expiring });
 
-    if (
-      typeof parsed !== 'object' ||
-      parsed === null ||
-      !('owner' in parsed) ||
-      !('expires' in parsed) ||
-      !('id' in parsed)
-    )
-      return null;
+export type Flow = typeof FlowSchema.Type;
 
-    const { owner, expires, id } = parsed;
-
-    return typeof owner === 'string' &&
-      typeof expires === 'number' &&
-      typeof id === 'string' &&
-      expires > now
-      ? { owner, expires, id }
-      : null;
-  } catch {
-    return null;
-  }
-};
+export const parseFlow = unexpired(Schema.decodeUnknownOption(FlowSchema));

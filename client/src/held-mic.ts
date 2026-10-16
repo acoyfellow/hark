@@ -34,7 +34,7 @@ class HeldCapture extends AudioWorkletProcessor {
 registerProcessor('held-capture', HeldCapture);
 `;
 
-export const browserMic: MicSource = () =>
+const browserMic: MicSource = () =>
   navigator.mediaDevices.getUserMedia({ audio: { sampleRate: { ideal: 48000 }, channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
 
 const rms = (samples: Float32Array) => Math.sqrt(samples.reduce((sum, value) => sum + value * value, 0) / Math.max(1, samples.length));

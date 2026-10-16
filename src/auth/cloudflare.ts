@@ -16,6 +16,8 @@ import {
   cookie,
   cookieJar,
   FLOW_TTL_MS,
+  type Flow,
+  parseFlow,
   parseSession,
   readCookie,
   SESSION_TTL_MS,
@@ -56,36 +58,6 @@ const wantsJson = (request: Request) => {
   const path = new URL(request.url).pathname;
 
   return path.startsWith('/api/') || path.startsWith('/agents/');
-};
-
-type Flow = { readonly state: string; readonly verifier: string; readonly expires: number };
-
-const parseFlow = (raw: string | null, now = Date.now()): Flow | null => {
-  if (raw === null) return null;
-
-  try {
-    const parsed: unknown = JSON.parse(raw);
-
-    if (
-      typeof parsed !== 'object' ||
-      parsed === null ||
-      !('state' in parsed) ||
-      !('verifier' in parsed) ||
-      !('expires' in parsed)
-    )
-      return null;
-
-    const { state, verifier, expires } = parsed;
-
-    return typeof state === 'string' &&
-      typeof verifier === 'string' &&
-      typeof expires === 'number' &&
-      expires > now
-      ? { state, verifier, expires }
-      : null;
-  } catch {
-    return null;
-  }
 };
 
 export const cloudflareAuth = (env: CloudflareAuthEnv, send: typeof fetch = fetch): Auth => {

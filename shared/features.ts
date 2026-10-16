@@ -1,6 +1,6 @@
-export type FeatureStatus = 'tested' | 'works' | 'todo';
+type FeatureStatus = 'tested' | 'works' | 'todo';
 
-export type Feature = { readonly name: string; readonly line: string; readonly status: FeatureStatus };
+type Feature = { readonly name: string; readonly line: string; readonly status: FeatureStatus };
 
 export type FeatureGroup = { readonly title: string; readonly features: readonly Feature[] };
 

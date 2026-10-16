@@ -1,6 +1,6 @@
 import { EVERY_SCOPE } from './every-scope';
 
-export const CLOUDFLARE_OAUTH = {
+const CLOUDFLARE_OAUTH = {
   authorize: 'https://dash.cloudflare.com/oauth2/auth',
   token: 'https://dash.cloudflare.com/oauth2/token',
   revoke: 'https://dash.cloudflare.com/oauth2/revoke',
@@ -60,7 +60,7 @@ const base64Url = (bytes: Uint8Array) =>
 
 export const randomToken = (bytes = 32) => base64Url(crypto.getRandomValues(new Uint8Array(bytes)));
 
-export const pkceChallenge = async (verifier: string) =>
+const pkceChallenge = async (verifier: string) =>
   base64Url(
     new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))),
   );

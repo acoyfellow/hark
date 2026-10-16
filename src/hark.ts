@@ -301,45 +301,6 @@ export class Hark extends VoiceAgent<Env> {
     };
   }
 
-  async thinkProbe(owner: string, input: { brain: Brain; say: string; history?: readonly { role: 'user' | 'assistant'; content: string }[]; memories?: boolean }) {
-    const caller: Caller = { owner, local: owner === LOCAL_OWNER, traced: false, timeZone: 'UTC', locale: 'en-US', camera: false, firstTurn: false };
-    const grant = await this.grantFor(caller);
-
-    if (grant === null) return { error: 'not signed in' };
-
-    const live = upstream(this.credentials(caller, grant), this.origins(caller));
-    const started = Date.now();
-    const messages = [
-      { role: 'system', content: systemPrompt({ now: new Date(), timeZone: 'UTC', locale: 'en-US', memories: input.memories === true ? this.memories() : [], camera: false, firstTurn: false }) },
-      ...(input.history ?? []),
-      { role: 'user', content: input.say },
-    ];
-
-    try {
-      const stream = await live.chat({ model: input.brain, messages, tools: toolSchemas(), stream: true, max_tokens: replyTokenBudget(input.brain), temperature: temperatureFor(input.brain), ...thinkingOptions(input.brain) }, AbortSignal.timeout(90_000));
-      const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
-      let raw = '';
-      let firstSignalMs: number | null = null;
-
-      for (;;) {
-        const { done, value } = await reader.read();
-
-        if (done) break;
-
-        raw += value;
-
-        if (firstSignalMs === null && /"(content|arguments)"\s*:\s*"[^"]/u.test(raw)) firstSignalMs = Date.now() - started;
-      }
-
-      const argumentText = [...raw.matchAll(/"arguments"\s*:\s*"((?:[^"\\]|\\.)*)"/gu)].map((match) => JSON.parse(`"${match[1] ?? ''}"`) as string).join('');
-      const said = [...raw.matchAll(/"content"\s*:\s*"((?:[^"\\]|\\.)*)"/gu)].map((match) => JSON.parse(`"${match[1] ?? ''}"`) as string).join('');
-
-      return { brain: input.brain, firstSignalMs, ms: Date.now() - started, finish: [...raw.matchAll(/"finish_reason"\s*:\s*"([a-z_]+)"/gu)].map((match) => match[1]), said: said.slice(0, 300), tools: [...raw.matchAll(/"name"\s*:\s*"([a-z_]+)"/gu)].map((match) => match[1]), arguments: argumentText };
-    } catch (cause) {
-      return { brain: input.brain, ms: Date.now() - started, error: cause instanceof Error ? cause.message.slice(0, 400) : String(cause) };
-    }
-  }
-
   async toolProbe(calledName: string, calledArgs: Record<string, unknown>) {
     const connection = [...this.getConnections()][0];
 
@@ -355,10 +316,6 @@ export class Hark extends VoiceAgent<Env> {
     if (result.visual !== undefined) this.send(connection, { _tag: 'Show', visual: result.visual });
 
     return { content: result.content };
-  }
-
-  async benchProbe(code: string) {
-    return runOnBench(this.env, this.name, code);
   }
 
   private async liveForBench(): Promise<Upstream> {

@@ -26,7 +26,7 @@ import { type Dot, drawingDots, emojiDots, iconDots, loadImage, pictureDots, sol
 import { type Program, startProgram } from './program';
 import { Message } from './message';
 
-export const EMBER_RAMP = ['#1a0904', '#5a1e08', '#c2520f', '#f6821f', '#ffb35c', '#ffe7c4'] as const;
+const EMBER_RAMP = ['#1a0904', '#5a1e08', '#c2520f', '#f6821f', '#ffb35c', '#ffe7c4'] as const;
 
 type Motion = 'still' | 'spin' | 'pulse' | 'bounce' | 'sway' | 'tumble' | 'explode';
 

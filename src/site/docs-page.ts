@@ -125,7 +125,7 @@ content-type: application/json
 </tbody></table>
 <p>A request for a gated action comes back as a pending task while your passkey decides. There is no approve tool. Settings, Connected agents lists every client with its scopes and last use, and revokes it at once. Every turn records whether it came from your voice or from which agent.</p>
 <h3>MCP events, while hark is awake</h3>
-<p>hark can subscribe to the MCP servers you connected and speak their updates as they happen, for example a Chat AX request that changed state. That works only while hark is awake. Asleep, nothing is connected and nothing is billed, so events that must not be missed should also send a webhook. Webhooks wake hark. MCP lets it reply and fetch details.</p>`,
+<p>hark can subscribe to the MCP servers you connected and speak their updates as they happen, for example a ticket that changed state. That works only while hark is awake. Asleep, nothing is connected and nothing is billed, so events that must not be missed should also send a webhook. Webhooks wake hark. MCP lets it reply and fetch details.</p>`,
   },
   {
     id: 'cost',

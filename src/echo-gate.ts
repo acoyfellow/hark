@@ -1,6 +1,6 @@
 import type { Transcriber, TranscriberSession, TranscriberSessionOptions } from 'agents/voice';
 
-export const BARGE_MIN_CHARS = 6;
+const BARGE_MIN_CHARS = 6;
 
 const ECHO_SHARE = 0.6;
 

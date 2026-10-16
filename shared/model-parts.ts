@@ -2,7 +2,7 @@ export type Vec = readonly [number, number, number];
 
 export const MODEL_SHAPES = ['sphere', 'box', 'cylinder', 'cone', 'torus', 'capsule'] as const;
 
-export type ModelShape = (typeof MODEL_SHAPES)[number];
+type ModelShape = (typeof MODEL_SHAPES)[number];
 
 export type Part = {
   readonly shape: ModelShape;

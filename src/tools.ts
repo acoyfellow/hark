@@ -316,7 +316,7 @@ const REDECLARED = /\b(?:const|let|var)\s+(i|n|t|out)\b/u;
 
 const FORBIDDEN = /\b(?:fetch|importScripts|XMLHttpRequest|WebSocket|document|window)\b/u;
 
-export const staticProgramProblem = (body: string): string | null => {
+const staticProgramProblem = (body: string): string | null => {
   const redeclared = REDECLARED.exec(body);
 
   if (redeclared !== null) return `redeclares ${redeclared[1]}, which is already given (i index, n count, t seconds, out result)`;

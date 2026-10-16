@@ -10,7 +10,7 @@ export const MCP_CALLBACK_PATHS = [LOOPBACK_CALLBACK_PATH, HOSTED_CALLBACK_PATH]
 
 export const mcpCallbackPath = (origin: string) => (LOOPBACK_HOSTS.has(new URL(origin).hostname) ? LOOPBACK_CALLBACK_PATH : HOSTED_CALLBACK_PATH);
 
-export const originResource = (advertised: string | undefined, serverUrl: string): string | undefined => {
+const originResource = (advertised: string | undefined, serverUrl: string): string | undefined => {
   if (advertised === undefined) return undefined;
 
   const resource = new URL(advertised);

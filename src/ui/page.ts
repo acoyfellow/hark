@@ -1,6 +1,6 @@
 import { APP_CSS, APP_ENTRY } from './app.generated';
 
-export const FONTS =
+const FONTS =
   'https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,300..700&family=Google+Sans+Code:wght@400;500&display=swap';
 
 export type AppSkin = { readonly style: string; readonly manifest: string; readonly icon: string; readonly touchIcon: string; readonly themeColor: string };

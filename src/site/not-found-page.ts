@@ -1,7 +1,7 @@
 import { mark } from './duotone';
 import { accent, siteLayout, tile } from './layout';
 
-export const notFoundPage = () =>
+const notFoundPage = () =>
   siteLayout({
     title: 'hark · not found',
     description: 'There is nothing at this address.',

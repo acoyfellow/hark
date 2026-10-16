@@ -116,18 +116,7 @@ const route = async (request: Request, env: Env, owner: string, local: boolean):
 
   if (isLoopback(request) && pathname === '/__trace' && request.method === 'POST') return browserTrace(request);
 
-  if (isLoopback(request) && pathname === '/__think' && request.method === 'POST') {
-    const agent = await getAgentByName(env.HARK, owner);
 
-    return Response.json(await agent.thinkProbe(owner, await request.json()));
-  }
-
-  if (isLoopback(request) && pathname === '/__api' && request.method === 'POST') {
-    const agent = await getAgentByName(env.HARK, owner);
-    const { method, path, body } = await request.json<{ method: string; path: string; body?: unknown }>();
-
-    return Response.json(await agent.apiProbe(method, path, body));
-  }
 
   if (isLoopback(request) && pathname === '/__tool' && request.method === 'POST') {
     const agent = await getAgentByName(env.HARK, owner);
@@ -136,11 +125,6 @@ const route = async (request: Request, env: Env, owner: string, local: boolean):
     return Response.json(await agent.toolProbe(name, args));
   }
 
-  if (local && pathname === '/__bench' && request.method === 'POST') {
-    const agent = await getAgentByName(env.HARK, owner);
-
-    return Response.json(await agent.benchProbe(await request.text()));
-  }
 
   if ((MCP_CALLBACK_PATHS as readonly string[]).includes(pathname) && request.method === 'GET') {
     const agent = await getAgentByName(env.HARK, owner);

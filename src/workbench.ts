@@ -2,11 +2,11 @@ import { exports, WorkerEntrypoint } from 'cloudflare:workers';
 import './worker-env';
 import type { Env } from './env';
 
-export const MAX_BRIDGE_CALLS = 40;
+const MAX_BRIDGE_CALLS = 40;
 
 export const MAX_FILE_BYTES = 200_000;
 
-export type BenchCall = { readonly name: string; readonly ok: boolean; readonly ms: number; readonly error?: string };
+type BenchCall = { readonly name: string; readonly ok: boolean; readonly ms: number; readonly error?: string };
 
 export type BenchResult =
   | { readonly ok: true; readonly result: unknown; readonly logs: readonly string[]; readonly calls: readonly BenchCall[] }
@@ -16,9 +16,7 @@ type Outcome = { readonly ok: true; readonly value: unknown } | { readonly ok: f
 
 type BridgeProps = { readonly owner: string };
 
-export const BENCH_CAPABILITIES = ['read_file', 'write_file', 'list_files', 'delete_file', 'imagine', 'mcp_connect', 'mcp_tools', 'mcp_describe', 'mcp_call'] as const;
-
-export type BenchCapability = (typeof BENCH_CAPABILITIES)[number];
+const BENCH_CAPABILITIES = ['read_file', 'write_file', 'list_files', 'delete_file', 'imagine', 'mcp_connect', 'mcp_tools', 'mcp_describe', 'mcp_call'] as const;
 
 const asJson = (value: unknown): unknown => (value === undefined ? null : JSON.parse(JSON.stringify(value)));
 

@@ -10,7 +10,7 @@ type Line = { readonly engine: Engine; readonly events: Events };
 
 export const VoiceLine = ManagedResource.tag<Line>()('VoiceLine');
 
-export const CameraFeed = ManagedResource.tag<MediaStream>()('CameraFeed');
+const CameraFeed = ManagedResource.tag<MediaStream>()('CameraFeed');
 
 export type Resources =
   | ManagedResource.ServiceOf<typeof VoiceLine>

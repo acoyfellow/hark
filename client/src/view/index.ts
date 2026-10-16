@@ -2,7 +2,7 @@ import { Option } from 'effect';
 import type { Document, Html, HtmlBuilder } from 'foldkit/html';
 import { Message } from '../message';
 import type { Look, Model } from '../model';
-import { Preview } from '../orb';
+import { Preview } from '../preview';
 import { Swarm } from '../swarm';
 import { commandSheet } from './command';
 import { workspacePanel } from './workspace';

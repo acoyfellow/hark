@@ -7,7 +7,7 @@ export type Credentials = {
   readonly signedOut: () => void;
 };
 
-export const SIGNED_OUT_DETAIL = 'Your Cloudflare sign-in expired. Sign in with Cloudflare again.';
+const SIGNED_OUT_DETAIL = 'Your Cloudflare sign-in expired. Sign in with Cloudflare again.';
 
 export type Origins = { readonly api: string; readonly gateway?: string };
 
@@ -22,16 +22,16 @@ const PREFERRED_GATEWAYS = ['hark', 'my-ax', 'ax', 'default'];
 
 const NO_GATEWAY = 'none';
 
-export const LISTEN_MODEL = '@cf/deepgram/flux';
+const LISTEN_MODEL = '@cf/deepgram/flux';
 
-export const SPEAK_MODELS: Record<SpeechEngine, string> = {
+const SPEAK_MODELS: Record<SpeechEngine, string> = {
   'aura-1': '@cf/deepgram/aura-1',
   'aura-2': '@cf/deepgram/aura-2-en',
 };
 
-export const IMAGINE_MODEL = '@cf/black-forest-labs/flux-2-klein-4b';
+const IMAGINE_MODEL = '@cf/black-forest-labs/flux-2-klein-4b';
 
-export const IMAGINE_FALLBACK = '@cf/black-forest-labs/flux-1-schnell';
+const IMAGINE_FALLBACK = '@cf/black-forest-labs/flux-1-schnell';
 
 export class UpstreamFailed extends Error {
   constructor(

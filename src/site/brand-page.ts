@@ -78,6 +78,46 @@ const sampleButton = (style: string) => `<a href="#buttons" class="${BUTTON_SHAP
 const buttonOption = ({ name, ratio, note, dark, light }: ButtonOption) =>
   `<li class="tile"><div class="tile-bar"><i></i><i></i><span class="ml-1.5">${name}</span><span class="ml-auto">${ratio}</span></div><div class="grid gap-2 p-2"><div class="flex items-center justify-center rounded-lg" style="padding:28px 16px;background:#0b0b0b">${sampleButton(dark)}</div><div class="flex items-center justify-center rounded-lg" style="padding:28px 16px;background:#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)">${sampleButton(light)}</div><p class="px-2 pb-2 font-mono text-[11px] tracking-[0.04em] text-muted uppercase">${note}</p></div></li>`;
 
+type Concept = { readonly name: string; readonly idea: string; readonly shapes: string };
+
+const SIGNAL_FILL = 'var(--color-signal)';
+
+const CONCEPTS: readonly Concept[] = [
+  {
+    name: 'C1 · Cube',
+    idea: 'A Durable Object, drawn as one: a solid block that stays. The lit face is the one orange thing.',
+    shapes: `<path d="M32 6 54.5 19 32 32 9.5 19Z" fill="${SIGNAL_FILL}"/><path d="M9.5 19 32 32V58L9.5 45Z" fill="currentColor"/><path d="M32 32 54.5 19V45L32 58Z" fill="currentColor" opacity=".55"/>`,
+  },
+  {
+    name: 'C1A · Cut',
+    idea: 'One orange hexagon. The cube edges are cut out of it, so the page draws the block.',
+    shapes: `<defs><mask id="cube-cut"><rect width="64" height="64" fill="#fff"/><path d="M32 32V60M32 32 8 18M32 32 56 18" stroke="#000" stroke-width="4.5"/></mask></defs><path d="M32 6 54.5 19V45L32 58 9.5 45V19Z" fill="${SIGNAL_FILL}" mask="url(#cube-cut)"/>`,
+  },
+  {
+    name: 'C1B · Open',
+    idea: 'The lid lifts off. The orange top floats over an ink box: something lives inside.',
+    shapes: `<path d="M32 3 54.5 16 32 29 9.5 16Z" fill="${SIGNAL_FILL}"/><path d="M9.5 23 32 36V60L9.5 47Z" fill="currentColor"/><path d="M32 36 54.5 23V47L32 60Z" fill="currentColor" opacity=".55"/>`,
+  },
+  {
+    name: 'C1C · Stack',
+    idea: 'A small orange cube sits on a big ink one. Memory on top of the object that keeps it.',
+    shapes: `<path d="M32 28 52 39.5 32 51 12 39.5Z" fill="currentColor" opacity=".3"/><path d="M12 39.5 32 51V62L12 50.5Z" fill="currentColor"/><path d="M32 51 52 39.5V50.5L32 62Z" fill="currentColor" opacity=".55"/><path d="M32 8 44 15 32 22 20 15Z" fill="${SIGNAL_FILL}"/><path d="M20 15 32 22V36L20 29Z" fill="${SIGNAL_FILL}" opacity=".8"/><path d="M32 22 44 15V29L32 36Z" fill="${SIGNAL_FILL}" opacity=".6"/>`,
+  },
+  {
+    name: 'C1D · Wire',
+    idea: 'A line drawing of the cube. Only the top face is filled. Lighter, more technical.',
+    shapes: `<path d="M32 6 54.5 19 32 32 9.5 19Z" fill="${SIGNAL_FILL}"/><path d="M32 6 54.5 19V45L32 58 9.5 45V19ZM9.5 19 32 32 54.5 19M32 32V58" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/>`,
+  },
+];
+
+const conceptSvg = (shapes: string, size: number) => `<svg viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true">${shapes}</svg>`;
+
+const conceptStage = (shapes: string, background: string, ink: string) =>
+  `<div class="grid place-items-center rounded-lg" style="padding:28px 16px;background:${background};color:${ink}">${conceptSvg(shapes, 96)}<div class="mt-5 flex items-end gap-3">${conceptSvg(shapes, 40)}${conceptSvg(shapes, 24)}${conceptSvg(shapes, 16)}</div></div>`;
+
+const concept = ({ name, idea, shapes }: Concept) =>
+  `<li>${tile(name, `<div class="grid gap-2 p-2">${conceptStage(shapes, '#0b0b0b', '#f2f2f2')}${conceptStage(shapes, '#fff;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)', '#111')}<p class="px-2 pb-2 font-mono text-[11px] tracking-[0.04em] text-muted uppercase">${idea}</p></div>`)}</li>`;
+
 const DUOTONE: readonly Swatch[] = [
   { token: 'signal', name: 'Signal', dark: '#ff5200', light: '#d93d00', use: 'Actions, the live dot, the ear. Nothing else.' },
   { token: 'ink', name: 'Ink', dark: '#0b0b0b', light: '#ffffff', use: 'The page.' },
@@ -94,6 +134,13 @@ const STAGE = 'flex min-h-[190px] items-center justify-center gap-5';
 type Chapter = { readonly id: string; readonly number: string; readonly title: string; readonly line: string; readonly body: string };
 
 const CHAPTERS: readonly Chapter[] = [
+  {
+    id: 'concepts',
+    number: 'C0',
+    title: 'Mark concepts',
+    line: 'The cube, then four takes on it. One orange, ink, and the page. Each at 96, 40, 24 and 16 px on dark and on light.',
+    body: `<ul class="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">${CONCEPTS.map(concept).join('')}</ul>`,
+  },
   {
     id: 'buttons',
     number: 'B0',

@@ -1,4 +1,4 @@
-export type ProgramFrame = { readonly positions: Float32Array; readonly tones: Float32Array };
+type ProgramFrame = { readonly positions: Float32Array; readonly tones: Float32Array };
 
 export type Program = {
   readonly latest: () => ProgramFrame | null;

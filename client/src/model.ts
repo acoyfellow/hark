@@ -9,14 +9,12 @@ export const WorkspaceEntry = Schema.Struct({ path: Schema.String, type: Schema.
 
 export type WorkspaceEntry = typeof WorkspaceEntry.Type;
 
-export const Workspace = Schema.Struct({
+const Workspace = Schema.Struct({
   open: Schema.Boolean,
   tree: Schema.Array(WorkspaceEntry),
   file: Schema.Option(Schema.Struct({ path: Schema.String, text: Schema.String })),
   loading: Schema.Boolean,
 });
-
-export type Workspace = typeof Workspace.Type;
 
 export const SettingsTab = Schema.Literals(['account', 'voice', 'brain', 'tools']);
 
@@ -26,9 +24,8 @@ export const PushState = Schema.Literals(['unsupported', 'default', 'granted', '
 
 export type PushState = typeof PushState.Type;
 
-export const ServerDraft = Schema.Struct({ url: Schema.String, token: Schema.String, pending: Schema.Boolean, note: Schema.Option(Schema.String), authUrl: Schema.Option(Schema.String) });
+const ServerDraft = Schema.Struct({ url: Schema.String, token: Schema.String, pending: Schema.Boolean, note: Schema.Option(Schema.String), authUrl: Schema.Option(Schema.String) });
 
-export type ServerDraft = typeof ServerDraft.Type;
 
 export const Model = Schema.Struct({
   local: Schema.Boolean,

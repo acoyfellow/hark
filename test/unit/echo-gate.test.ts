@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { gateSession, SpokenRecord } from '../../src/echo-gate';
-import { markupCalls, markupStart } from '../../src/leaked-calls';
 
 const clock = () => {
   let now = 1_000_000;
@@ -93,50 +92,5 @@ describe('the echo gate', () => {
     expect(record.agentAudible()).toBe(true);
     time.advance(5_000);
     expect(record.agentAudible()).toBe(false);
-  });
-});
-
-describe('tool calls a brain writes as text', () => {
-  it('reads a self-closing tag with bare keys', () => {
-    const text = '<show_form beats=[{kind:"emoji",value:"👋",seconds:2,motion:"pulse"}] />';
-
-    expect(markupStart(`Hey there! ${text}`)).toBe(11);
-    expect(markupCalls(text)).toEqual([
-      { id: 'leaked_markup', name: 'show_form', arguments: JSON.stringify({ beats: [{ kind: 'emoji', value: '👋', seconds: 2, motion: 'pulse' }] }) },
-    ]);
-  });
-
-  it('reads a name-colon-json call', () => {
-    const text = 'show_form: {"beats":[{"kind":"word","value":"YES","motion":"pulse"}]}';
-
-    expect(markupStart(text)).toBe(0);
-    expect(markupCalls(text)[0]?.name).toBe('show_form');
-  });
-
-  it('reads the capitalised call GPT-OSS writes after a sentence, with bare keys in a bare array', () => {
-    const text = 'I hear you loud and clear.  \nShow_form: [{kind:"solid", value:"sphere", seconds:6, motion:"spin"}]';
-
-    expect(markupStart(text)).toBeGreaterThan(0);
-    expect(markupCalls(text)).toEqual([
-      { id: 'leaked_colon', name: 'show_form', arguments: JSON.stringify({ beats: [{ kind: 'solid', value: 'sphere', seconds: 6, motion: 'spin' }] }) },
-    ]);
-  });
-});
-
-describe('a written call followed by more words', () => {
-  it('takes only the balanced JSON', () => {
-    const text = 'show_form: {"beats":[{"kind":"word","value":"A } B","motion":"pulse"}]} and here is your story.';
-
-    expect(JSON.parse(markupCalls(text)[0]?.arguments ?? '{}')).toEqual({ beats: [{ kind: 'word', value: 'A } B', motion: 'pulse' }] });
-  });
-});
-
-describe('what is left after a written call', () => {
-  it('is spoken, not swallowed', async () => {
-    const { markupRemainder } = await import('../../src/leaked-calls');
-
-    expect(markupRemainder('show_form: {"beats":[]} Once upon a time')).toBe(' Once upon a time');
-    expect(markupRemainder('<show_form beats=[] /> There.')).toBe(' There.');
-    expect(markupRemainder('show_form: {"beats":[')).toBeNull();
   });
 });

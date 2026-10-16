@@ -25,9 +25,9 @@ const READY_POLL_MS = 1_000;
 
 const STARTING = /not been started|not running|starting/iu;
 
-export type ExecResult = { readonly exitCode: number; readonly stdout: string; readonly stderr: string };
+type ExecResult = { readonly exitCode: number; readonly stdout: string; readonly stderr: string };
 
-export type Entry = { readonly name: string; readonly type: string };
+type Entry = { readonly name: string; readonly type: string };
 
 const SNAPSHOT_COMMAND = `cd ${WORKSPACE} && tar --exclude=node_modules --exclude=.git/objects/pack -czf - . 2>/dev/null | base64 -w0`;
 
@@ -67,7 +67,7 @@ const decode = (bytes: ArrayBuffer | Uint8Array | string | undefined): string =>
 
 const capped = (text: string) => (text.length > OUTPUT_CAP_BYTES ? `${text.slice(0, OUTPUT_CAP_BYTES)}\n[output truncated]` : text);
 
-export const inWorkspace = (path: string) => (path.startsWith('/') ? path : path === '' || path === '.' ? WORKSPACE : `${WORKSPACE}/${path.replace(/^(\.\/)+/u, '')}`);
+const inWorkspace = (path: string) => (path.startsWith('/') ? path : path === '' || path === '.' ? WORKSPACE : `${WORKSPACE}/${path.replace(/^(\.\/)+/u, '')}`);
 
 export const sandboxComputer = (container: Container, image: string): Computer => {
   const files = new Files(container);

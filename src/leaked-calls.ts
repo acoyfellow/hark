@@ -34,7 +34,7 @@ export const mightStartWrittenCall = (text: string): RegExpExecArray | null => {
 
 const quoteBareKeys = (text: string) => text.replace(/([{,]\s*)([a-z_]+)\s*:/giu, '$1"$2":');
 
-export const balancedJson = (text: string): string | null => {
+const balancedJson = (text: string): string | null => {
   const start = text.search(/[[{]/u);
 
   if (start === -1) return null;

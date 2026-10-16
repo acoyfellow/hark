@@ -1,4 +1,4 @@
-export type Part =
+type Part =
   | { readonly type: 'text'; readonly text: string }
   | { readonly type: 'image_url'; readonly image_url: { readonly url: string } };
 

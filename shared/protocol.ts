@@ -1,10 +1,6 @@
 import { Schema } from 'effect';
 
-export const MIC_SAMPLE_RATE = 16_000;
-
 export const SPEECH_SAMPLE_RATE = 24_000;
-
-export const MIC_FRAME_SAMPLES = 1_280;
 
 export const Presence = Schema.Literals(['waking', 'listening', 'hearing', 'thinking', 'speaking']);
 
@@ -84,7 +80,7 @@ export type Brain = typeof Brain.Type;
 
 export const DEFAULT_BRAIN: Brain = '@cf/daily-co/phonellm-mini-alpha-2';
 
-export const GATEWAY_BRAIN_PREFIX = 'gateway/';
+const GATEWAY_BRAIN_PREFIX = 'gateway/';
 
 export const isGatewayBrain = (brain: string) => brain.startsWith(GATEWAY_BRAIN_PREFIX);
 
@@ -119,15 +115,15 @@ export type Beat = typeof Beat.Type;
 
 export const WIDGET_KINDS = ['report', 'alert', 'table', 'chart', 'terminal', 'browser', 'files', 'sources'] as const;
 
-export const WidgetKind = Schema.Literals(WIDGET_KINDS);
+const WidgetKind = Schema.Literals(WIDGET_KINDS);
 
 export const WIDGET_TONES = ['neutral', 'good', 'warn', 'bad'] as const;
 
-export const WidgetTone = Schema.Literals(WIDGET_TONES);
+const WidgetTone = Schema.Literals(WIDGET_TONES);
 
-export const WidgetStat = Schema.Struct({ label: Schema.String, value: Schema.String, tone: WidgetTone });
+const WidgetStat = Schema.Struct({ label: Schema.String, value: Schema.String, tone: WidgetTone });
 
-export const WidgetLink = Schema.Struct({ title: Schema.String, url: Schema.String, note: Schema.String });
+const WidgetLink = Schema.Struct({ title: Schema.String, url: Schema.String, note: Schema.String });
 
 export const Widget = Schema.Struct({
   id: Schema.String,
@@ -235,13 +231,11 @@ export const ClientFrame = Schema.Union([
 
 export type ClientFrame = typeof ClientFrame.Type;
 
-export const ServerFrameJson = Schema.fromJsonString(ServerFrame);
+const ServerFrameJson = Schema.fromJsonString(ServerFrame);
 
-export const ClientFrameJson = Schema.fromJsonString(ClientFrame);
+const ClientFrameJson = Schema.fromJsonString(ClientFrame);
 
 export const encodeServerFrame = Schema.encodeSync(ServerFrameJson);
-
-export const decodeServerFrame = Schema.decodeUnknownOption(ServerFrameJson);
 
 export const encodeClientFrame = Schema.encodeSync(ClientFrameJson);
 

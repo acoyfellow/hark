@@ -3,7 +3,7 @@ import { refreshTokens } from './oauth';
 
 export const TOKEN_REFRESH_MARGIN_MS = 60_000;
 
-export class SignedOut extends Error {}
+class SignedOut extends Error {}
 
 export type RefreshEnv = {
   readonly OAUTH_CLIENT_ID?: string;
