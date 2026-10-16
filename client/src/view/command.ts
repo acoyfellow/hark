@@ -120,19 +120,15 @@ const accountTab = (h: H, model: Model): readonly Html[] => {
       h.p([h.Class('mt-3 text-[12px] leading-relaxed text-white/40')], ['Every word is heard, thought and spoken on your own Workers AI. Your token never leaves your Durable Object.']),
     ]),
     pushSection(h, model),
-    ...(model.local
-      ? []
-      : [
-          h.button(
-            [
-              h.Type('button'),
-              h.Id('sign-out'),
-              h.Class('flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 py-2.5 text-[13px] text-white/70 transition hover:border-red-400/40 hover:bg-red-500/10 hover:text-red-200'),
-              h.OnClick(Message.ClickedSignOut()),
-            ],
-            [icon(h, 'logout', 'size-4'), 'Sign out'],
-          ),
-        ]),
+      h.button(
+        [
+          h.Type('button'),
+          h.Id('sign-out'),
+          h.Class('flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 py-2.5 text-[13px] text-white/70 transition hover:border-red-400/40 hover:bg-red-500/10 hover:text-red-200'),
+          h.OnClick(Message.ClickedSignOut()),
+        ],
+        [icon(h, 'logout', 'size-4'), 'Sign out'],
+      ),
   ];
 };
 
