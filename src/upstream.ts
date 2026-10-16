@@ -109,7 +109,10 @@ const bytesToBase64 = (bytes: Uint8Array) => {
   return btoa(binary);
 };
 
-const accountPath = (path: string, accountId: string) => (path.startsWith('/') ? path : `/${path}`).replaceAll('{account}', enc(accountId));
+const ACCOUNT_PLACEHOLDER = /\{\s*account(?:[_-]?id)?\s*\}|<\s*account(?:[_-]?id)?\s*>|:account(?:[_-]?id)?\b|\$\{?account(?:[_-]?id)?\}?|\bACCOUNT_ID\b|\byour[_-]account[_-]id\b/giu;
+
+export const accountPath = (path: string, accountId: string) =>
+  (path.startsWith('/') ? path : `/${path}`).replace(/^\/client\/v4(?=\/)/u, '').replace(ACCOUNT_PLACEHOLDER, enc(accountId));
 
 
 export const listenUrl = (origins: Origins, credentials: Credentials, params: Readonly<Record<string, unknown>>) => {

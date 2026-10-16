@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { listenUrl, upstream } from '../../src/upstream';
+import { accountPath, listenUrl, upstream } from '../../src/upstream';
 
 const credentials = { accountId: 'acc 1', token: async () => 'tok', refresh: async () => 'tok', signedOut: () => {} };
 
@@ -136,5 +136,11 @@ describe('every model call goes straight to Workers AI on the person’s own acc
     const up = upstream(credentials, undefined, async () => new Response('{"errors":[{"message":"not allowed to access"}]}', { status: 403 }));
 
     await expect(up.chat({}, new AbortController().signal)).rejects.toThrow(/Thinking failed \(403\).*not allowed/);
+  });
+});
+
+describe('the cloudflare tool fills in the account however the brain spells the placeholder', () => {
+  it.each(['/accounts/{account}/workers/scripts', '/accounts/{account_id}/workers/scripts', '/accounts/<account_id>/workers/scripts', '/accounts/:account_id/workers/scripts', '/accounts/ACCOUNT_ID/workers/scripts', 'accounts/{accountId}/workers/scripts', '/client/v4/accounts/{account}/workers/scripts'])('%s', (path) => {
+    expect(accountPath(path, 'acc123')).toBe('/accounts/acc123/workers/scripts');
   });
 });
