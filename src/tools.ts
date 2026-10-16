@@ -586,6 +586,7 @@ const showWidget: Definition = {
   label: () => 'Putting it on screen',
   description: [
     'Put a small live card beside the swarm for things words cannot carry: a report, an alert, a table, a chart, terminal output, a browser screenshot, a file list, or sources.',
+    'When they ask for a card ("show me an alert card", "a report on"), call this right away with what you know; do not search first and do not refuse because a lookup found nothing.',
     'Use it for status reports, incident alerts, comparisons, numbers, logs and results of work you did. Keep it short and scannable. Speak the headline, never read the card aloud.',
     'kind: report | alert | table | chart | terminal | browser | files | sources. tone: neutral | good | warn | bad (alerts usually warn or bad).',
     'Fill only what helps: title, body (a few lines), stats [{label,value,tone}], columns + rows for a table, series [{label,value}] for a bar chart, code for terminal or file text, image (a URL or data URL), links [{title,url,note}] for sources.',
