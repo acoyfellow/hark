@@ -136,6 +136,7 @@ export class Hark extends VoiceAgent<Env> {
   );
 
   override async onStart() {
+    this.sql`CREATE TABLE IF NOT EXISTS cf_voice_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, role TEXT NOT NULL, text TEXT NOT NULL, timestamp INTEGER NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS memories (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, at INTEGER NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS missed (label TEXT NOT NULL, at INTEGER NOT NULL)`;
