@@ -45,7 +45,7 @@ const hostOf = (url: string) => {
   }
 };
 import { COMPUTER_IMAGE, type Computer, sandboxComputer, WORKSPACE } from './computer';
-import { attachCommand, bridgeTerminal, TERMINAL_ENV } from './terminal';
+import { attachCommand, bridgeTerminal, TERMINAL_ENV, TERMINAL_PATH, type TerminalSize, terminalSize } from './terminal';
 import { pageText, pageTitle } from './page-text';
 import { parseResults, searchCommand } from './web-results';
 import { MAX_FILE_BYTES, runOnBench } from './workbench';
@@ -417,7 +417,15 @@ export class Hark extends VoiceAgent<Env> {
     throw new Error(`no capability ${name}`);
   }
 
-  async openTerminal(cols: number, rows: number): Promise<Response> {
+  override async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+
+    if (url.pathname === TERMINAL_PATH) return this.openTerminal(terminalSize(url));
+
+    return super.fetch(request);
+  }
+
+  private async openTerminal({ cols, rows }: TerminalSize): Promise<Response> {
     const container = this.ctx.container;
 
     if (container === undefined) return new Response('This hark has no computer attached', { status: 500 });

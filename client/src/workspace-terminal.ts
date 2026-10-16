@@ -49,6 +49,8 @@ const connect = async (element: HTMLElement, live: Live) => {
   element.dataset.terminal = 'connecting';
   socket.addEventListener('open', () => {
     element.dataset.terminal = 'live';
+    terminal.fit();
+    socket.send(JSON.stringify({ resize: [terminal.cols, terminal.rows] }));
     terminal.focus();
   });
 };

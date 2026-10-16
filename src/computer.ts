@@ -4,7 +4,7 @@ export const WORKSPACE = '/workspace';
 
 export const COMPUTER_IMAGE = 'computer';
 
-const SHELL_ENV: Record<string, string> = {
+export const SHELL_ENV: Record<string, string> = {
   PATH: '/usr/local/bin:/usr/bin:/bin',
   HOME: '/root',
   GIT_AUTHOR_NAME: 'hark',

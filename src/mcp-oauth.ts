@@ -26,11 +26,8 @@ export const saveResource = (storage: DurableObjectStorage, serverId: string, re
 export class ResourceAwareOAuthProvider extends DurableObjectOAuthClientProvider {
   async validateResourceURL(serverUrl: string | URL, advertised?: string): Promise<URL | undefined> {
     const pinned = await this.storage.get<string>(resourceKey(this.serverId));
+    const resource = typeof pinned === 'string' ? pinned : originResource(advertised, String(serverUrl));
 
-    if (typeof pinned === 'string') return new URL(pinned);
-
-    const resource = originResource(advertised, String(serverUrl));
-
-    return resource === undefined ? undefined : new URL(resource);
+    return resource as unknown as URL | undefined;
   }
 }

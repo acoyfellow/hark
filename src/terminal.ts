@@ -1,6 +1,6 @@
-import { WORKSPACE } from './computer';
+import { SHELL_ENV, WORKSPACE } from './computer';
 
-export const TERMINAL_SESSION = 'hark';
+export const TERMINAL_PATH = '/internal/terminal';
 
 export type TerminalSize = { readonly cols: number; readonly rows: number };
 
@@ -14,18 +14,9 @@ export const terminalSize = (url: URL): TerminalSize => {
   };
 };
 
-const TMUX_CONF = ['set -g status off', 'set -g mouse off', 'set -g history-limit 20000', 'set -g default-terminal xterm-256color', 'set -sg escape-time 0', 'set -g window-size latest'].join('\n');
+export const attachCommand = () => ['bash', '-c', `mkdir -p ${WORKSPACE} && cd ${WORKSPACE} && exec bash -l`];
 
-export const attachCommand = (session = TERMINAL_SESSION) => [
-  'bash',
-  '-c',
-  `mkdir -p ${WORKSPACE} && printf '%s\\n' "$1" > /root/.tmux.conf; exec tmux -f /root/.tmux.conf new-session -A -s "$2" -c ${WORKSPACE}`,
-  'attach',
-  TMUX_CONF,
-  session,
-];
-
-export const TERMINAL_ENV = { TERM: 'xterm-256color', LANG: 'C.UTF-8', HOME: '/root' };
+export const TERMINAL_ENV = { ...SHELL_ENV, TERM: 'xterm-256color', LANG: 'C.UTF-8' };
 
 const resizeOf = (frame: string): TerminalSize | null => {
   try {

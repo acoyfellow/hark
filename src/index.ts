@@ -4,7 +4,7 @@ import { type Env, LOCAL_HEADER, LOCAL_OWNER, OWNER_HEADER, TRACE_HEADER } from 
 import { signInPage } from './auth/sign-in-page';
 import { appPage } from './ui/page';
 import { MCP_CALLBACK_PATHS } from './mcp-oauth';
-import { terminalSize } from './terminal';
+import { TERMINAL_PATH, terminalSize } from './terminal';
 import { brandPage } from './site/brand-page';
 import { docsPage } from './site/docs-page';
 import { notFoundResponse } from './site/not-found-page';
@@ -83,8 +83,12 @@ const terminalSocket = async (request: Request, env: Env, owner: string) => {
   if (isCrossOrigin(request)) return new Response('Cross-origin sockets are refused', { status: 403 });
 
   const size = terminalSize(new URL(request.url));
+  const inner = new URL(TERMINAL_PATH, request.url);
 
-  return (await getAgentByName(env.HARK, owner)).openTerminal(size.cols, size.rows);
+  inner.searchParams.set('cols', String(size.cols));
+  inner.searchParams.set('rows', String(size.rows));
+
+  return (await getAgentByName(env.HARK, owner)).fetch(new Request(inner, { headers: request.headers }));
 };
 
 const MAX_TRACE_BYTES = 64_000;

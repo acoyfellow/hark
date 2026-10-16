@@ -1,0 +1,28 @@
+{
+  "at": "2026-10-16T14:03:09.345Z",
+  "against": "local fakes (fake-cloudflare, fake-ax-mcp)",
+  "passed": true,
+  "checks": {
+    "dev server came up": true,
+    "voice history table exists on a fresh Durable Object": true,
+    "voice history table exists on a reused Durable Object": true,
+    "authless MCP server connects and lists names only": true,
+    "OAuth MCP server goes to authenticating with a sign-in link in Settings": true,
+    "finishing sign-in makes the server ready with its tools": true,
+    "a tool call carries the bearer token and the origin resource": true,
+    "a redirect not on the allowlist fails clearly": true,
+    "an expired token sends the server back to authenticating": true,
+    "the coding workspace opens with a file tree and a live terminal": true,
+    "open_computer by voice opens the workspace on a file": true,
+    "no uncaught page errors": true
+  },
+  "notes": {
+    "connectNote": "axfake needs you to sign in. Open the sign-in link. The link is in Settings, Your MCP servers.\naxfake (authenticating): no tools yet",
+    "authless MCP server connects and lists names only": "axfake (authenticating): no tools yet",
+    "OAuth MCP server goes to authenticating with a sign-in link in Settings": {
+      "redirect": "http://127.0.0.1:8795/callback",
+      "resource": "http://127.0.0.1:8798"
+    },
+    "an expired token sends the server back to authenticating": "That server needs you to sign in again. The link is in Settings, Your MCP servers."
+  }
+}
