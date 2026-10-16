@@ -1,0 +1,19 @@
+scripts/ship.sh
+  s_ca5a6532cca4b3::t_d89e954ea27e02 40,46-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "5d961e94194cdfbc813eff5b36f68c65e6fd7b98",
+  "prompts": {},
+  "sessions": {
+    "s_ca5a6532cca4b3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a13c32-5367-7000-8a26-f0799dfcdedc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
