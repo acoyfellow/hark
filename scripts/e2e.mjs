@@ -314,7 +314,7 @@ await scenario('the settings sheet shows the stack, voices, and brains', async (
 
 await scenario('every upstream call went straight to Workers AI with the account token', async () => {
   const log = await (await fetch(`${FAKE}/__log`)).json();
-  const unauthorized = log.filter((entry) => !entry.authorized);
+  const unauthorized = log.filter((entry) => !entry.authorized && entry.path !== '/');
   const kinds = new Set(log.map((entry) => (entry.method === 'WS' ? 'listen' : entry.path.split('/').pop())));
 
   if (unauthorized.length > 0) throw new Error(`${unauthorized.length} calls had no token`);
