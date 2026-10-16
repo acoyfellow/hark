@@ -46,12 +46,12 @@ const html = (body: string, status = 200, headers: Record<string, string> = {}) 
     },
   });
 
-const redirect = (location: string, cookies: string[] = []) => {
+const redirect = (location: string, cookies: string[] = [], status: 302 | 303 = 302) => {
   const headers = new Headers({ location, 'cache-control': 'no-store' });
 
   for (const each of cookies) headers.append('set-cookie', each);
 
-  return new Response(null, { status: 302, headers });
+  return new Response(null, { status, headers });
 };
 
 const wantsJson = (request: Request) => {
@@ -196,7 +196,7 @@ export const cloudflareAuth = (env: CloudflareAuthEnv, send: typeof fetch = fetc
 
     const jar = cookieJar(request.url);
 
-    return redirect('/', [clearCookie(jar, jar.session)]);
+    return redirect('/', [clearCookie(jar, jar.session)], 303);
   };
 
   const me = async (request: Request) => {

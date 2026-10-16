@@ -132,6 +132,8 @@ const route = async (request: Request, env: Env, owner: string, local: boolean):
     return agent.finishServerSignIn(request);
   }
 
+  if (local && pathname === '/oauth/logout' && request.method === 'POST') return new Response(null, { status: 303, headers: { location: '/?signed-out', 'cache-control': 'no-store' } });
+
   if (local && pathname === '/' && new URL(request.url).searchParams.has('signed-out')) return htmlResponse(signInPage({ origin: new URL(request.url).origin }));
 
   if (pathname === '/' && request.method === 'GET') return appPage(new URL(request.url).origin, local, DUOTONE_APP_SKIN);

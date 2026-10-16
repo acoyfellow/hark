@@ -28,14 +28,18 @@ export const Snap = Command.define('Snap', {
     ),
 });
 
+const postSignOut = () => {
+  const form = document.createElement('form');
+
+  form.method = 'POST';
+  form.action = '/oauth/logout';
+  document.body.append(form);
+  form.submit();
+};
+
 export const SignOut = Command.define('SignOut', {
   messages: [Message.CompletedSignOut],
-  execute: Effect.promise(() =>
-    fetch('/oauth/logout', { method: 'POST', redirect: 'manual' }).catch(() => undefined),
-  ).pipe(
-    Effect.andThen(Navigation.load('/')),
-    Effect.as(Message.CompletedSignOut()),
-  ),
+  execute: Effect.sync(postSignOut).pipe(Effect.as(Message.CompletedSignOut())),
 });
 
 export const SendHome = Command.define('SendHome', {

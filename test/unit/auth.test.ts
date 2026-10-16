@@ -113,7 +113,11 @@ describe('the full sign-in round trip', () => {
 
     expect('refused' in refused && refused.refused.status).toBe(401);
 
-    await auth.routes(new Request(`${origin}/oauth/logout`, { method: 'POST', headers: { cookie: session } }));
+    const signedOut = await auth.routes(new Request(`${origin}/oauth/logout`, { method: 'POST', headers: { cookie: session } }));
+
+    expect(signedOut?.status).toBe(303);
+    expect(signedOut?.headers.get('location')).toBe('/');
+    expect(signedOut?.headers.get('set-cookie')).toMatch(/Max-Age=0/u);
 
     expect(directory.grants.size).toBe(0);
     expect('refused' in (await auth.admit(new Request(`${origin}/api/voice`, { headers: { cookie: session } })))).toBe(true);

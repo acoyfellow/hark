@@ -434,6 +434,18 @@ await scenario('the landing page offers Sign in with Cloudflare on desktop and p
   if ((await landing.locator('#sign-in').getAttribute('href')) !== '/oauth/login') throw new Error('sign-in does not start OAuth');
 });
 
+await scenario('Sign out in Settings leaves the app for the sign-in page', async () => {
+  const leaving = await context.newPage();
+
+  await leaving.goto(BASE);
+  await leaving.locator('#settings').click();
+  await leaving.locator('[data-tab="account"]').click();
+  await leaving.locator('#sign-out').click();
+  await leaving.waitForURL((url) => url.search === '?signed-out', { timeout: 10000 });
+  await leaving.locator('#sign-in').waitFor({ timeout: 10000 });
+  await leaving.close();
+});
+
 await mobile.close();
 await browser.close();
 
