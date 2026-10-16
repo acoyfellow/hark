@@ -9,7 +9,7 @@ export const appPage = (origin: string, local: boolean) =>
 <html lang="en" class="dark">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <title>hark</title>
 <meta name="description" content="A long-running durable voice agent on your own Cloudflare account. Bring your own MCP servers.">
 <meta name="theme-color" content="#09090b">

@@ -376,6 +376,38 @@ await scenario('the phone layout renders asleep, then talks and shows a card', a
   return measured;
 });
 
+await scenario('the phone never zooms or scrolls: double tap, pinch and swipe leave scale 1 and scroll 0', async () => {
+  const orb = await mobile.locator('#orb').boundingBox();
+  const x = orb.x + orb.width / 2;
+  const y = orb.y + orb.height / 2;
+  const session = await mobile.context().newCDPSession(mobile);
+  const touch = (type, points) => session.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+
+  await mobile.touchscreen.tap(x, y);
+  await mobile.touchscreen.tap(x, y);
+  await touch('touchStart', [{ x: x - 20, y }, { x: x + 20, y }]);
+  for (let step = 1; step <= 8; step += 1) await touch('touchMove', [{ x: x - 20 - step * 15, y }, { x: x + 20 + step * 15, y }]);
+  await touch('touchEnd', []);
+  await touch('touchStart', [{ x, y: y + 150 }]);
+  for (let step = 1; step <= 8; step += 1) await touch('touchMove', [{ x, y: y + 150 - step * 40 }]);
+  await touch('touchEnd', []);
+  await mobile.mouse.wheel(0, 900);
+  await mobile.waitForTimeout(600);
+
+  const still = await mobile.evaluate(() => ({
+    scale: window.visualViewport?.scale ?? 1,
+    scrollTop: document.scrollingElement?.scrollTop ?? 0,
+    scrollY: window.scrollY,
+    viewport: document.querySelector('meta[name=viewport]')?.getAttribute('content') ?? '',
+  }));
+
+  if (still.scale !== 1 || still.scrollTop !== 0 || still.scrollY !== 0 || !still.viewport.includes('user-scalable=no')) throw new Error(JSON.stringify(still));
+
+  await mobile.locator('#orb').tap();
+
+  return still;
+});
+
 await scenario('the landing page offers Sign in with Cloudflare on desktop and phone', async () => {
   const landing = await context.newPage();
 

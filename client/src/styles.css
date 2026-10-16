@@ -23,6 +23,30 @@
     overscroll-behavior: none;
   }
 
+  html,
+  body {
+    position: fixed;
+    inset: 0;
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+  }
+
+  a,
+  button,
+  input,
+  label,
+  [role='button'] {
+    touch-action: manipulation;
+  }
+
+  .own-scroll {
+    overflow: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
   body {
     margin: 0;
     font-size: 14px;

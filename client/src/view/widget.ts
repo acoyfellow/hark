@@ -36,7 +36,7 @@ const table = (h: H, widget: Widget): Html =>
   widget.rows.length === 0
     ? h.empty
     : h.div(
-        [h.Class('mt-3 max-h-56 overflow-auto rounded-xl bg-black/20')],
+        [h.Class('own-scroll mt-3 max-h-56 rounded-xl bg-black/20')],
         [
           h.table(
             [h.Class('w-full text-left text-[12px]')],
@@ -70,7 +70,7 @@ const chart = (h: H, widget: Widget): Html => {
 const code = (h: H, widget: Widget): Html =>
   widget.code === ''
     ? h.empty
-    : h.pre([h.Class('mt-3 max-h-64 overflow-auto rounded-xl bg-black/50 p-3 font-mono text-[11.5px] leading-relaxed whitespace-pre-wrap text-emerald-100/90')], [widget.code]);
+    : h.pre([h.Class('own-scroll mt-3 max-h-64 rounded-xl bg-black/50 p-3 font-mono text-[11.5px] leading-relaxed whitespace-pre-wrap text-emerald-100/90')], [widget.code]);
 
 const image = (h: H, widget: Widget): Html =>
   widget.image === null ? h.empty : h.img([h.Src(widget.image), h.Alt(widget.title), h.Class('mt-3 w-full rounded-xl border border-white/10')]);

@@ -1,6 +1,7 @@
 import './styles.css';
 import { Runtime } from 'foldkit';
 import { primeAudio } from './engine';
+import { holdStill } from './no-zoom';
 import { startTracing } from './trace';
 import { type Flags, flags, Flags as FlagsSchema, init } from './main';
 import { Message } from './message';
@@ -10,6 +11,7 @@ import { update } from './update';
 import { view } from './view';
 
 startTracing();
+holdStill();
 
 for (const event of ['pointerdown', 'keydown'])
   addEventListener(event, primeAudio, { capture: true, passive: true });

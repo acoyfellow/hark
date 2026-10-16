@@ -172,7 +172,7 @@ const sheet = (h: H, model: Model): Html => {
           h.AriaModal(true),
           h.AriaLabel('Settings'),
           h.Inert(!model.sheet),
-          h.Class(`absolute right-0 bottom-0 left-0 max-h-[88dvh] overflow-y-auto rounded-t-3xl border-t border-white/10 bg-zinc-950/95 p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-xl transition-transform duration-300 md:top-0 md:left-auto md:max-h-none md:w-[400px] md:rounded-none md:border-t-0 md:border-l ${model.sheet ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-x-full md:translate-y-0'}`),
+          h.Class(`absolute right-0 bottom-0 left-0 max-h-[88dvh] own-scroll rounded-t-3xl border-t border-white/10 bg-zinc-950/95 p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-xl transition-transform duration-300 md:top-0 md:left-auto md:max-h-none md:w-[400px] md:rounded-none md:border-t-0 md:border-l ${model.sheet ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-x-full md:translate-y-0'}`),
         ],
         [
           h.div(
