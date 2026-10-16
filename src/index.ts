@@ -75,6 +75,12 @@ const route = async (request: Request, env: Env, owner: string, local: boolean):
 
   if (isLoopback(request) && pathname === '/__trace' && request.method === 'POST') return browserTrace(request);
 
+  if (isLoopback(request) && pathname === '/__think' && request.method === 'POST') {
+    const agent = await getAgentByName(env.HARK, owner);
+
+    return Response.json(await agent.thinkProbe(owner, await request.json()));
+  }
+
   if (local && pathname === '/__bench' && request.method === 'POST') {
     const agent = await getAgentByName(env.HARK, owner);
 

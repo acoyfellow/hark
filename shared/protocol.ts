@@ -62,20 +62,32 @@ export const voicesFor = (engine: SpeechEngine): readonly string[] =>
   engine === 'aura-1' ? FAST_VOICES : RICH_VOICES;
 
 export const BRAINS = [
-  { id: '@cf/moonshotai/kimi-k3', label: 'Kimi K3', note: 'Smartest. Falls back to GPT-OSS 20B if your account cannot use it yet.' },
-  { id: '@cf/openai/gpt-oss-20b', label: 'GPT-OSS 20B', note: 'Quickest. The internal voice benchmark baseline.' },
-  { id: '@cf/openai/gpt-oss-120b', label: 'GPT-OSS 120B', note: 'Sharper, a little slower.' },
-  { id: '@cf/google/gemma-4-26b-a4b-it', label: 'Gemma 4', note: 'Thinking off. Measure before you trust it.' },
-  { id: '@cf/moonshotai/kimi-k2.6', label: 'Kimi K2.6', note: 'Deepest. Slow to answer.' },
+  { id: 'gateway/openai/gpt-6-luna', label: 'GPT-6 Luna', note: 'OpenAI through your AI Gateway. Fast and sharp.' },
+  { id: 'gateway/openai/gpt-6-sol', label: 'GPT-6 Sol', note: 'OpenAI through your AI Gateway.' },
+  { id: 'gateway/anthropic/claude-sonnet-5-5', label: 'Claude Sonnet 5.5', note: 'Anthropic through your AI Gateway.' },
+  { id: 'gateway/anthropic/claude-sonnet-5', label: 'Claude Sonnet 5', note: 'Anthropic through your AI Gateway.' },
+  { id: 'gateway/anthropic/claude-opus-5-5', label: 'Claude Opus 5.5', note: 'Anthropic through your AI Gateway. Deepest, slowest.' },
+  { id: 'gateway/anthropic/claude-opus-5', label: 'Claude Opus 5', note: 'Anthropic through your AI Gateway.' },
+  { id: '@cf/zai-org/glm-5.3', label: 'GLM 5.3', note: 'Workers AI. Calls tools and talks while it draws.' },
+  { id: '@cf/zai-org/glm-5.3-flash', label: 'GLM 5.3 Flash', note: 'Workers AI. Quicker GLM.' },
+  { id: '@cf/deepseek-ai/deepseek-v4-flash-0731', label: 'DeepSeek V4 Flash', note: 'Workers AI.' },
+  { id: '@cf/deepseek-ai/deepseek-v4-pro-0813', label: 'DeepSeek V4 Pro', note: 'Workers AI. Slow.' },
+  { id: '@cf/moonshotai/kimi-k3', label: 'Kimi K3', note: 'Workers AI. Falls back if your account cannot use it yet.' },
+  { id: '@cf/openai/gpt-oss-120b', label: 'GPT-OSS 120B', note: 'Workers AI.' },
+  { id: '@cf/openai/gpt-oss-20b', label: 'GPT-OSS 20B', note: 'Workers AI. Quickest.' },
 ] as const;
 
 export const Brain = Schema.Literals(BRAINS.map((brain) => brain.id));
 
 export type Brain = typeof Brain.Type;
 
-export const DEFAULT_BRAIN: Brain = '@cf/moonshotai/kimi-k3';
+export const DEFAULT_BRAIN: Brain = 'gateway/openai/gpt-6-luna';
 
-export const FALLBACK_BRAIN: Brain = '@cf/openai/gpt-oss-20b';
+export const GATEWAY_BRAIN_PREFIX = 'gateway/';
+
+export const isGatewayBrain = (brain: string) => brain.startsWith(GATEWAY_BRAIN_PREFIX);
+
+export const FALLBACK_BRAIN: Brain = '@cf/zai-org/glm-5.3';
 
 export const DEFAULT_ENGINE: SpeechEngine = 'aura-1';
 

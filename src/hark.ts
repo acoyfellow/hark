@@ -2,6 +2,7 @@ import { Agent, type Connection, type ConnectionContext, type WSMessage } from '
 import { type TextSource, type VoiceTurnContext, WorkersAIFluxSTT, withVoice } from 'agents/voice';
 import {
   BRAINS,
+  isGatewayBrain,
   type Brain,
   type ClientFrame,
   DEFAULT_BRAIN,
@@ -59,13 +60,16 @@ const fitVoice = (voice: Voice, engine: SpeechEngine): Voice =>
 
 const NOT_ALLOWED = /not allowed to access|5018|No such model|not found/iu;
 
-const isBrainRefused = (cause: unknown) =>
-  cause instanceof UpstreamFailed && (cause.status === 403 || cause.status === 404 || (cause.status === 400 && NOT_ALLOWED.test(cause.message)));
+const isBrainRefused = (cause: unknown, brain: Brain) =>
+  cause instanceof UpstreamFailed &&
+  (isGatewayBrain(brain) ? cause.status >= 400 && cause.status !== 401 : cause.status === 403 || cause.status === 404 || (cause.status === 400 && NOT_ALLOWED.test(cause.message)));
 
 const THINKS_BEFORE_TOOLS: readonly Brain[] = ['@cf/moonshotai/kimi-k3'];
 
 const thinkingOptions = (brain: Brain): Record<string, unknown> =>
-  brain.startsWith('@cf/openai/gpt-oss')
+  isGatewayBrain(brain)
+    ? {}
+    : brain.startsWith('@cf/openai/gpt-oss')
     ? { reasoning_effort: 'low' }
     : THINKS_BEFORE_TOOLS.includes(brain)
       ? {}
@@ -248,6 +252,31 @@ export class Hark extends VoiceAgent<Env> {
       },
       signedOut: () => this.signOutEveryone(),
     };
+  }
+
+  async thinkProbe(owner: string, input: { brain: Brain; say: string }) {
+    const caller: Caller = { owner, local: owner === LOCAL_OWNER, traced: false, timeZone: 'UTC', locale: 'en-US', camera: false, firstTurn: false };
+    const grant = await this.grantFor(caller);
+
+    if (grant === null) return { error: 'not signed in' };
+
+    const live = upstream(this.credentials(caller, grant), this.origins(caller));
+    const started = Date.now();
+    const messages = [
+      { role: 'system', content: systemPrompt({ now: new Date(), timeZone: 'UTC', locale: 'en-US', memories: [], camera: false, firstTurn: false }) },
+      { role: 'user', content: input.say },
+    ];
+
+    try {
+      const stream = await live.chat({ model: input.brain, messages, tools: toolSchemas(), stream: true, max_tokens: 1600, temperature: 0.7, ...thinkingOptions(input.brain) }, AbortSignal.timeout(90_000));
+      const raw = await new Response(stream).text();
+      const argumentText = [...raw.matchAll(/"arguments"\s*:\s*"((?:[^"\\]|\\.)*)"/gu)].map((match) => JSON.parse(`"${match[1] ?? ''}"`) as string).join('');
+      const said = [...raw.matchAll(/"content"\s*:\s*"((?:[^"\\]|\\.)*)"/gu)].map((match) => JSON.parse(`"${match[1] ?? ''}"`) as string).join('');
+
+      return { brain: input.brain, ms: Date.now() - started, said: said.slice(0, 300), tools: [...raw.matchAll(/"name"\s*:\s*"([a-z_]+)"/gu)].map((match) => match[1]), arguments: argumentText };
+    } catch (cause) {
+      return { brain: input.brain, ms: Date.now() - started, error: cause instanceof Error ? cause.message.slice(0, 400) : String(cause) };
+    }
   }
 
   async benchProbe(code: string) {
@@ -550,7 +579,7 @@ export class Hark extends VoiceAgent<Env> {
         try {
           return await ask(chosen);
         } catch (cause) {
-          if (chosen === FALLBACK_BRAIN || !isBrainRefused(cause)) throw cause;
+          if (chosen === FALLBACK_BRAIN || !isBrainRefused(cause, chosen)) throw cause;
 
           this.refusedBrains.add(chosen);
           trace('brain-refused', { brain: chosen, reason: cause instanceof Error ? cause.message.slice(0, 200) : String(cause) });

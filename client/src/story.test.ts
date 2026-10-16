@@ -192,7 +192,7 @@ describe('settings', () => {
   });
 
   test('a brain picked while awake is sent right away', () => {
-    story(update, given(awake), message(Message.PickedBrain({ brain: '@cf/moonshotai/kimi-k2.6' })), Command.expectHas(Send), Command.resolve(Send, Message.CompletedSend()));
+    story(update, given(awake), message(Message.PickedBrain({ brain: '@cf/zai-org/glm-5.3' })), Command.expectHas(Send), Command.resolve(Send, Message.CompletedSend()));
   });
 
   test('switching to the rich engine keeps a voice it has, or picks its first', () => {

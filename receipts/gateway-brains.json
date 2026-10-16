@@ -1,0 +1,66 @@
+[
+ {
+  "brain": "gateway/openai/gpt-6-luna",
+  "ask": "make me a rocket that blasts off",
+  "ms": 7083,
+  "kinds": [
+   "code",
+   "svg",
+   "code"
+  ],
+  "said": "",
+  "err": null
+ },
+ {
+  "brain": "gateway/openai/gpt-6-luna",
+  "ask": "draw a city skyline at night",
+  "ms": 6092,
+  "kinds": [
+   "svg"
+  ],
+  "said": "",
+  "err": null
+ },
+ {
+  "brain": "gateway/openai/gpt-6-luna",
+  "ask": "make a dog running",
+  "ms": 3650,
+  "kinds": [
+   "code"
+  ],
+  "said": "",
+  "err": null
+ },
+ {
+  "brain": "gateway/anthropic/claude-sonnet-5-5",
+  "ask": "make me a rocket that blasts off",
+  "ms": 7720,
+  "kinds": [
+   "word",
+   "word",
+   "word",
+   "code",
+   "word"
+  ],
+  "said": "",
+  "err": null
+ },
+ {
+  "brain": "gateway/anthropic/claude-sonnet-5-5",
+  "ask": "draw a city skyline at night",
+  "ms": 10936,
+  "kinds": [],
+  "said": "Here's a city after dark.",
+  "err": null
+ },
+ {
+  "brain": "gateway/anthropic/claude-sonnet-5-5",
+  "ask": "make a dog running",
+  "ms": 8142,
+  "kinds": [
+   "code"
+  ],
+  "said": "",
+  "err": null
+ }
+]

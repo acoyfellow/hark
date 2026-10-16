@@ -9,11 +9,18 @@ export type Credentials = {
 
 export const SIGNED_OUT_DETAIL = 'Your Cloudflare sign-in expired. Sign in with Cloudflare again.';
 
-export type Origins = { readonly api: string };
+export type Origins = { readonly api: string; readonly gateway?: string };
 
 export const CLOUDFLARE_ORIGINS: Origins = {
   api: 'https://api.cloudflare.com/client/v4',
+  gateway: 'https://gateway.ai.cloudflare.com/v1',
 };
+
+const GATEWAY_PREFIX = 'gateway/';
+
+const PREFERRED_GATEWAYS = ['hark', 'my-ax', 'ax', 'default'];
+
+const NO_GATEWAY = 'none';
 
 export const LISTEN_MODEL = '@cf/deepgram/flux';
 
@@ -47,7 +54,8 @@ const UNAUTHORIZED = 401;
 const authorizedSend =
   (credentials: Credentials, send: typeof fetch) =>
   async (url: string, init: RequestInit & { headers?: Record<string, string> }): Promise<Response> => {
-    const attempt = (token: string) => send(url, { ...init, headers: { authorization: `Bearer ${token}`, ...init.headers } });
+    const header = url.includes('gateway.ai.cloudflare.com') || url.includes('/__gateway/') ? 'cf-aig-authorization' : 'authorization';
+    const attempt = (token: string) => send(url, { ...init, headers: { [header]: `Bearer ${token}`, ...init.headers } });
     const first = await attempt(await credentials.token());
 
     if (first.status !== UNAUTHORIZED) return first;
@@ -100,6 +108,40 @@ export const upstream = (
   rawSend: typeof fetch = (input, init) => fetch(input, init),
 ): Upstream => {
   const send = authorizedSend(credentials, rawSend);
+  let gatewayId: Promise<string> | null = null;
+
+  const pickGateway = async (): Promise<string> => {
+    const response = await send(`${origins.api}/accounts/${enc(credentials.accountId)}/ai-gateway/gateways?per_page=100`, { method: 'GET' });
+    const parsed: unknown = await response.json().catch(() => null);
+    const listed = typeof parsed === 'object' && parsed !== null && Array.isArray((parsed as { result?: unknown }).result) ? ((parsed as { result: { id?: unknown; authentication?: unknown }[] }).result) : [];
+    const ids = listed.map((gateway) => (typeof gateway.id === 'string' ? gateway.id : '')).filter((id) => id !== '');
+    const authenticated = listed.filter((gateway) => gateway.authentication === true).map((gateway) => String(gateway.id));
+
+    return PREFERRED_GATEWAYS.find((id) => authenticated.includes(id)) ?? authenticated[0] ?? PREFERRED_GATEWAYS.find((id) => ids.includes(id)) ?? ids[0] ?? NO_GATEWAY;
+  };
+
+  const gatewayChat = async (body: Record<string, unknown>, signal: AbortSignal) => {
+    gatewayId ??= pickGateway();
+
+    const gateway = await gatewayId;
+
+    if (gateway === NO_GATEWAY) throw new UpstreamFailed('Thinking (AI Gateway)', 404, 'this account has no AI Gateway; create one named hark in the dashboard');
+
+    const model = String(body.model).slice(GATEWAY_PREFIX.length);
+    const tuned = model.startsWith('openai/')
+      ? { ...body, model, reasoning_effort: 'none', max_completion_tokens: body.max_tokens, max_tokens: undefined, temperature: undefined }
+      : { ...body, model, temperature: undefined };
+    const response = await send(`${origins.gateway ?? CLOUDFLARE_ORIGINS.gateway}/${enc(credentials.accountId)}/${enc(gateway)}/compat/chat/completions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(tuned),
+      signal,
+    });
+
+    if (!response.ok || response.body === null) throw await failure(`Thinking (${model} via AI Gateway ${gateway})`, response);
+
+    return response.body;
+  };
   const runModel = async (
     model: string,
     body: () => BodyInit,
@@ -128,6 +170,8 @@ export const upstream = (
   },
 
   chat: async (body, signal) => {
+    if (String(body.model).startsWith(GATEWAY_PREFIX)) return gatewayChat(body, signal);
+
     const response = await send(`${aiBase(origins, credentials)}/v1/chat/completions`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
