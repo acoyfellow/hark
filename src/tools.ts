@@ -21,12 +21,14 @@ export type ToolHost = {
   readonly imagine: (prompt: string) => Promise<string>;
   readonly mcp: McpPort;
   readonly runCode: (code: string) => Promise<string>;
+  readonly signal?: AbortSignal;
   readonly terminal: (command: string) => Promise<{ readonly exitCode: number; readonly stdout: string; readonly stderr: string }>;
   readonly files: (action: 'list' | 'read' | 'write', path: string, content: string) => Promise<string>;
   readonly cloudflare: (method: string, path: string, body: unknown) => Promise<{ readonly status: number; readonly body: string }>;
   readonly webSearch: (query: string) => Promise<readonly { readonly title: string; readonly url: string; readonly note: string }[]>;
   readonly screenshot: (url: string) => Promise<{ readonly image: string; readonly title: string; readonly text: string }>;
   readonly setIdle: (beats: readonly Beat[]) => void;
+  readonly openWorkspace: (path: string | null) => void;
   readonly setVoice: (voice: Voice) => void;
   readonly fetch: typeof fetch;
   readonly id: () => string;
@@ -37,7 +39,7 @@ export type McpPort = {
   readonly remove: (server: string) => Promise<string>;
   readonly tools: () => readonly { readonly server: string; readonly name: string; readonly description: string; readonly schema: unknown }[];
   readonly connect: (name: string, url: string, token: string) => Promise<string>;
-  readonly call: (server: string, tool: string, args: Record<string, unknown>) => Promise<string>;
+  readonly call: (server: string, tool: string, args: Record<string, unknown>, signal?: AbortSignal) => Promise<string>;
 };
 
 type Definition = {
@@ -393,7 +395,7 @@ const showForm: Definition = {
   },
 };
 
-const MCP_ACTIONS = ['list', 'connect', 'call', 'disconnect'] as const;
+const MCP_ACTIONS = ['list', 'describe', 'connect', 'call', 'disconnect'] as const;
 
 const MCP_RESULT_LIMIT = 3000;
 
@@ -402,10 +404,21 @@ const mcpCatalog = (host: ToolHost) => {
 
   if (servers.length === 0) return 'No MCP servers are connected yet.';
 
-  return [
-    `Connected servers: ${servers.map((server) => `${server.name} (${server.id}, ${server.state})`).join(', ')}.`,
-    ...host.mcp.tools().map((tool) => `- ${tool.server} / ${tool.name}: ${tool.description.slice(0, 200)} args ${JSON.stringify(tool.schema).slice(0, 400)}`),
-  ].join('\n');
+  const tools = host.mcp.tools();
+
+  return servers
+    .map((server) => {
+      const names = tools.filter((tool) => tool.server === server.name).map((tool) => tool.name);
+
+      return `${server.name} (${server.state}): ${names.length === 0 ? 'no tools yet' : names.join(', ')}`;
+    })
+    .join('\n');
+};
+
+const describeTool = (host: ToolHost, server: string, name: string) => {
+  const tool = host.mcp.tools().find((each) => each.name === name && (server === '' || each.server === server));
+
+  return tool === undefined ? `No tool called ${name}. Use action list.` : `${tool.server} / ${tool.name}: ${tool.description.slice(0, 600)}\nargs ${JSON.stringify(tool.schema).slice(0, 2000)}`;
 };
 
 const mcp: Definition = {
@@ -413,7 +426,8 @@ const mcp: Definition = {
   label: (args) => (args.action === 'connect' ? 'Connecting a server' : args.action === 'call' ? `Using ${str(args.tool, 'a tool')}` : 'Checking my tools'),
   description: [
     'Use any MCP server the person has connected, or connect a new one. This is how you reach tools you do not have built in: code runners, search, docs, their own services.',
-    'action "list" shows connected servers and every tool with its arguments. Call it first when you are unsure.',
+    'action "list" shows each connected server and its tool names only. Call it first when you are unsure.',
+    'action "describe" shows one tool\'s description and arguments: server, tool. Do this before the first call of a tool.',
     'action "connect" adds a server by name and https url, with an optional bearer token. It stays connected.',
     'action "call" runs one tool: server (name or id), tool, args.',
     'action "disconnect" removes a server by name or id when the person asks.',
@@ -442,8 +456,10 @@ const mcp: Definition = {
 
     if (action === 'disconnect') return { content: await host.mcp.remove(str(args.server)) };
 
+    if (action === 'describe') return { content: describeTool(host, str(args.server), str(args.tool)) };
+
     if (action === 'call') {
-      const result = await host.mcp.call(str(args.server), str(args.tool), rec(args.args));
+      const result = await host.mcp.call(str(args.server), str(args.tool), rec(args.args), host.signal);
 
       return { content: result.slice(0, MCP_RESULT_LIMIT) };
     }
@@ -460,7 +476,7 @@ const runCode: Definition = {
     'The body is an async function. Return a value. console.log works. await hark.<capability>(input) reaches:',
     '- read_file({path}), write_file({path, content}), list_files({}), delete_file({path}): files that persist between calls and sessions.',
     '- imagine({prompt}): paint an image, returns a data URL.',
-    '- mcp_tools({}), mcp_call({server, tool, args}): every connected MCP server.',
+    '- mcp_tools({}) lists server and tool names, mcp_describe({server, tool}) gives one schema, mcp_call({server, tool, args}) runs it.',
     'Good for generating particle code or SVG for show_form, saving a scene as a file to replay later, or chaining MCP calls.',
   ].join('\n'),
   parameters: object({ code: { type: 'string', description: 'The async function body.' } }, ['code']),
@@ -490,6 +506,21 @@ const terminal: Definition = {
       content: code.slice(0, MCP_RESULT_LIMIT),
       visual: { _tag: 'Widget', id, widget: widgetOf(id, { kind: 'terminal', tone: result.exitCode === 0 ? 'neutral' : 'bad', title: command.slice(0, 80), code }) },
     };
+  },
+};
+
+const openComputer: Definition = {
+  name: 'open_computer',
+  label: () => 'Opening your computer',
+  description:
+    'Open the coding workspace on screen: their file tree, the open file and a live terminal on their durable Linux computer. Call it when they say "open my computer", "show me the code", "show my files", or when they will want to watch you work. path optionally opens one file, relative to /workspace.',
+  parameters: object({ path: { type: 'string' } }, []),
+  run: async (args, host) => {
+    const path = str(args.path);
+
+    host.openWorkspace(path === '' ? null : path);
+
+    return { content: path === '' ? 'The workspace is open on their screen.' : `The workspace is open on ${path}.` };
   },
 };
 
@@ -630,6 +661,7 @@ export const TOOLS: readonly Definition[] = [
   showWidget,
   terminal,
   files,
+  openComputer,
   cloudflare,
   webSearch,
   browse,

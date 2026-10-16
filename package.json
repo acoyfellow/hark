@@ -31,6 +31,7 @@
     "@cloudflare/sandbox": "1.0.0",
     "@effect/platform-browser": "4.0.0",
     "agents": "file:./vendor/agents-0.28.1-voice-93aa507-continuous.tgz",
+    "cloudterm": "github:acoyfellow/cloudterm#v0.0.9",
     "effect": "4.0.0",
     "foldkit": "0.168.0",
     "three": "0.169.0"

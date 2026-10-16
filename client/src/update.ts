@@ -2,7 +2,7 @@ import { Match, Option } from 'effect';
 import type { Command, Update } from 'foldkit';
 import { modifyFields } from 'foldkit/struct';
 import { DEFAULT_BRAIN, DEFAULT_ENGINE, DEFAULT_VOICE, type ServerFrame, type Settings, type Visual, voicesFor } from '../../shared/protocol';
-import { AskPush, SendHome, Send, SignOut, Snap } from './command';
+import { AskPush, LoadFile, LoadTree, SendHome, Send, SignOut, Snap } from './command';
 import { Message } from './message';
 import { MAX_VISUALS, type Model, type SettingsTab } from './model';
 import type { Resources } from './resources';
@@ -113,6 +113,10 @@ const onFrame = (model: Model, frame: ServerFrame): Return =>
       }),
       Sleep: ({ reason }): Return => ({ model: sleep(model, Option.some(reason)) }),
       Idle: ({ beats }): Return => ({ model: modifyFields(model, { idle: () => beats }) }),
+      OpenWorkspace: ({ path }): Return => ({
+        model: modifyFields(model, { workspace: (workspace) => ({ ...workspace, open: true, loading: true }), sheet: () => false }),
+        commands: [LoadTree(), ...(path === null ? [] : [LoadFile({ path })])],
+      }),
       Servers: ({ servers }): Return => ({ model: modifyFields(model, { servers: () => servers }) }),
       ServerNote: ({ note, authUrl }): Return => ({
         model: modifyFields(model, {
@@ -130,7 +134,7 @@ export const update = (model: Model, message: Message): Return =>
     ClickedOrb: () => toggle(model),
     PressedSpace: () => toggle(model),
     PressedEscape: () =>
-      model.sheet ? { model: modifyFields(model, { sheet: () => false }) } : model.awake ? { model: sleep(model, Option.none()) } : { model },
+      model.workspace.open ? { model: modifyFields(model, { workspace: (workspace) => ({ ...workspace, open: false }) }) } : model.sheet ? { model: modifyFields(model, { sheet: () => false }) } : model.awake ? { model: sleep(model, Option.none()) } : { model },
     ClickedCamera: () => ({
       model: modifyFields(model, { camera: (on) => !on }),
       commands: model.connected ? [Send({ frame: { _tag: 'Camera', on: !model.camera } })] : [],
@@ -150,6 +154,15 @@ export const update = (model: Model, message: Message): Return =>
             commands: [Send({ frame: { _tag: 'AddServer', name: '', url: model.draft.url.trim(), token: model.draft.token.trim() } })],
           },
     ClickedEnablePush: () => ({ model, commands: [AskPush()] }),
+    ClickedWorkspace: () =>
+      model.workspace.open
+        ? { model: modifyFields(model, { workspace: (workspace) => ({ ...workspace, open: false }) }) }
+        : { model: modifyFields(model, { workspace: (workspace) => ({ ...workspace, open: true, loading: true }), sheet: () => false }), commands: [LoadTree()] },
+    ClosedWorkspace: () => ({ model: modifyFields(model, { workspace: (workspace) => ({ ...workspace, open: false }) }) }),
+    ClickedRefreshTree: () => ({ model: modifyFields(model, { workspace: (workspace) => ({ ...workspace, loading: true }) }), commands: [LoadTree()] }),
+    GotTree: ({ tree }) => ({ model: modifyFields(model, { workspace: (workspace) => ({ ...workspace, tree, loading: false }) }) }),
+    ClickedFile: ({ path }) => ({ model, commands: [LoadFile({ path })] }),
+    GotFile: ({ path, text }) => ({ model: modifyFields(model, { workspace: (workspace) => ({ ...workspace, file: Option.some({ path, text }) }) }) }),
     ChangedPush: ({ push }) => ({ model: modifyFields(model, { push: () => push }) }),
     ClickedRemoveServer: ({ id }) => ({
       model: modifyFields(model, { servers: (servers) => servers.filter((server) => server.id !== id) }),

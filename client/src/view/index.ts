@@ -5,6 +5,7 @@ import type { Look, Model } from '../model';
 import { Preview } from '../orb';
 import { Swarm } from '../swarm';
 import { commandSheet } from './command';
+import { workspacePanel } from './workspace';
 import { icon } from './icons';
 import { visuals } from './visuals';
 
@@ -54,6 +55,10 @@ const header = (h: H, model: Model): Html =>
               ),
             ],
           }),
+          h.button(
+            [h.Type('button'), h.Id('open-workspace'), h.AriaLabel('Your computer'), h.AriaExpanded(model.workspace.open), h.Class('grid size-10 place-items-center rounded-full text-white/60 transition hover:bg-white/[0.06] hover:text-white'), h.OnClick(Message.ClickedWorkspace())],
+            [icon(h, 'terminal')],
+          ),
           h.button(
             [h.Type('button'), h.Id('settings'), h.AriaLabel('Settings'), h.AriaExpanded(model.sheet), h.Class('grid size-10 place-items-center rounded-full text-white/60 transition hover:bg-white/[0.06] hover:text-white'), h.OnClick(Message.ClickedSheet())],
             [icon(h, 'sliders')],
@@ -196,6 +201,6 @@ export const view = (model: Model, h: H): Document => ({
   title: model.look === 'asleep' ? 'hark' : `hark · ${LABELS[model.look].toLowerCase()}`,
   body: h.div(
     [h.Class(`app look-${model.look} relative flex h-dvh flex-col overflow-hidden`)],
-    [swarm(h, model), header(h, model), toast(h, model), preview(h, model), fault(h, model), stage(h, model), dock(h, model), commandSheet(h, model)],
+    [swarm(h, model), header(h, model), toast(h, model), preview(h, model), fault(h, model), stage(h, model), dock(h, model), workspacePanel(h, model), commandSheet(h, model)],
   ),
 });

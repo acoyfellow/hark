@@ -40,6 +40,7 @@ export const initialModel = ({ local, now }: Flags): Model => ({
   query: '',
   servers: [],
   draft: { url: '', token: '', pending: false, note: Option.none(), authUrl: Option.none() },
+  workspace: { open: false, tree: [], file: Option.none(), loading: false },
   push: typeof Notification === 'undefined' ? 'unsupported' : Notification.permission,
   now,
 });

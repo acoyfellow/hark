@@ -1,5 +1,3 @@
-export const MCP_CALLBACK_PATH = '/mcp/callback';
-
 export const MAX_MCP_SERVERS = 12;
 
 const MAX_NAME_LENGTH = 40;

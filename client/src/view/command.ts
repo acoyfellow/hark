@@ -250,6 +250,12 @@ const toolsTab = (h: H, model: Model): readonly Html[] => {
   const groups = TOOL_GROUPS.map((group) => ({ group, tools: TOOL_CATALOG.filter((tool) => tool.group === group && matches(model.query, tool.title, tool.say, tool.name, group)) })).filter((entry) => entry.tools.length > 0);
 
   return [
+    section(h, 'Your computer', [
+      h.button(
+        [h.Type('button'), h.Id('settings-open-workspace'), h.Class('flex w-full items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3.5 py-3 text-left hover:border-ember/40'), h.OnClick(Message.ClickedWorkspace())],
+        [icon(h, 'terminal', 'size-4 text-ember'), h.span([h.Class('flex flex-col')], [h.span([h.Class('text-[13.5px] font-medium')], ['Open the workspace']), h.span([h.Class('text-[12px] text-white/45')], ['Files, code and a terminal on your durable Linux box. Or say "open my computer".'])])],
+      ),
+    ]),
     section(h, 'Your MCP servers', [
       servers.length === 0
         ? h.p([h.Class('rounded-xl border border-white/[0.07] px-3.5 py-3 text-[13px] text-white/45')], [model.servers.length === 0 ? 'None yet. Connect any MCP server and hark can call its tools by voice.' : 'No server matches that.'])

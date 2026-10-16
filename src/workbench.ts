@@ -16,7 +16,7 @@ type Outcome = { readonly ok: true; readonly value: unknown } | { readonly ok: f
 
 type BridgeProps = { readonly owner: string };
 
-export const BENCH_CAPABILITIES = ['read_file', 'write_file', 'list_files', 'delete_file', 'imagine', 'mcp_connect', 'mcp_tools', 'mcp_call'] as const;
+export const BENCH_CAPABILITIES = ['read_file', 'write_file', 'list_files', 'delete_file', 'imagine', 'mcp_connect', 'mcp_tools', 'mcp_describe', 'mcp_call'] as const;
 
 export type BenchCapability = (typeof BENCH_CAPABILITIES)[number];
 

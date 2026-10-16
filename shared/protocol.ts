@@ -212,6 +212,7 @@ export const ServerFrame = Schema.Union([
   Schema.TaggedStruct('Servers', { servers: Schema.Array(McpServer) }),
   Schema.TaggedStruct('ServerNote', { note: Schema.String, authUrl: Schema.NullOr(Schema.String) }),
   Schema.TaggedStruct('Idle', { beats: Schema.Array(Beat) }),
+  Schema.TaggedStruct('OpenWorkspace', { path: Schema.NullOr(Schema.String) }),
 ]);
 
 export type ServerFrame = typeof ServerFrame.Type;
@@ -227,7 +228,7 @@ export const ClientFrame = Schema.Union([
   Schema.TaggedStruct('Configure', { settings: Settings }),
   Schema.TaggedStruct('Camera', { on: Schema.Boolean }),
   Schema.TaggedStruct('Hush', {}),
-  Schema.TaggedStruct('AddServer', { name: Schema.String, url: Schema.String, token: Schema.String }),
+  Schema.TaggedStruct('AddServer', { name: Schema.String, url: Schema.String, token: Schema.String, resource: Schema.optional(Schema.String) }),
   Schema.TaggedStruct('RemoveServer', { id: Schema.String }),
   Schema.TaggedStruct('ListServers', {}),
 ]);

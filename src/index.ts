@@ -3,7 +3,8 @@ import { gate } from './auth/gate';
 import { type Env, LOCAL_HEADER, LOCAL_OWNER, OWNER_HEADER, TRACE_HEADER } from './env';
 import { signInPage } from './auth/sign-in-page';
 import { appPage } from './ui/page';
-import { MCP_CALLBACK_PATH } from './mcp-servers';
+import { MCP_CALLBACK_PATHS } from './mcp-oauth';
+import { terminalSize } from './terminal';
 import { brandPage } from './site/brand-page';
 import { docsPage } from './site/docs-page';
 import { notFoundResponse } from './site/not-found-page';
@@ -25,7 +26,7 @@ const sitePage = (request: Request) => {
   return page === undefined ? null : htmlResponse(page());
 };
 
-const KNOWN_ROUTES = /^\/(|oauth\/(login|callback|logout|me)|mcp\/callback|__[a-z]+)$/u;
+const KNOWN_ROUTES = /^\/(|oauth\/(login|callback|logout|me)|mcp\/callback|callback|workspace\/(terminal|tree|file)|__[a-z]+)$/u;
 
 const isKnownRoute = (pathname: string) => KNOWN_ROUTES.test(pathname) || AGENT_PATH.test(pathname);
 
@@ -76,6 +77,16 @@ const voiceSocket = async (request: Request, env: Env, owner: string, local: boo
   return agent.fetch(new Request(request.url, { headers }));
 };
 
+const terminalSocket = async (request: Request, env: Env, owner: string) => {
+  if (request.headers.get('upgrade')?.toLowerCase() !== 'websocket') return new Response('Expected a WebSocket upgrade', { status: 426 });
+
+  if (isCrossOrigin(request)) return new Response('Cross-origin sockets are refused', { status: 403 });
+
+  const size = terminalSize(new URL(request.url));
+
+  return (await getAgentByName(env.HARK, owner)).openTerminal(size.cols, size.rows);
+};
+
 const MAX_TRACE_BYTES = 64_000;
 
 const browserTrace = async (request: Request) => {
@@ -91,6 +102,12 @@ const route = async (request: Request, env: Env, owner: string, local: boolean):
   const { pathname } = new URL(request.url);
 
   if (AGENT_PATH.test(pathname)) return voiceSocket(request, env, owner, local);
+
+  if (pathname === '/workspace/terminal') return terminalSocket(request, env, owner);
+
+  if (pathname === '/workspace/tree' && request.method === 'GET') return Response.json(await (await getAgentByName(env.HARK, owner)).workspaceTree());
+
+  if (pathname === '/workspace/file' && request.method === 'GET') return new Response(await (await getAgentByName(env.HARK, owner)).workspaceFile(new URL(request.url).searchParams.get('path') ?? ''), { headers: { 'content-type': 'text/plain; charset=utf-8' } });
 
   if (isLoopback(request) && pathname === '/__trace' && request.method === 'POST') return browserTrace(request);
 
@@ -113,7 +130,7 @@ const route = async (request: Request, env: Env, owner: string, local: boolean):
     return Response.json(await agent.benchProbe(await request.text()));
   }
 
-  if (pathname === MCP_CALLBACK_PATH && request.method === 'GET') {
+  if ((MCP_CALLBACK_PATHS as readonly string[]).includes(pathname) && request.method === 'GET') {
     const agent = await getAgentByName(env.HARK, owner);
 
     return agent.finishServerSignIn(request);

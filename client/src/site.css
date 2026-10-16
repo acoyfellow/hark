@@ -135,6 +135,18 @@
     @apply m-0 flex flex-col gap-2 pl-5;
   }
 
+  .prose-doc :is(ol, ul, table):not(:last-child) {
+    @apply mb-4;
+  }
+
+  .prose-doc h3 {
+    @apply mt-7 mb-2.5 text-[17px] font-semibold tracking-[-0.01em] text-text;
+  }
+
+  .prose-doc td code {
+    @apply whitespace-nowrap [overflow-wrap:normal];
+  }
+
   .prose-doc ol {
     @apply list-decimal;
   }
@@ -164,7 +176,7 @@
   }
 
   .prose-doc td:first-child {
-    @apply pr-4 text-text md:w-[46%] md:pr-6;
+    @apply pr-4 text-text [overflow-wrap:normal] md:w-[46%] md:pr-6;
   }
 
   .on-light {

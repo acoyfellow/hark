@@ -5,6 +5,19 @@ export const Look = Schema.Union([Schema.Literal('asleep'), Presence]);
 
 export type Look = typeof Look.Type;
 
+export const WorkspaceEntry = Schema.Struct({ path: Schema.String, type: Schema.Literals(['file', 'dir']) });
+
+export type WorkspaceEntry = typeof WorkspaceEntry.Type;
+
+export const Workspace = Schema.Struct({
+  open: Schema.Boolean,
+  tree: Schema.Array(WorkspaceEntry),
+  file: Schema.Option(Schema.Struct({ path: Schema.String, text: Schema.String })),
+  loading: Schema.Boolean,
+});
+
+export type Workspace = typeof Workspace.Type;
+
 export const SettingsTab = Schema.Literals(['account', 'voice', 'brain', 'tools']);
 
 export type SettingsTab = typeof SettingsTab.Type;
@@ -40,6 +53,7 @@ export const Model = Schema.Struct({
   servers: Schema.Array(McpServer),
   draft: ServerDraft,
   push: PushState,
+  workspace: Workspace,
   now: Schema.Number,
 });
 

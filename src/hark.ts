@@ -34,7 +34,8 @@ import type { ChatMessage } from './chat';
 import { CLOUDFLARE_ORIGINS, type Credentials, type Origins, type Upstream, UpstreamFailed, upstream } from './upstream';
 import { userAI } from './user-ai';
 import type { McpPort } from './tools';
-import { checkServerUrl, checkToken, MAX_MCP_SERVERS, MCP_CALLBACK_PATH, serverName } from './mcp-servers';
+import { checkServerUrl, checkToken, MAX_MCP_SERVERS, serverName } from './mcp-servers';
+import { mcpCallbackPath, ResourceAwareOAuthProvider, saveResource } from './mcp-oauth';
 
 const hostOf = (url: string) => {
   try {
@@ -43,7 +44,8 @@ const hostOf = (url: string) => {
     return url;
   }
 };
-import { COMPUTER_IMAGE, type Computer, sandboxComputer } from './computer';
+import { COMPUTER_IMAGE, type Computer, sandboxComputer, WORKSPACE } from './computer';
+import { attachCommand, bridgeTerminal, TERMINAL_ENV } from './terminal';
 import { pageText, pageTitle } from './page-text';
 import { parseResults, searchCommand } from './web-results';
 import { MAX_FILE_BYTES, runOnBench } from './workbench';
@@ -217,10 +219,10 @@ export class Hark extends VoiceAgent<Env> {
       case 'Hush':
         return;
       case 'ListServers':
-        this.send(connection, { _tag: 'Servers', servers: this.serverList() });
+        void this.reviveEmptyServers().then(() => this.send(connection, { _tag: 'Servers', servers: this.serverList() }));
         return;
       case 'AddServer':
-        void this.addServer(frame.name, frame.url, frame.token, this.origin).then((outcome) => this.send(connection, { _tag: 'ServerNote', note: outcome.note, authUrl: outcome.authUrl }));
+        void this.addServer(frame.name, frame.url, frame.token, this.origin, frame.resource ?? '').then((outcome) => this.send(connection, { _tag: 'ServerNote', note: outcome.note, authUrl: outcome.authUrl }));
         return;
       case 'RemoveServer':
         void this.removeServer(frame.id).then((note) => this.send(connection, { _tag: 'ServerNote', note, authUrl: null }));
@@ -402,11 +404,49 @@ export class Hark extends VoiceAgent<Env> {
 
     if (name === 'mcp_connect') return port.connect(text('name'), text('url'), text('token'));
 
-    if (name === 'mcp_tools') return port.tools();
+    if (name === 'mcp_tools') return port.servers().map((server) => ({ server: server.name, state: server.state, tools: port.tools().filter((tool) => tool.server === server.name).map((tool) => tool.name) }));
 
-    if (name === 'mcp_call') return port.call(text('server'), text('tool'), typeof args.args === 'object' && args.args !== null ? (args.args as Record<string, unknown>) : {});
+    if (name === 'mcp_describe') return port.tools().find((tool) => tool.name === text('tool') && (text('server') === '' || tool.server === text('server'))) ?? null;
+
+    if (name === 'mcp_call') {
+      this.stopIfInterrupted();
+
+      return port.call(text('server'), text('tool'), typeof args.args === 'object' && args.args !== null ? (args.args as Record<string, unknown>) : {}, this.turnSignal ?? undefined);
+    }
 
     throw new Error(`no capability ${name}`);
+  }
+
+  async openTerminal(cols: number, rows: number): Promise<Response> {
+    const container = this.ctx.container;
+
+    if (container === undefined) return new Response('This hark has no computer attached', { status: 500 });
+
+    await this.bootedComputer();
+
+    const abort = new AbortController();
+    const process = await container.exec(attachCommand(), { pty: { cols, rows }, env: TERMINAL_ENV, cwd: WORKSPACE, signal: abort.signal });
+    const [client, server] = Object.values(new WebSocketPair()) as [WebSocket, WebSocket];
+
+    server.binaryType = 'arraybuffer';
+    server.accept();
+    bridgeTerminal(server, process, abort);
+
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  async workspaceTree(): Promise<readonly { readonly path: string; readonly type: 'file' | 'dir' }[]> {
+    const computer = await this.bootedComputer();
+    const listed = await computer.shell(`cd ${WORKSPACE} && find . -mindepth 1 -maxdepth 4 \\( -name node_modules -o -name .git \\) -prune -o -printf '%y %P\\n' | sort -k2 | head -400`);
+
+    return listed.stdout
+      .split('\n')
+      .filter((line) => line.length > 2)
+      .map((line) => ({ path: line.slice(2), type: line.startsWith('d') ? 'dir' : 'file' }));
+  }
+
+  async workspaceFile(path: string): Promise<string> {
+    return (await this.bootedComputer()).readFile(path);
   }
 
   private async bootedComputer(fresh = false): Promise<Computer> {
@@ -484,7 +524,11 @@ export class Hark extends VoiceAgent<Env> {
     for (const connection of this.getConnections()) this.send(connection, frame);
   }
 
-  private async addServer(rawName: string, rawUrl: string, rawToken: string, origin: string | null): Promise<{ note: string; authUrl: string | null }> {
+  override createMcpOAuthProvider(callbackUrl: string) {
+    return new ResourceAwareOAuthProvider(this.ctx.storage, this.name, callbackUrl);
+  }
+
+  private async addServer(rawName: string, rawUrl: string, rawToken: string, origin: string | null, rawResource = ''): Promise<{ note: string; authUrl: string | null }> {
     const checked = checkServerUrl(rawUrl, this.name === LOCAL_OWNER);
 
     if (!checked.ok) return { note: checked.reason, authUrl: null };
@@ -501,8 +545,14 @@ export class Hark extends VoiceAgent<Env> {
     if (existing !== null) await this.removeMcpServer(existing);
 
     try {
+      const id = crypto.randomUUID().slice(0, 8);
+      const resource = rawResource.trim() === '' ? null : rawResource.trim();
+
+      await saveResource(this.ctx.storage, id, resource);
+
       const added = await this.addMcpServer(name, checked.url, {
-        ...(origin === null ? {} : { callbackHost: origin, callbackPath: MCP_CALLBACK_PATH }),
+        id,
+        ...(origin === null ? {} : { callbackHost: origin, callbackPath: mcpCallbackPath(origin) }),
         transport: token === '' ? {} : { headers: { authorization: `Bearer ${token}` } },
       });
 
@@ -517,6 +567,40 @@ export class Hark extends VoiceAgent<Env> {
       this.announceServers();
 
       return { note: `Could not connect ${name}: ${cause instanceof Error ? cause.message.slice(0, 200) : String(cause)}`, authUrl: null };
+    }
+  }
+
+  private async callFailed(serverId: string, cause: unknown): Promise<string> {
+    const reason = cause instanceof Error ? cause.message : String(cause);
+
+    if (!/401|unauthori[sz]ed|invalid_token|expired/iu.test(reason)) return `That call failed: ${reason.slice(0, 200)}`;
+
+    const authUrl = await this.reauthorize(serverId);
+
+    return authUrl === null ? 'That server signed me out. Add it again in Settings.' : 'That server needs you to sign in again. The link is in Settings, Your MCP servers.';
+  }
+
+  private async reauthorize(serverId: string): Promise<string | null> {
+    const server = this.getMcpServers().servers[serverId];
+
+    if (server === undefined || this.origin === null) return null;
+
+    await this.removeMcpServer(serverId);
+
+    const again = await this.addMcpServer(server.name, server.server_url, { id: serverId, callbackHost: this.origin, callbackPath: mcpCallbackPath(this.origin) }).catch(() => null);
+
+    this.announceServers();
+
+    return again !== null && again.state === 'authenticating' ? again.authUrl : null;
+  }
+
+  private async reviveEmptyServers() {
+    const state = this.getMcpServers();
+
+    for (const [id, server] of Object.entries(state.servers)) {
+      const empty = server.state === 'ready' && !state.tools.some((tool) => tool.serverId === id);
+
+      if (empty) await this.reauthorize(id);
     }
   }
 
@@ -555,12 +639,16 @@ export class Hark extends VoiceAgent<Env> {
         return outcome.authUrl === null ? outcome.note : `${outcome.note} The link is in Settings, Your MCP servers.`;
       },
       remove: (server) => this.removeServer(server),
-      call: async (server, tool, args) => {
+      call: async (server, tool, args, signal) => {
         const serverId = this.serverFor(server);
 
         if (serverId === null) return `No connected server called ${server}.`;
 
-        const result = await this.mcp.callTool({ serverId, name: tool, arguments: args });
+        if (signal?.aborted === true) return 'The person interrupted, so this call was not made.';
+
+        const result = await this.mcp.callTool({ serverId, name: tool, arguments: args }, { ...(signal === undefined ? {} : { signal }), timeout: 60_000 }).catch((cause: unknown) => this.callFailed(serverId, cause));
+
+        if (typeof result === 'string') return result;
         const parts = Array.isArray(result.content) ? result.content : [];
 
         return parts.map((part) => (part.type === 'text' ? part.text : `[${part.type}]`)).join('\n') || JSON.stringify(result.structuredContent ?? result);
@@ -606,6 +694,12 @@ export class Hark extends VoiceAgent<Env> {
   }
 
   private sessionStartsAfter = 0;
+
+  private turnSignal: AbortSignal | null = null;
+
+  private stopIfInterrupted() {
+    if (this.turnSignal?.aborted === true) throw new Error('The person interrupted, so this call was stopped.');
+  }
 
   override getConversationHistory(limit?: number) {
     const inThisSession = this.sql<{ count: number }>`SELECT COUNT(*) AS count FROM cf_voice_messages WHERE id > ${this.sessionStartsAfter}`[0]?.count ?? 0;
@@ -773,6 +867,7 @@ export class Hark extends VoiceAgent<Env> {
 
         return { image: '', title: pageTitle(page.stdout, url), text: pageText(page.stdout, 6000) };
       },
+      openWorkspace: (path) => this.send(connection, { _tag: 'OpenWorkspace', path }),
       setIdle: (beats) => {
         this.sql`INSERT OR REPLACE INTO settings (key, value) VALUES ('idle', ${JSON.stringify(beats)})`;
         this.send(connection, { _tag: 'Idle', beats: this.idleBeats() });
@@ -798,7 +893,8 @@ export class Hark extends VoiceAgent<Env> {
     const connection = context.connection;
     const caller = this.caller(connection);
     const live = this.requireLive();
-    const host = this.toolHost(connection, caller);
+    const host = { ...this.toolHost(connection, caller), signal: context.signal };
+    this.turnSignal = context.signal;
     const startedAt = Date.now();
     const result: ReplyResult = { sleep: false, tools: [], firstTextAt: null, error: null };
     const history: ChatMessage[] = [

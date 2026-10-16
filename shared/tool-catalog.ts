@@ -9,6 +9,7 @@ export const TOOL_CATALOG: readonly CatalogTool[] = [
   { name: 'run_code', title: 'Scratch workbench', group: 'Make', say: 'Simulate a thousand coin flips.' },
   { name: 'terminal', title: 'Terminal', group: 'Your computer', say: 'Run node -v in my computer.' },
   { name: 'files', title: 'Files', group: 'Your computer', say: 'What files are in my workspace?' },
+  { name: 'open_computer', title: 'Coding workspace', group: 'Your computer', say: 'Open my computer.' },
   { name: 'cloudflare', title: 'Cloudflare API', group: 'Your Cloudflare', say: 'How many Workers do I have?' },
   { name: 'web_search', title: 'Web search', group: 'Find', say: 'Search the web for Workers news.' },
   { name: 'browse', title: 'Browse a page', group: 'Find', say: 'Open developers.cloudflare.com.' },
