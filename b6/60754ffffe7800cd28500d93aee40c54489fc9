@@ -1,0 +1,25 @@
+src/hark.ts
+  s_ca5a6532cca4b3::t_44605488407b29 35,118,269-275,283-285,298-300,419-428,611-623
+src/index.ts
+  s_ca5a6532cca4b3::t_227bf9faedc28a 78-83
+src/scene.ts
+  s_ca5a6532cca4b3::t_3271c00790c664 17-61,91-93,124
+src/tools.ts
+  s_ca5a6532cca4b3::t_65c3daf595ceeb 22-24,533-571,594
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b660754ffffe7800cd28500d93aee40c54489fc9",
+  "prompts": {},
+  "sessions": {
+    "s_ca5a6532cca4b3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a13c32-5367-7000-8a26-f0799dfcdedc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
