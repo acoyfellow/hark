@@ -20,12 +20,6 @@ export const MAX_TAUGHT_EXAMPLES = 3;
 
 export const taughtExamples = (taught: readonly Taught[]) => taught.filter((each) => each.example !== null).slice(-MAX_TAUGHT_EXAMPLES);
 
-const exampleNote = (taught: readonly Taught[]) => {
-  const shown = taughtExamples(taught);
-
-  return shown.length === 0 ? '' : ` Image 1 is the live camera. ${shown.map((each, index) => `Image ${index + 2} is the person's own example of "${each.label}".`).join(' ')}`;
-};
-
 export const TAUGHT_MIN_P = 0.7;
 
 const taughtId = (index: number) => `taught_${index}`;
