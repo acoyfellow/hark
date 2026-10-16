@@ -1,0 +1,31 @@
+src/flatten.ts
+  s_ca5a6532cca4b3::t_b5c9db68ff3973 19-20
+src/hark.ts
+  s_ca5a6532cca4b3::t_bb1e3ca9959f45 296,305-306,602-614,616-617
+src/leaked-calls.ts
+  s_ca5a6532cca4b3::t_dc0f9532876b79 8-11,19,30-31,96,99
+src/reply.ts
+  s_ca5a6532cca4b3::t_c700a50052d2e9 66-69,136-137
+src/tools.ts
+  s_ca5a6532cca4b3::t_362d55627e56f3 459,477,521
+test/unit/flatten.test.ts
+  s_ca5a6532cca4b3::t_2128c61c354313 19,33
+test/unit/phonellm-leak.test.ts
+  s_ca5a6532cca4b3::t_962b0290d45682 1-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "770d67af402f284c37c9069f1a40bdc05c62f2b8",
+  "prompts": {},
+  "sessions": {
+    "s_ca5a6532cca4b3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a13c32-5367-7000-8a26-f0799dfcdedc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
