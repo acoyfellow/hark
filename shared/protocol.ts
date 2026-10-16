@@ -150,6 +150,18 @@ export const Settings = Schema.Struct({ voice: Voice, brain: Brain, engine: Spee
 
 export type Settings = typeof Settings.Type;
 
+export const McpServer = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+  host: Schema.String,
+  state: Schema.String,
+  tools: Schema.Number,
+  error: Schema.NullOr(Schema.String),
+  authUrl: Schema.NullOr(Schema.String),
+});
+
+export type McpServer = typeof McpServer.Type;
+
 export const ServerFrame = Schema.Union([
   Schema.TaggedStruct('Ready', {
     settings: Settings,
@@ -166,6 +178,9 @@ export const ServerFrame = Schema.Union([
   Schema.TaggedStruct('Measured', { latency: Latency }),
   Schema.TaggedStruct('Fault', { reason: Schema.String, fatal: Schema.Boolean }),
   Schema.TaggedStruct('Sleep', { reason: Schema.String }),
+  Schema.TaggedStruct('Servers', { servers: Schema.Array(McpServer) }),
+  Schema.TaggedStruct('ServerNote', { note: Schema.String, authUrl: Schema.NullOr(Schema.String) }),
+  Schema.TaggedStruct('Idle', { beats: Schema.Array(Beat) }),
 ]);
 
 export type ServerFrame = typeof ServerFrame.Type;
@@ -181,6 +196,9 @@ export const ClientFrame = Schema.Union([
   Schema.TaggedStruct('Configure', { settings: Settings }),
   Schema.TaggedStruct('Camera', { on: Schema.Boolean }),
   Schema.TaggedStruct('Hush', {}),
+  Schema.TaggedStruct('AddServer', { name: Schema.String, url: Schema.String, token: Schema.String }),
+  Schema.TaggedStruct('RemoveServer', { id: Schema.String }),
+  Schema.TaggedStruct('ListServers', {}),
 ]);
 
 export type ClientFrame = typeof ClientFrame.Type;

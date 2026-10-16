@@ -101,6 +101,9 @@ const onFrame = (model: Model, frame: ServerFrame): Return =>
           : modifyFields(model, { fault: () => Option.some(reason) }),
       }),
       Sleep: ({ reason }): Return => ({ model: sleep(model, Option.some(reason)) }),
+      Idle: ({ beats }): Return => ({ model: modifyFields(model, { idle: () => beats }) }),
+      Servers: (): Return => ({ model }),
+      ServerNote: ({ note }): Return => ({ model: modifyFields(model, { fault: () => Option.some(note) }) }),
     }),
   );
 

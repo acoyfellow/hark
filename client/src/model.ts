@@ -1,5 +1,5 @@
 import { Schema } from 'effect';
-import { Latency, Presence, Settings, Visual } from '../../shared/protocol';
+import { Latency, Presence, Settings, Visual, Beat } from '../../shared/protocol';
 
 export const Look = Schema.Union([Schema.Literal('asleep'), Presence]);
 
@@ -21,6 +21,7 @@ export const Model = Schema.Struct({
   note: Schema.Option(Schema.String),
   camera: Schema.Boolean,
   cameraLive: Schema.Boolean,
+  idle: Schema.Array(Beat),
   sheet: Schema.Boolean,
   now: Schema.Number,
 });

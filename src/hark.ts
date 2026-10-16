@@ -2,6 +2,7 @@ import { Agent, type Connection, type ConnectionContext, type WSMessage } from '
 import { type TextSource, type VoiceTurnContext, WorkersAIFluxSTT, withVoice } from 'agents/voice';
 import {
   BRAINS,
+  type Beat,
   isGatewayBrain,
   type Brain,
   type ClientFrame,
@@ -11,6 +12,7 @@ import {
   DEFAULT_VOICE,
   decodeClientFrame,
   encodeServerFrame,
+  type McpServer,
   type ServerFrame,
   type Settings,
   type SpeechEngine,
@@ -26,11 +28,20 @@ import { systemPrompt } from './prompt';
 import { type ReplyPorts, type ReplyResult, reply } from './reply';
 import { speakable } from './sentences';
 import { UserSpeech } from './speech';
-import { parseArguments, runTool, type ToolHost, toolLabel, toolSchemas } from './tools';
+import { parseArguments, runTool, type ToolHost, toolLabel, toolSchemas, TOOLS } from './tools';
 import type { ChatMessage } from './chat';
 import { CLOUDFLARE_ORIGINS, type Credentials, type Origins, type Upstream, UpstreamFailed, upstream } from './upstream';
 import { userAI } from './user-ai';
 import type { McpPort } from './tools';
+import { checkServerUrl, checkToken, MAX_MCP_SERVERS, MCP_CALLBACK_PATH, serverName } from './mcp-servers';
+
+const hostOf = (url: string) => {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
+};
 import { MAX_FILE_BYTES, runOnBench } from './workbench';
 import { EchoGatedTranscriber, SpokenRecord } from './echo-gate';
 
@@ -82,6 +93,8 @@ const replyTokenBudget = (brain: Brain) => (isGatewayBrain(brain) ? 4000 : THINK
 export class Hark extends VoiceAgent<Env> {
   private callers = new Map<string, Caller>();
 
+  private origin: string | null = null;
+
   private live: Upstream | null = null;
 
   private readonly spokenRecord = new SpokenRecord();
@@ -114,6 +127,8 @@ export class Hark extends VoiceAgent<Env> {
 
   override onConnect(connection: Connection, context: ConnectionContext) {
     const headers = context.request.headers;
+
+    this.origin = new URL(context.request.url).origin;
 
     this.callers.set(connection.id, {
       owner: headers.get(OWNER_HEADER) ?? '',
@@ -181,6 +196,15 @@ export class Hark extends VoiceAgent<Env> {
         return;
       case 'Played':
       case 'Hush':
+        return;
+      case 'ListServers':
+        this.send(connection, { _tag: 'Servers', servers: this.serverList() });
+        return;
+      case 'AddServer':
+        void this.addServer(frame.name, frame.url, frame.token, this.origin).then((outcome) => this.send(connection, { _tag: 'ServerNote', note: outcome.note, authUrl: outcome.authUrl }));
+        return;
+      case 'RemoveServer':
+        void this.removeServer(frame.id).then((note) => this.send(connection, { _tag: 'ServerNote', note, authUrl: null }));
         return;
     }
   }
@@ -281,6 +305,20 @@ export class Hark extends VoiceAgent<Env> {
     }
   }
 
+  async toolProbe(name: string, args: Record<string, unknown>) {
+    const connection = [...this.getConnections()][0];
+
+    if (connection === undefined) return { error: 'no open page' };
+
+    const tool = TOOLS.find((each) => each.name === name);
+
+    if (tool === undefined) return { error: `no tool ${name}` };
+
+    const result = await tool.run(args, this.toolHost(connection, this.caller(connection)));
+
+    return { content: result.content };
+  }
+
   async benchProbe(code: string) {
     return runOnBench(this.env, this.name, code);
   }
@@ -335,28 +373,118 @@ export class Hark extends VoiceAgent<Env> {
     throw new Error(`no capability ${name}`);
   }
 
+  private idleBeats(): Beat[] {
+    const raw = this.sql<{ value: string }>`SELECT value FROM settings WHERE key = 'idle'`[0]?.value ?? '[]';
+
+    try {
+      const parsed: unknown = JSON.parse(raw);
+
+      return Array.isArray(parsed) ? (parsed as Beat[]) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private serverFor(wanted: string): string | null {
+    const servers = Object.entries(this.getMcpServers().servers);
+    const match = servers.find(([id, server]) => id === wanted || server.name.toLowerCase() === wanted.toLowerCase()) ?? (servers.length === 1 ? servers[0] : undefined);
+
+    return match?.[0] ?? null;
+  }
+
+  private serverList(): McpServer[] {
+    const state = this.getMcpServers();
+
+    return Object.entries(state.servers).map(([id, server]) => ({
+      id,
+      name: server.name,
+      host: hostOf(server.server_url),
+      state: server.state,
+      tools: state.tools.filter((tool) => tool.serverId === id).length,
+      error: server.error ?? null,
+      authUrl: server.state === 'authenticating' ? (server.auth_url ?? null) : null,
+    }));
+  }
+
+  private announceServers() {
+    const frame: ServerFrame = { _tag: 'Servers', servers: this.serverList() };
+
+    for (const connection of this.getConnections()) this.send(connection, frame);
+  }
+
+  private async addServer(rawName: string, rawUrl: string, rawToken: string, origin: string | null): Promise<{ note: string; authUrl: string | null }> {
+    const checked = checkServerUrl(rawUrl, this.name === LOCAL_OWNER);
+
+    if (!checked.ok) return { note: checked.reason, authUrl: null };
+
+    const token = checkToken(rawToken);
+
+    if (token === null) return { note: 'That token has spaces or control characters in it.', authUrl: null };
+
+    const name = serverName(rawName, checked.url);
+    const existing = this.serverFor(name);
+
+    if (existing === null && Object.keys(this.getMcpServers().servers).length >= MAX_MCP_SERVERS) return { note: `You can connect up to ${MAX_MCP_SERVERS} servers. Remove one first.`, authUrl: null };
+
+    if (existing !== null) await this.removeMcpServer(existing);
+
+    try {
+      const added = await this.addMcpServer(name, checked.url, {
+        ...(origin === null ? {} : { callbackHost: origin, callbackPath: MCP_CALLBACK_PATH }),
+        transport: token === '' ? {} : { headers: { authorization: `Bearer ${token}` } },
+      });
+
+      this.announceServers();
+
+      if (added.state === 'authenticating') return { note: `${name} needs you to sign in. Open the sign-in link.`, authUrl: added.authUrl };
+
+      const tools = this.getMcpServers().tools.filter((tool) => tool.serverId === added.id).length;
+
+      return { note: `${name} is connected with ${tools} tool${tools === 1 ? '' : 's'}.`, authUrl: null };
+    } catch (cause) {
+      this.announceServers();
+
+      return { note: `Could not connect ${name}: ${cause instanceof Error ? cause.message.slice(0, 200) : String(cause)}`, authUrl: null };
+    }
+  }
+
+  private async removeServer(wanted: string): Promise<string> {
+    const id = this.serverFor(wanted);
+
+    if (id === null) return `No connected server called ${wanted}.`;
+
+    const name = this.getMcpServers().servers[id]?.name ?? wanted;
+
+    await this.removeMcpServer(id);
+    this.announceServers();
+
+    return `${name} is disconnected.`;
+  }
+
+  async finishServerSignIn(request: Request): Promise<Response> {
+    const handled = await this.mcp.onRequest({ request } as Parameters<typeof this.mcp.onRequest>[0]);
+
+    this.announceServers();
+
+    return handled ?? new Response('This sign-in link has expired. Add the server again from Settings.', { status: 400 });
+  }
+
   private mcpPort(): McpPort {
-    const serverFor = (wanted: string) => {
-      const servers = Object.entries(this.getMcpServers().servers);
-      const match = servers.find(([id, server]) => id === wanted || server.name === wanted) ?? (servers.length === 1 ? servers[0] : undefined);
-
-      return match?.[0] ?? null;
-    };
-
     return {
-      servers: () => Object.entries(this.getMcpServers().servers).map(([id, server]) => ({ id, name: server.name, state: server.state })),
+      servers: () => this.serverList().map((server) => ({ id: server.id, name: server.name, state: server.state })),
       tools: () => {
         const names = this.getMcpServers().servers;
 
         return this.mcp.listTools().map((tool) => ({ server: names[tool.serverId]?.name ?? tool.serverId, name: tool.name, description: tool.description ?? '', schema: tool.inputSchema }));
       },
       connect: async (name, url, token) => {
-        const added = await this.addMcpServer(name, url, { transport: token === '' ? {} : { headers: { authorization: `Bearer ${token}` } } });
+        const outcome = await this.addServer(name, url, token, this.origin);
 
-        return added.state === 'authenticating' ? `${name} needs sign-in. Open this link: ${added.authUrl}` : `${name} is connected.`;
+        return outcome.authUrl === null ? outcome.note : `${outcome.note} The link is in Settings, Your MCP servers.`;
       },
+      remove: (server) => this.removeServer(server),
       call: async (server, tool, args) => {
-        const serverId = serverFor(server);
+        const serverId = this.serverFor(server);
 
         if (serverId === null) return `No connected server called ${server}.`;
 
@@ -395,6 +523,7 @@ export class Hark extends VoiceAgent<Env> {
         account: grant.accountName,
         memories: this.memories().length,
       });
+      this.send(connection, { _tag: 'Idle', beats: this.idleBeats() });
 
       return true;
     } catch (cause) {
@@ -510,6 +639,10 @@ export class Hark extends VoiceAgent<Env> {
       imagine: (prompt) => this.requireLive().imagine(prompt, AbortSignal.timeout(45_000)),
       mcp: this.mcpPort(),
       runCode: async (code) => JSON.stringify(await runOnBench(this.env, this.name, code)),
+      setIdle: (beats) => {
+        this.sql`INSERT OR REPLACE INTO settings (key, value) VALUES ('idle', ${JSON.stringify(beats)})`;
+        this.send(connection, { _tag: 'Idle', beats: this.idleBeats() });
+      },
       setVoice: (voice) => {
         const current = this.settings();
         const engine = voicesFor(current.engine).includes(voice) ? current.engine : current.engine === 'aura-1' ? 'aura-2' : 'aura-1';

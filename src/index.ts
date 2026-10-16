@@ -3,6 +3,7 @@ import { gate } from './auth/gate';
 import { type Env, LOCAL_HEADER, LOCAL_OWNER, OWNER_HEADER, TRACE_HEADER } from './env';
 import { signInPage } from './auth/sign-in-page';
 import { appPage } from './ui/page';
+import { MCP_CALLBACK_PATH } from './mcp-servers';
 
 export { Directory } from './directory';
 export { Hark } from './hark';
@@ -81,10 +82,23 @@ const route = async (request: Request, env: Env, owner: string, local: boolean):
     return Response.json(await agent.thinkProbe(owner, await request.json()));
   }
 
+  if (isLoopback(request) && pathname === '/__tool' && request.method === 'POST') {
+    const agent = await getAgentByName(env.HARK, owner);
+    const { name, args } = await request.json<{ name: string; args: Record<string, unknown> }>();
+
+    return Response.json(await agent.toolProbe(name, args));
+  }
+
   if (local && pathname === '/__bench' && request.method === 'POST') {
     const agent = await getAgentByName(env.HARK, owner);
 
     return Response.json(await agent.benchProbe(await request.text()));
+  }
+
+  if (pathname === MCP_CALLBACK_PATH && request.method === 'GET') {
+    const agent = await getAgentByName(env.HARK, owner);
+
+    return agent.finishServerSignIn(request);
   }
 
   if (pathname === '/' && request.method === 'GET') return appPage(new URL(request.url).origin, local);

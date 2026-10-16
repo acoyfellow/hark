@@ -193,6 +193,8 @@ const startSwarm = (host: HTMLElement) => {
     used: 0,
     shapeUntil: 0,
     formKey: '',
+    playing: false,
+    idling: false,
     paintKey: '',
     show: 0,
     shocks: [] as number[],
@@ -250,10 +252,13 @@ const startSwarm = (host: HTMLElement) => {
 
   const PROGRAM_PARTICLES = Math.min(count, 6000);
 
-  const play = async (beats: readonly BeatData[]) => {
+  const play = async (beats: readonly BeatData[], idling = false) => {
     state.show += 1;
 
     const show = state.show;
+
+    state.playing = true;
+    state.idling = idling;
     const prepared = await Promise.all(beats.map(async (beat) => ({ beat, ...(await dotsFor(beat)) })));
 
     for (const { beat, dots, picture, solid, code } of prepared) {
@@ -268,6 +273,16 @@ const startSwarm = (host: HTMLElement) => {
       hold({ dots, picture, solid, program, motion: code ? 'still' : motionOf(beat.motion), bornAt: performance.now(), scale: code ? SCALES.program : picture ? SCALES.picture : solid ? SCALES.solid : SCALES.flat }, millis);
       await new Promise((resolve) => setTimeout(resolve, millis));
     }
+
+    if (show === state.show) state.playing = false;
+  };
+
+  const readIdle = () => {
+    if (state.playing || state.shape !== null) return;
+
+    const beats = beatsOf(host.dataset.idleBeats ?? '[]');
+
+    if (beats.length > 0) void play(beats, true);
   };
 
   const readForm = () => {
@@ -408,7 +423,9 @@ const startSwarm = (host: HTMLElement) => {
     readForm();
     readPaint();
 
-    if (state.shape !== null && (now > state.shapeUntil || state.look === 'asleep')) release();
+    if (state.shape !== null && (now > state.shapeUntil || (state.look === 'asleep' && !state.idling))) release();
+
+    readIdle();
 
     anchor();
 

@@ -18,6 +18,7 @@ export type ToolHost = {
   readonly imagine: (prompt: string) => Promise<string>;
   readonly mcp: McpPort;
   readonly runCode: (code: string) => Promise<string>;
+  readonly setIdle: (beats: readonly Beat[]) => void;
   readonly setVoice: (voice: Voice) => void;
   readonly fetch: typeof fetch;
   readonly id: () => string;
@@ -25,6 +26,7 @@ export type ToolHost = {
 
 export type McpPort = {
   readonly servers: () => readonly { readonly id: string; readonly name: string; readonly state: string }[];
+  readonly remove: (server: string) => Promise<string>;
   readonly tools: () => readonly { readonly server: string; readonly name: string; readonly description: string; readonly schema: unknown }[];
   readonly connect: (name: string, url: string, token: string) => Promise<string>;
   readonly call: (server: string, tool: string, args: Record<string, unknown>) => Promise<string>;
@@ -291,45 +293,29 @@ const beatOf = (raw: unknown): Beat | BeatProblem => {
 
   if ((kind === 'svg' || kind === 'code') && value.length > MAX_PROGRAM) return { problem: `${kind} must be under ${MAX_PROGRAM} characters` };
 
-  const broken = kind === 'code' ? dryRunProgram(value) : null;
+  const broken = kind === 'code' ? staticProgramProblem(value) : null;
 
-  if (broken !== null) return { problem: `the code beat ${broken}. n is already the particle count; do not redeclare i, n, t or out. Fix it and call show_form again` };
+  if (broken !== null) return { problem: `the code beat ${broken}. Fix it and call show_form again` };
 
   return { kind, value, seconds, motion: still };
 };
 
 const isProblem = (beat: Beat | BeatProblem): beat is BeatProblem => 'problem' in beat;
 
-const DRY_RUN_COUNT = 6000;
+const REDECLARED = /\b(?:const|let|var)\s+(i|n|t|out)\b/u;
 
-const DRY_RUN_PARTICLES = [0, 1, 7, 211, 2999, DRY_RUN_COUNT - 1];
+const FORBIDDEN = /\b(?:fetch|importScripts|XMLHttpRequest|WebSocket|document|window)\b/u;
 
-export const dryRunProgram = (body: string): string | null => {
-  let move: (i: number, n: number, t: number, out: number[], math: Math) => void;
+export const staticProgramProblem = (body: string): string | null => {
+  const redeclared = REDECLARED.exec(body);
 
-  try {
-    move = new Function('i', 'n', 't', 'out', 'Math', body) as typeof move;
-  } catch (cause) {
-    return `does not compile: ${cause instanceof Error ? cause.message : String(cause)}`;
-  }
+  if (redeclared !== null) return `redeclares ${redeclared[1]}, which is already given (i index, n count, t seconds, out result)`;
 
-  const points = new Set<string>();
+  if (FORBIDDEN.test(body)) return 'uses the network or the page, which the sandbox does not have';
 
-  for (const index of DRY_RUN_PARTICLES) {
-    const out = [0, 0, 0, 0.7];
+  if (!/out\s*\[\s*[01]\s*\]\s*=/u.test(body)) return 'never writes out[0] and out[1], so nothing moves';
 
-    try {
-      move(index, DRY_RUN_COUNT, 1.3, out, Math);
-    } catch (cause) {
-      return `throws for particle ${index}: ${cause instanceof Error ? cause.message : String(cause)}`;
-    }
-
-    if (!out.slice(0, 3).every(Number.isFinite)) return `particle ${index} got a non-number position`;
-
-    points.add(out.slice(0, 2).map((value) => value.toFixed(3)).join(','));
-  }
-
-  return points.size < 3 ? 'every particle lands on the same spot; spread them out using i / n' : null;
+  return null;
 };
 
 const showForm: Definition = {
@@ -349,6 +335,7 @@ const showForm: Definition = {
     '- "painting": a short image prompt; a real picture is painted and the swarm becomes it. Slow (a few seconds), so use it for the big moments.',
     `Each beat has seconds (1 to 12) and motion: ${FORM_MOTIONS.join(', ')}.`,
     'If someone asks you to make, show, draw or animate anything, always try. Prefer code for motion and svg for scenes. Never refuse.',
+    'Set idle to true to make these beats your new resting shape: what the swarm loops whenever nothing else is showing, until changed again. Use it when they say "make that your default", "stay as X", "idle as X". Set idle true with no beats to go back to the plain ring.',
     'Then keep talking. Never describe the shape, never read out the path or the code.',
   ].join('\n'),
   parameters: object(
@@ -366,6 +353,7 @@ const showForm: Definition = {
           ['kind', 'value'],
         ),
       },
+      idle: { type: 'boolean', description: 'Make these beats the resting shape that loops when nothing else is showing.' },
     },
     ['beats'],
   ),
@@ -375,20 +363,28 @@ const showForm: Definition = {
     const problems = checked.filter(isProblem).map((beat) => beat.problem);
     const good = checked.filter((beat): beat is Beat => !isProblem(beat));
 
+    if (args.idle === true && raw.length === 0) {
+      host.setIdle([]);
+
+      return { content: 'Back to the plain resting ring.' };
+    }
+
     if (good.length === 0) return { content: `Nothing was shown: ${problems.join('; ') || 'the beats were empty, probably cut off; send a shorter one'}. Call show_form again now with the fix.` };
 
     const beats = await Promise.all(
       good.map(async (beat) => (beat.kind === 'painting' ? { ...beat, value: await host.imagine(`${beat.value}, bold silhouette, strong contrast, dramatic light`) } : beat)),
     );
 
+    if (args.idle === true) host.setIdle(beats);
+
     return {
-      content: problems.length === 0 ? 'It is playing on their screen. Do not describe it.' : `It is playing, but some beats were skipped: ${problems.join('; ')}.`,
+      content: `${problems.length === 0 ? 'It is playing on their screen.' : `It is playing, but some beats were skipped: ${problems.join('; ')}.`}${args.idle === true ? ' It is now your resting shape, saved for next time.' : ''} Do not describe it.`,
       visual: { _tag: 'Form', id: host.id(), beats },
     };
   },
 };
 
-const MCP_ACTIONS = ['list', 'connect', 'call'] as const;
+const MCP_ACTIONS = ['list', 'connect', 'call', 'disconnect'] as const;
 
 const MCP_RESULT_LIMIT = 3000;
 
@@ -411,6 +407,8 @@ const mcp: Definition = {
     'action "list" shows connected servers and every tool with its arguments. Call it first when you are unsure.',
     'action "connect" adds a server by name and https url, with an optional bearer token. It stays connected.',
     'action "call" runs one tool: server (name or id), tool, args.',
+    'action "disconnect" removes a server by name or id when the person asks.',
+    'Never say a token out loud. If a server needs a token, ask them to add it in Settings, Your MCP servers.',
   ].join('\n'),
   parameters: object(
     {
@@ -428,14 +426,12 @@ const mcp: Definition = {
     const action = str(args.action, 'list');
 
     if (action === 'connect') {
-      const url = str(args.url);
-
-      if (!url.startsWith('https:') && !url.startsWith('http:')) return { content: 'connect needs an http or https url.' };
-
-      const state = await host.mcp.connect(str(args.name, new URL(url).hostname), url, str(args.token));
+      const state = await host.mcp.connect(str(args.name), str(args.url), str(args.token));
 
       return { content: `${state}\n${mcpCatalog(host)}` };
     }
+
+    if (action === 'disconnect') return { content: await host.mcp.remove(str(args.server)) };
 
     if (action === 'call') {
       const result = await host.mcp.call(str(args.server), str(args.tool), rec(args.args));

@@ -139,7 +139,7 @@ const fault = (h: H, model: Model): Html =>
     onNone: () => h.empty,
     onSome: (reason) =>
       h.div(
-        [h.Role('alert'), h.Id('fault'), h.Class('fault-in absolute top-[max(4.5rem,calc(env(safe-area-inset-top)+3.5rem))] left-1/2 z-40 flex w-[min(92vw,520px)] -translate-x-1/2 items-start gap-3 rounded-2xl border border-red-400/25 bg-red-950/70 px-4 py-3 text-[13px] text-red-100 backdrop-blur-xl')],
+        [h.Role('alert'), h.Id('fault'), h.Class('fault-in absolute top-[max(4.5rem,calc(env(safe-area-inset-top)+3.5rem))] inset-x-0 mx-auto z-40 flex w-[min(92vw,520px)] items-start gap-3 rounded-2xl border border-red-400/25 bg-red-950/70 px-4 py-3 text-[13px] text-red-100 backdrop-blur-xl')],
         [
           h.p([h.Class('flex-1 leading-relaxed')], [reason]),
           h.button([h.Type('button'), h.AriaLabel('Dismiss'), h.Class('text-red-200/60 hover:text-white'), h.OnClick(Message.DismissedFault())], [icon(h, 'close', 'size-4')]),
@@ -254,6 +254,7 @@ const swarm = (h: H, model: Model): Html => {
       h.DataAttribute('look', model.look),
       h.DataAttribute('form-id', form?.id ?? ''),
       h.DataAttribute('form-beats', JSON.stringify(form?.beats ?? [])),
+      h.DataAttribute('idle-beats', JSON.stringify(model.idle)),
       h.DataAttribute('paint-id', painting?.id ?? ''),
       h.DataAttribute('paint-src', painting?.src ?? ''),
       h.OnMount(Swarm()),
