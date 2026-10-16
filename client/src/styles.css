@@ -97,7 +97,7 @@
   background: linear-gradient(160deg, rgba(255, 170, 90, 0.13), rgba(255, 170, 90, 0.025) 60%), rgba(10, 6, 4, 0.55);
   border: 1px solid var(--glass-edge);
   backdrop-filter: blur(30px);
-  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 231, 196, 0.08);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 231, 196, 0.08);
 }
 
 .toast {

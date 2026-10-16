@@ -316,6 +316,8 @@ export class Hark extends VoiceAgent<Env> {
 
     const result = await tool.run(args, this.toolHost(connection, this.caller(connection)));
 
+    if (result.visual !== undefined) this.send(connection, { _tag: 'Show', visual: result.visual });
+
     return { content: result.content };
   }
 

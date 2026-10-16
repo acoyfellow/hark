@@ -21,6 +21,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { meter } from './engine';
+import { modelDots } from './model3d';
 import { type Dot, drawingDots, emojiDots, iconDots, loadImage, pictureDots, solidDots, svgDots, wordDots } from './shapes';
 import { type Program, startProgram } from './program';
 import { Message } from './message';
@@ -80,6 +81,8 @@ const dotsFor = async (beat: BeatData): Promise<{ dots: Dot[]; picture: boolean;
   }
 
   if (beat.kind === 'solid') return { dots: solidDots(beat.value), picture: false, solid: true, code: false };
+
+  if (beat.kind === 'model') return { dots: modelDots(beat.value), picture: false, solid: true, code: false };
 
   const flat = beat.kind === 'emoji' ? emojiDots(beat.value) : beat.kind === 'word' ? wordDots(beat.value) : beat.kind === 'draw' ? drawingDots(beat.value) : iconDots(beat.value);
 

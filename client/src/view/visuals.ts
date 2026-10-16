@@ -124,7 +124,7 @@ export const visuals = (h: H, model: Model): Html =>
       h.AriaLabel('What hark showed you'),
       h.AriaLive('polite'),
       h.Class(
-        'pointer-events-none flex w-full flex-col gap-3 md:absolute md:top-20 md:right-6 md:bottom-28 md:w-[340px] md:justify-start md:overflow-hidden',
+        'pointer-events-none flex w-full flex-col gap-3 md:absolute md:top-20 md:right-6 md:bottom-28 md:w-[340px] md:justify-start md:overflow-visible',
       ),
     ],
     model.visuals

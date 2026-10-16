@@ -1,3 +1,4 @@
+import { modelProblem } from '../shared/model-parts';
 import { type Beat, FAST_VOICES, FORM_ICONS, FORM_KINDS, FORM_MOTIONS, FORM_SOLIDS, RICH_VOICES, VOICES, type FormKind, type FormMotion, type Visual, type Voice } from '../shared/protocol';
 
 export type ToolOutcome = {
@@ -291,11 +292,11 @@ const beatOf = (raw: unknown): Beat | BeatProblem => {
 
   if (kind === 'draw' && value.length > MAX_PATH) return asPainting(value.slice(0, 300));
 
-  if ((kind === 'svg' || kind === 'code') && value.length > MAX_PROGRAM) return { problem: `${kind} must be under ${MAX_PROGRAM} characters` };
+  if ((kind === 'svg' || kind === 'code' || kind === 'model') && value.length > MAX_PROGRAM) return { problem: `${kind} must be under ${MAX_PROGRAM} characters` };
 
-  const broken = kind === 'code' ? staticProgramProblem(value) : null;
+  const broken = kind === 'code' ? staticProgramProblem(value) : kind === 'model' ? modelProblem(value) : null;
 
-  if (broken !== null) return { problem: `the code beat ${broken}. Fix it and call show_form again` };
+  if (broken !== null) return { problem: `the ${kind} beat ${broken}. Fix it and call show_form again` };
 
   return { kind, value, seconds, motion: still };
 };
@@ -332,9 +333,10 @@ const showForm: Definition = {
     '- "draw": anything at all. Write SVG path data on a 0 to 100 canvas (M L Q C A Z commands, strokes are drawn as glowing lines). Draw a cat, a bicycle, a map, a face, a punchline. Be inventive.',
     '- "svg": a whole <svg viewBox="0 0 100 100"> scene with fills, strokes, text, gradients. Brightness becomes glow. Best for scenes, lettering, logos, diagrams.',
     '- "code": the most powerful kind. A JavaScript function body that moves every particle every frame, for any animation: orbits, waves, a beating heart, a running dog, a rocket launch, a clock, fireworks, a DNA helix. It receives (i, n, t, out): particle index i of n, time t in seconds. Write out[0], out[1], out[2] (x, y, z, about -1 to 1) and out[3] (brightness 0 to 1). Math is available. No DOM, no network. Example: const a=i/n*Math.PI*2+t; out[0]=Math.cos(a)*0.8; out[1]=Math.sin(a*2)*0.4; out[2]=0; out[3]=0.8;',
+    '- "model": a real 3D model you build from parts, like a sculptor. Value is JSON: an array of up to 40 parts, each {"shape": sphere|box|cylinder|cone|torus|capsule, "at": [x,y,z], "size": [x,y,z] half-extents, "turn": [x,y,z] degrees, "glow": 0.1 to 1}. y is up. It is rendered in embers and spins so they see it from every side. Use it for any object: a rocket, a car, a robot, a house, a chair, a snowman, a molecule, a guitar. Build it carefully with enough parts to be recognisable. Example rocket: [{"shape":"cylinder","at":[0,0,0],"size":[0.2,0.6,0.2]},{"shape":"cone","at":[0,0.8,0],"size":[0.2,0.2,0.2]},{"shape":"box","at":[0.25,-0.5,0],"size":[0.08,0.15,0.02]},{"shape":"box","at":[-0.25,-0.5,0],"size":[0.08,0.15,0.02]}]',
     '- "painting": a short image prompt; a real picture is painted and the swarm becomes it. Slow (a few seconds), so use it for the big moments.',
     `Each beat has seconds (1 to 12) and motion: ${FORM_MOTIONS.join(', ')}.`,
-    'If someone asks you to make, show, draw or animate anything, always try. Prefer code for motion and svg for scenes. Never refuse.',
+    'If someone asks you to make, show, draw or animate anything, always try. Prefer model for objects and 3D, code for motion, svg for scenes. Never refuse.',
     'Set idle to true to make these beats your new resting shape: what the swarm loops whenever nothing else is showing, until changed again. Use it when they say "make that your default", "stay as X", "idle as X". Set idle true with no beats to go back to the plain ring.',
     'Then keep talking. Never describe the shape, never read out the path or the code.',
   ].join('\n'),
