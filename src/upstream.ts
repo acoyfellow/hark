@@ -86,7 +86,7 @@ export type Upstream = {
   ) => Promise<ReadableStream<Uint8Array>>;
   readonly see: (image: string, question: string, signal: AbortSignal) => Promise<string>;
   readonly imagine: (prompt: string, signal: AbortSignal) => Promise<string>;
-  readonly judge: (request: Record<string, unknown>, signal: AbortSignal) => Promise<unknown>;
+  readonly judge: (request: Record<string, unknown>, signal: AbortSignal, model?: string) => Promise<unknown>;
   readonly routes: () => Readonly<Record<string, string>>;
 };
 
@@ -231,8 +231,8 @@ export const upstream = (
     return typeof message?.content === 'string' ? message.content : 'I could not make out the picture.';
   },
 
-  judge: async (request, signal) => {
-    const response = await runModel(JUDGE_MODEL, () => JSON.stringify(request), 'application/json', signal);
+  judge: async (request, signal, model = JUDGE_MODEL) => {
+    const response = await runModel(model, () => JSON.stringify(request), 'application/json', signal);
 
     if (!response.ok) throw await failure('Judging (Clef)', response);
 

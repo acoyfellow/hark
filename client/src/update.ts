@@ -101,6 +101,7 @@ const onFrame = (model: Model, frame: ServerFrame): Return =>
           : modifyFields(model, { fault: () => Option.some(reason) }),
       }),
       Sleep: ({ reason }): Return => ({ model: sleep(model, Option.some(reason)) }),
+      Sight: ({ summary }): Return => ({ model: modifyFields(model, { sight: () => Option.some(summary) }) }),
     }),
   );
 
@@ -159,7 +160,7 @@ export const update = (model: Model, message: Message): Return =>
     FailedCamera: ({ reason }) => ({
       model: modifyFields(model, { camera: () => false, cameraLive: () => false, fault: () => Option.some(reason) }),
     }),
-    StoppedCamera: () => ({ model: modifyFields(model, { cameraLive: () => false }) }),
+    StoppedCamera: () => ({ model: modifyFields(model, { cameraLive: () => false, sight: () => Option.none() }) }),
     Ticked: ({ now }) => ({
       model: modifyFields(model, { now: () => now, visuals: (visuals) => prune(visuals, now) }),
     }),

@@ -34,6 +34,7 @@ export const initialModel = ({ local, now }: Flags): Model => ({
   note: Option.none(),
   camera: false,
   cameraLive: false,
+  sight: Option.none(),
   sheet: false,
   now,
 });

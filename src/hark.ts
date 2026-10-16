@@ -32,6 +32,7 @@ import { CLOUDFLARE_ORIGINS, type Credentials, type Origins, type Upstream, Upst
 import { userAI } from './user-ai';
 import { judgeQuestion, type McpPort } from './tools';
 import { MAX_FILE_BYTES, runOnBench } from './workbench';
+import { describeScene, type Scene, SIGHT_MODEL, SIGHT_QUESTIONS, sceneKey, sceneOf, sightLine } from './scene';
 import { EchoGatedTranscriber, SpokenRecord } from './echo-gate';
 
 const HISTORY_KEEP = 24;
@@ -83,6 +84,10 @@ export class Hark extends VoiceAgent<Env> {
   private callers = new Map<string, Caller>();
 
   private live: Upstream | null = null;
+
+  private scene: Scene | null = null;
+
+  private sightBusy = false;
 
   private readonly spokenRecord = new SpokenRecord();
 
@@ -178,6 +183,10 @@ export class Hark extends VoiceAgent<Env> {
         return;
       case 'Camera':
         caller.camera = frame.on;
+        if (!frame.on) this.scene = null;
+        return;
+      case 'Glance':
+        void this.glance(connection, frame.src);
         return;
       case 'Played':
       case 'Hush':
@@ -256,7 +265,56 @@ export class Hark extends VoiceAgent<Env> {
     };
   }
 
-  async thinkProbe(owner: string, input: { brain: Brain; say: string }) {
+  async glanceProbe(owner: string, src: string) {
+    const caller: Caller = { owner, local: owner === LOCAL_OWNER, traced: false, timeZone: 'UTC', locale: 'en-US', camera: true, firstTurn: false };
+    const grant = await this.grantFor(caller);
+
+    if (grant === null) return { error: 'not signed in' };
+
+    const started = Date.now();
+    const raw = await upstream(this.credentials(caller, grant), this.origins(caller)).judge({ images: [src], state: { task: 'what the camera sees right now' }, questions: SIGHT_QUESTIONS }, AbortSignal.timeout(6000), SIGHT_MODEL);
+    const scene = sceneOf(raw, Date.now());
+
+    return { ms: Date.now() - started, scene, prompt: sightLine(scene, Date.now()) };
+  }
+
+  private async glance(connection: Connection, src: string) {
+    if (this.sightBusy || this.live === null) return;
+
+    this.sightBusy = true;
+
+    const started = Date.now();
+
+    try {
+      const raw = await this.live.judge({ images: [src], state: { task: 'what the camera sees right now' }, questions: SIGHT_QUESTIONS }, AbortSignal.timeout(4000), SIGHT_MODEL);
+      const scene = sceneOf(raw, Date.now());
+
+      if (scene === null) return;
+
+      const changed = this.scene === null || sceneKey(this.scene) !== sceneKey(scene);
+
+      this.scene = scene;
+
+      if (changed && this.caller(connection).traced) console.info(JSON.stringify({ trace: 'sight', ms: Date.now() - started, summary: describeScene(scene) }));
+
+      if (changed)
+        this.send(connection, {
+          _tag: 'Sight',
+          summary: describeScene(scene),
+          holding: scene.holding,
+          mood: scene.mood,
+          gesture: scene.gesture,
+          person: scene.person >= 0.5,
+          ms: Date.now() - started,
+        });
+    } catch {
+      return;
+    } finally {
+      this.sightBusy = false;
+    }
+  }
+
+  async thinkProbe(owner: string, input: { brain: Brain; say: string; sight?: string }) {
     const caller: Caller = { owner, local: owner === LOCAL_OWNER, traced: false, timeZone: 'UTC', locale: 'en-US', camera: false, firstTurn: false };
     const grant = await this.grantFor(caller);
 
@@ -266,6 +324,7 @@ export class Hark extends VoiceAgent<Env> {
     const started = Date.now();
     const messages = [
       { role: 'system', content: systemPrompt({ now: new Date(), timeZone: 'UTC', locale: 'en-US', memories: [], camera: false, firstTurn: false }) },
+      ...(input.sight === undefined ? [] : [{ role: 'system', content: input.sight }]),
       { role: 'user', content: input.say },
     ];
 
@@ -345,6 +404,12 @@ export class Hark extends VoiceAgent<Env> {
     if (name === 'mcp_call') return port.call(text('server'), text('tool'), typeof args.args === 'object' && args.args !== null ? (args.args as Record<string, unknown>) : {});
 
     throw new Error(`no capability ${name}`);
+  }
+
+  private sightMessages(caller: Caller): ChatMessage[] {
+    const line = caller.camera ? sightLine(this.scene, Date.now()) : null;
+
+    return line === null ? [] : [{ role: 'system', content: line }];
   }
 
   private mcpPort(): McpPort {
@@ -560,6 +625,7 @@ export class Hark extends VoiceAgent<Env> {
         }),
       },
       ...context.messages.map((message): ChatMessage => ({ role: message.role === 'assistant' ? 'assistant' : 'user', content: message.content })),
+      ...this.sightMessages(caller),
       { role: 'user', content: transcript },
     ];
 
