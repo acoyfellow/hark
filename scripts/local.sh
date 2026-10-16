@@ -5,7 +5,8 @@ cd "$(dirname "$0")/.."
 mkdir -p .wrangler/logs
 node scripts/fake-cloudflare.mjs > .wrangler/logs/fake.log 2>&1 &
 echo $! > .wrangler/fake.pid
-npx wrangler dev --port "${PORT:-8790}" --ip 127.0.0.1 \
+node scripts/with-local-image.mjs
+npx wrangler dev --config wrangler.local.jsonc --port "${PORT:-8790}" --ip 127.0.0.1 \
   --var LOCAL_DEV_WITHOUT_AUTH:1 --var HARK_FAKE_ORIGIN:http://127.0.0.1:8799 \
   > .wrangler/logs/dev.log 2>&1 &
 echo $! > .wrangler/dev.pid

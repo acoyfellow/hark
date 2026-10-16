@@ -10,3 +10,5 @@ deploy/*.conf
 wrangler.*.local.jsonc
 test-results/
 .scratch/
+wrangler.local.jsonc
+computer/certs/*.pem

@@ -20,6 +20,11 @@ export type ToolHost = {
   readonly imagine: (prompt: string) => Promise<string>;
   readonly mcp: McpPort;
   readonly runCode: (code: string) => Promise<string>;
+  readonly terminal: (command: string) => Promise<{ readonly exitCode: number; readonly stdout: string; readonly stderr: string }>;
+  readonly files: (action: 'list' | 'read' | 'write', path: string, content: string) => Promise<string>;
+  readonly cloudflare: (method: string, path: string, body: unknown) => Promise<{ readonly status: number; readonly body: string }>;
+  readonly webSearch: (query: string) => Promise<readonly { readonly title: string; readonly url: string; readonly note: string }[]>;
+  readonly screenshot: (url: string) => Promise<{ readonly image: string; readonly title: string; readonly text: string }>;
   readonly setIdle: (beats: readonly Beat[]) => void;
   readonly setVoice: (voice: Voice) => void;
   readonly fetch: typeof fetch;
@@ -461,6 +466,111 @@ const runCode: Definition = {
   run: async (args, host) => ({ content: (await host.runCode(str(args.code))).slice(0, MCP_RESULT_LIMIT) }),
 };
 
+const terminalLine = (command: string, result: { exitCode: number; stdout: string; stderr: string }) =>
+  [`$ ${command}`, result.stdout.trimEnd(), result.stderr.trimEnd(), result.exitCode === 0 ? '' : `[exit ${result.exitCode}]`].filter((line) => line !== '').join('\n');
+
+const terminal: Definition = {
+  name: 'terminal',
+  label: () => 'Working in your computer',
+  description: [
+    'Run a shell command on your own durable Linux computer (bash, node 22, npm, git, python3, curl, jq, ripgrep, wrangler). It has the internet. Files in /workspace persist between sessions.',
+    'Use it for real coding work: clone a repo, scaffold a project, install packages, run tests, write and run scripts. One command per call; chain with &&. 120 second limit.',
+    'The output is shown to them as a terminal card. Then say in one sentence what happened. Never read the output aloud.',
+    'It has no Cloudflare token. For anything on their Cloudflare account use the cloudflare tool.',
+  ].join('\n'),
+  parameters: object({ command: { type: 'string' } }, ['command']),
+  run: async (args, host) => {
+    const command = str(args.command);
+    const result = await host.terminal(command);
+    const id = host.id();
+    const code = terminalLine(command, result);
+
+    return {
+      content: code.slice(0, MCP_RESULT_LIMIT),
+      visual: { _tag: 'Widget', id, widget: widgetOf(id, { kind: 'terminal', tone: result.exitCode === 0 ? 'neutral' : 'bad', title: command.slice(0, 80), code }) },
+    };
+  },
+};
+
+const files: Definition = {
+  name: 'files',
+  label: () => 'Opening your files',
+  description: 'List, read or write files on your durable computer (paths are relative to /workspace). Shows them a files card. action: list | read | write.',
+  parameters: object({ action: { type: 'string', enum: ['list', 'read', 'write'] }, path: { type: 'string' }, content: { type: 'string' } }, ['action']),
+  run: async (args, host) => {
+    const action = args.action === 'read' || args.action === 'write' ? args.action : 'list';
+    const path = str(args.path, '.');
+    const text = await host.files(action, path, str(args.content));
+    const id = host.id();
+
+    return {
+      content: text.slice(0, MCP_RESULT_LIMIT),
+      visual: { _tag: 'Widget', id, widget: widgetOf(id, { kind: 'files', title: `${action} ${path}`, code: text }) },
+    };
+  },
+};
+
+const DESTRUCTIVE = new Set(['DELETE', 'PUT', 'PATCH']);
+
+const cloudflare: Definition = {
+  name: 'cloudflare',
+  label: (args) => (DESTRUCTIVE.has(str(args.method).toUpperCase()) ? 'Changing your account' : 'Checking your account'),
+  description: [
+    'Call the Cloudflare API on their account with their own sign-in. path starts after /client/v4, and {account} is replaced with their account id. Example: GET /accounts/{account}/workers/scripts, GET /zones, GET /accounts/{account}/ai/models/search.',
+    'GET and POST that only reads are fine. DELETE, PUT and PATCH change things: first say exactly what will change and ask. Only after they clearly say yes, call again with confirmed true.',
+    'Summarise results out loud in one sentence and use show_widget for tables or reports.',
+  ].join('\n'),
+  parameters: object(
+    { method: { type: 'string', enum: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] }, path: { type: 'string' }, body: { type: 'object' }, confirmed: { type: 'boolean' } },
+    ['method', 'path'],
+  ),
+  run: async (args, host) => {
+    const method = str(args.method, 'GET').toUpperCase();
+
+    if (DESTRUCTIVE.has(method) && args.confirmed !== true) return { content: `Not done. ${method} ${str(args.path)} changes their account. Say what will change and ask them first; call again with confirmed true only after a clear yes.` };
+
+    const result = await host.cloudflare(method, str(args.path), args.body ?? null);
+
+    return { content: `${result.status}\n${result.body}`.slice(0, MCP_RESULT_LIMIT) };
+  },
+};
+
+const webSearch: Definition = {
+  name: 'web_search',
+  label: () => 'Searching the web',
+  description: 'Search the live web for current facts, news, docs and prices. Shows them a sources card. Answer from the results in a sentence or two and name where it came from.',
+  parameters: object({ query: { type: 'string' } }, ['query']),
+  run: async (args, host) => {
+    const query = str(args.query);
+    const results = await host.webSearch(query);
+    const id = host.id();
+
+    if (results.length === 0) return { content: 'No results came back.' };
+
+    return {
+      content: results.map((result, index) => `[${index + 1}] ${result.title} (${result.url})\n${result.note}`).join('\n\n').slice(0, MCP_RESULT_LIMIT),
+      visual: { _tag: 'Widget', id, widget: widgetOf(id, { kind: 'sources', title: query, links: results.slice(0, 6) }) },
+    };
+  },
+};
+
+const browse: Definition = {
+  name: 'browse',
+  label: () => 'Opening a browser',
+  description: 'Open a real web page in a headless browser, read it and show them a screenshot card. Use it to check a site, a deploy, docs or a dashboard page that is public.',
+  parameters: object({ url: { type: 'string' } }, ['url']),
+  run: async (args, host) => {
+    const url = str(args.url);
+    const page = await host.screenshot(url);
+    const id = host.id();
+
+    return {
+      content: `${page.title}\n${page.text}`.slice(0, MCP_RESULT_LIMIT),
+      visual: { _tag: 'Widget', id, widget: widgetOf(id, { kind: 'browser', title: page.title || url, image: page.image === '' ? null : page.image, body: page.image === '' ? page.text.slice(0, 600) : '', links: [{ title: url, url, note: '' }] }) },
+    };
+  },
+};
+
 const rest: Definition = {
   name: 'rest',
   label: () => 'Going quiet',
@@ -516,6 +626,11 @@ export const TOOLS: readonly Definition[] = [
   changeVoice,
   showForm,
   showWidget,
+  terminal,
+  files,
+  cloudflare,
+  webSearch,
+  browse,
   mcp,
   runCode,
   rest,

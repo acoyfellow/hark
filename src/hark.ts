@@ -42,6 +42,9 @@ const hostOf = (url: string) => {
     return url;
   }
 };
+import { COMPUTER_IMAGE, type Computer, sandboxComputer } from './computer';
+import { pageText, pageTitle } from './page-text';
+import { parseResults, searchCommand } from './web-results';
 import { MAX_FILE_BYTES, runOnBench } from './workbench';
 import { EchoGatedTranscriber, SpokenRecord } from './echo-gate';
 
@@ -375,6 +378,18 @@ export class Hark extends VoiceAgent<Env> {
     throw new Error(`no capability ${name}`);
   }
 
+  private async bootedComputer(): Promise<Computer> {
+    const container = this.ctx.container;
+
+    if (container === undefined) throw new Error('This hark has no computer attached');
+
+    const computer = sandboxComputer(container, container.images[COMPUTER_IMAGE] ?? COMPUTER_IMAGE);
+
+    await computer.boot({});
+
+    return computer;
+  }
+
   private idleBeats(): Beat[] {
     const raw = this.sql<{ value: string }>`SELECT value FROM settings WHERE key = 'idle'`[0]?.value ?? '[]';
 
@@ -641,6 +656,45 @@ export class Hark extends VoiceAgent<Env> {
       imagine: (prompt) => this.requireLive().imagine(prompt, AbortSignal.timeout(45_000)),
       mcp: this.mcpPort(),
       runCode: async (code) => JSON.stringify(await runOnBench(this.env, this.name, code)),
+      terminal: async (command) => {
+        const computer = await this.bootedComputer();
+
+        return computer.shell(command);
+      },
+      files: async (action, path, content) => {
+        const computer = await this.bootedComputer();
+
+        if (action === 'read') return computer.readFile(path);
+
+        if (action === 'write') {
+          await computer.writeFile(path, content);
+
+          return `Wrote ${content.length} characters to ${path}.`;
+        }
+
+        return (await computer.list(path)).map((entry) => `${entry.type === 'directory' ? 'd' : '-'} ${entry.name}`).join('\n') || '(empty)';
+      },
+      cloudflare: (method, path, body) => this.requireLive().api(method, path, body, AbortSignal.timeout(30_000)),
+      webSearch: async (query) => {
+        const found = await this.env.WEBSEARCH?.search({ query }).catch(() => null);
+
+        if (found !== undefined && found !== null && found.items.length > 0) return found.items.slice(0, 8).map((item) => ({ title: item.title, url: item.url, note: item.description ?? '' }));
+
+        const page = await (await this.bootedComputer()).shell(searchCommand(query));
+
+        return parseResults(page.stdout, 8);
+      },
+      screenshot: async (url) => {
+        const rendered = await this.requireLive()
+          .screenshot(url, AbortSignal.timeout(45_000))
+          .catch(() => null);
+
+        if (rendered !== null) return rendered;
+
+        const page = await (await this.bootedComputer()).shell(`curl -sL --max-time 20 ${JSON.stringify(url)} | head -c 400000`);
+
+        return { image: '', title: pageTitle(page.stdout, url), text: pageText(page.stdout, 6000) };
+      },
       setIdle: (beats) => {
         this.sql`INSERT OR REPLACE INTO settings (key, value) VALUES ('idle', ${JSON.stringify(beats)})`;
         this.send(connection, { _tag: 'Idle', beats: this.idleBeats() });

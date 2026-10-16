@@ -38,8 +38,27 @@ describe('a token Cloudflare rejects signs the person out instead of failing qui
     );
 
     await expect(live.listen({})).rejects.toThrow(/sign-in expired/u);
-    expect(seen).toEqual(['old', 'new']);
+    expect(seen).toEqual(['old', 'new', 'old']);
     expect(signedOut).toBe(true);
+  });
+
+  it('keeps the person signed in when only one product refuses the token', async () => {
+    const seen: string[] = [];
+    let signedOut = false;
+    const live = upstream(
+      { accountId: 'a', token: async () => 'good', refresh: async () => 'good', signedOut: () => { signedOut = true; } },
+      origins,
+      async (input) => {
+        seen.push(String(input));
+
+        return new Response('{}', { status: String(input).includes('browser-rendering') ? 401 : 200 });
+      },
+    );
+
+    const result = await live.api('POST', '/accounts/{account}/browser-rendering/screenshot', {}, new AbortController().signal);
+
+    expect(result.status).toBe(401);
+    expect(signedOut).toBe(false);
   });
 
   it('signs out when there is no way to refresh', async () => {

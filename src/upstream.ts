@@ -49,6 +49,16 @@ const aiBase = (origins: Origins, credentials: Credentials) => `${origins.api}/a
 
 const UNAUTHORIZED = 401;
 
+const tokenStillWorks = async (credentials: Credentials, send: typeof fetch) => {
+  const token = await credentials.token().catch(() => null);
+
+  if (token === null) return false;
+
+  const check = await send(`https://api.cloudflare.com/client/v4/accounts/${enc(credentials.accountId)}/ai/models/search?per_page=1`, { headers: { authorization: `Bearer ${token}` } }).catch(() => null);
+
+  return check !== null && check.status !== UNAUTHORIZED;
+};
+
 const authorizedSend =
   (credentials: Credentials, send: typeof fetch) =>
   async (url: string, init: RequestInit & { headers?: Record<string, string> }): Promise<Response> => {
@@ -64,6 +74,8 @@ const authorizedSend =
       .catch(() => null);
 
     if (retried !== null && retried.status !== UNAUTHORIZED) return retried;
+
+    if (await tokenStillWorks(credentials, send)) return retried ?? first;
 
     credentials.signedOut();
 
@@ -85,7 +97,19 @@ export type Upstream = {
   readonly see: (image: string, question: string, signal: AbortSignal) => Promise<string>;
   readonly imagine: (prompt: string, signal: AbortSignal) => Promise<string>;
   readonly routes: () => Readonly<Record<string, string>>;
+  readonly api: (method: string, path: string, body: unknown, signal: AbortSignal) => Promise<{ readonly status: number; readonly body: string }>;
+  readonly screenshot: (url: string, signal: AbortSignal) => Promise<{ readonly image: string; readonly title: string; readonly text: string }>;
 };
+
+const bytesToBase64 = (bytes: Uint8Array) => {
+  let binary = '';
+
+  for (let index = 0; index < bytes.length; index += 0x8000) binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
+
+  return btoa(binary);
+};
+
+const accountPath = (path: string, accountId: string) => (path.startsWith('/') ? path : `/${path}`).replaceAll('{account}', enc(accountId));
 
 
 export const listenUrl = (origins: Origins, credentials: Credentials, params: Readonly<Record<string, unknown>>) => {
@@ -154,6 +178,37 @@ export const upstream = (
 
   return {
   routes: () => ({ think: 'workers-ai', speak: 'workers-ai', listen: 'workers-ai', paint: 'workers-ai' }),
+
+  api: async (method, path, body, signal) => {
+    const response = await send(`${origins.api}${accountPath(path, credentials.accountId)}`, {
+      method,
+      headers: body === null || body === undefined ? {} : { 'content-type': 'application/json' },
+      body: body === null || body === undefined || method === 'GET' ? undefined : JSON.stringify(body),
+      signal,
+    });
+
+    return { status: response.status, body: await response.text() };
+  },
+
+  screenshot: async (url, signal) => {
+    const base = `${origins.api}/accounts/${enc(credentials.accountId)}/browser-rendering`;
+    const shot = await send(`${base}/screenshot`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ url, viewport: { width: 1280, height: 800 }, screenshotOptions: { type: 'jpeg', quality: 60 } }),
+      signal,
+    });
+
+    if (!shot.ok) throw await failure('Opening the page (Browser Rendering)', shot);
+
+    const image = `data:image/jpeg;base64,${bytesToBase64(new Uint8Array(await shot.arrayBuffer()))}`;
+    const page = await send(`${base}/markdown`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url }), signal });
+    const parsed: unknown = page.ok ? await page.json().catch(() => null) : null;
+    const text = typeof parsed === 'object' && parsed !== null && typeof (parsed as { result?: unknown }).result === 'string' ? (parsed as { result: string }).result : '';
+    const title = /^#\s+(.+)$/mu.exec(text)?.[1] ?? '';
+
+    return { image, title, text: text.slice(0, 6000) };
+  },
 
   listen: async (params) => {
     const response = await send(listenUrl(origins, credentials, params), {

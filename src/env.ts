@@ -6,6 +6,7 @@ export type Env = {
   readonly DIRECTORY: DurableObjectNamespace<Directory>;
   readonly HARK: DurableObjectNamespace<Hark>;
   readonly LOADER: WorkerLoader;
+  readonly WEBSEARCH?: WebSearch;
   readonly OAUTH_CLIENT_ID?: string;
   readonly OAUTH_CLIENT_SECRET?: string;
   readonly SESSION_SECRET?: string;

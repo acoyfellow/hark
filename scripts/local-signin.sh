@@ -8,7 +8,8 @@ umask 077
 printf 'OAUTH_CLIENT_ID=%s\nOAUTH_CLIENT_SECRET=%s\nSESSION_SECRET=%s\n' \
   "$(keychain hark-oauth-client-id)" "$(keychain hark-oauth-client-secret)" "$(keychain hark-session-secret)" > "$vars"
 mkdir -p .wrangler/logs
-npx wrangler dev --port "${PORT:-8790}" --ip 127.0.0.1 --env-file "$vars" > .wrangler/logs/dev.log 2>&1 &
+node scripts/with-local-image.mjs
+npx wrangler dev --config wrangler.local.jsonc --port "${PORT:-8790}" --ip 127.0.0.1 --env-file "$vars" > .wrangler/logs/dev.log 2>&1 &
 dev=$!
 echo $dev > .wrangler/dev.pid
 ( while kill -0 "$dev" 2>/dev/null; do sleep 2; done; rm -f "$vars" ) &
