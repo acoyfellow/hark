@@ -30,9 +30,9 @@ export const Snap = Command.define('Snap', {
 export const SignOut = Command.define('SignOut', {
   messages: [Message.CompletedSignOut],
   execute: Effect.promise(() =>
-    fetch('/oauth/logout', { method: 'POST', redirect: 'manual' }).catch(() => undefined),
+    fetch('/oauth/logout', { method: 'POST', redirect: 'follow' }).catch(() => undefined),
   ).pipe(
-    Effect.andThen(Navigation.load('/')),
+    Effect.andThen((response) => Navigation.load(response?.redirected ? new URL(response.url).pathname : '/')),
     Effect.as(Message.CompletedSignOut()),
   ),
 });

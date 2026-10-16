@@ -101,6 +101,8 @@ const route = async (request: Request, env: Env, owner: string, local: boolean):
     return agent.finishServerSignIn(request);
   }
 
+  if (local && pathname === '/oauth/logout' && request.method === 'POST') return Response.redirect(new URL('/welcome', request.url).toString(), 303);
+
   if (pathname === '/' && request.method === 'GET') return appPage(new URL(request.url).origin, local);
 
   if (local && pathname === '/welcome')
