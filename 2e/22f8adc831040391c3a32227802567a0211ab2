@@ -1,0 +1,25 @@
+scripts/check-edge.sh
+  s_ca5a6532cca4b3::t_76453dbab1e254 17-18
+scripts/demo-scopes.txt
+  s_ca5a6532cca4b3::t_31e9e69ca1aef8 1
+scripts/local-signin.sh
+  s_ca5a6532cca4b3::t_f6b19445afd1e1 9
+src/hark.ts
+  s_ca5a6532cca4b3::t_d38f7dca6f2263 141,712-720,722-723,731
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "2e22f8adc831040391c3a32227802567a0211ab2",
+  "prompts": {},
+  "sessions": {
+    "s_ca5a6532cca4b3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a13c32-5367-7000-8a26-f0799dfcdedc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
