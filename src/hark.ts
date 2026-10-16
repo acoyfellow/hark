@@ -30,7 +30,7 @@ import { parseArguments, runTool, type ToolHost, toolLabel, toolSchemas } from '
 import type { ChatMessage } from './chat';
 import { CLOUDFLARE_ORIGINS, type Credentials, type Origins, type Upstream, UpstreamFailed, upstream } from './upstream';
 import { userAI } from './user-ai';
-import { judgeQuestion, type McpPort } from './tools';
+import type { McpPort } from './tools';
 import { MAX_FILE_BYTES, runOnBench } from './workbench';
 import { EchoGatedTranscriber, SpokenRecord } from './echo-gate';
 
@@ -324,18 +324,6 @@ export class Hark extends VoiceAgent<Env> {
       return { deleted: text('path') };
     }
 
-    if (name === 'judge') {
-      const questions = Array.isArray(args.questions) ? args.questions : [];
-
-      return (await this.liveForBench()).judge(
-        {
-          state: { context: text('context') || 'the input' },
-          questions: Object.fromEntries(questions.map((question, index) => [`q${index + 1}`, judgeQuestion(question)])),
-        },
-        AbortSignal.timeout(20_000),
-      );
-    }
-
     if (name === 'imagine') return (await this.liveForBench()).imagine(text('prompt'), AbortSignal.timeout(45_000));
 
     if (name === 'mcp_connect') return port.connect(text('name'), text('url'), text('token'));
@@ -520,7 +508,6 @@ export class Hark extends VoiceAgent<Env> {
         }),
       see: (image, question) => this.requireLive().see(image, question, AbortSignal.timeout(20_000)),
       imagine: (prompt) => this.requireLive().imagine(prompt, AbortSignal.timeout(45_000)),
-      judge: (request) => this.requireLive().judge(request, AbortSignal.timeout(20_000)),
       mcp: this.mcpPort(),
       runCode: async (code) => JSON.stringify(await runOnBench(this.env, this.name, code)),
       setVoice: (voice) => {

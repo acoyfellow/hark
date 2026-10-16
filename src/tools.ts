@@ -16,7 +16,6 @@ export type ToolHost = {
   readonly look: () => Promise<string | null>;
   readonly see: (image: string, question: string) => Promise<string>;
   readonly imagine: (prompt: string) => Promise<string>;
-  readonly judge: (request: Record<string, unknown>) => Promise<unknown>;
   readonly mcp: McpPort;
   readonly runCode: (code: string) => Promise<string>;
   readonly setVoice: (voice: Voice) => void;
@@ -389,69 +388,6 @@ const showForm: Definition = {
   },
 };
 
-const JUDGE_KINDS = ['yes_no', 'choice', 'score'] as const;
-
-export const judgeQuestion = (raw: unknown): Record<string, unknown> | null => {
-  const item = rec(raw);
-  const kind = str(item.kind, 'yes_no');
-  const question = str(item.question);
-  const options = list(item.options).map((option) => str(option)).filter((option) => option !== '');
-
-  if (question === '') return null;
-
-  if (kind === 'choice' && options.length >= 2) return { type: 'choice', instructions: question, criteria: Object.fromEntries(options.map((option) => [option, option])) };
-
-  if (kind === 'score' && options.length >= 2) return { type: 'score', instructions: question, criteria: options.slice(0, 10) };
-
-  return { type: 'noul', instructions: question };
-};
-
-const judge: Definition = {
-  name: 'judge',
-  label: (args) => (args.camera === true ? 'Looking closely' : 'Weighing it'),
-  description: [
-    'Ask a fast judgment model typed questions and get calibrated probabilities back, not prose. Use it to decide things precisely: what is the person holding, which of these is it, how happy do they look, is this text a scam, which option fits best.',
-    'Set camera to true to judge the current camera frame. Combine with show_form: judge what they hold, then shape the swarm into it.',
-    `Each question has kind ${JUDGE_KINDS.join(', ')}. choice needs 2 or more options. score needs 2 to 10 ordered levels.`,
-  ].join('\n'),
-  parameters: object(
-    {
-      context: { type: 'string', description: 'What to judge, as text. Can be empty when judging the camera.' },
-      camera: { type: 'boolean', description: 'Judge the current camera frame.' },
-      questions: {
-        type: 'array',
-        maxItems: 8,
-        items: object(
-          {
-            question: { type: 'string' },
-            kind: { type: 'string', enum: [...JUDGE_KINDS] },
-            options: { type: 'array', items: { type: 'string' } },
-          },
-          ['question'],
-        ),
-      },
-    },
-    ['questions'],
-  ),
-  run: async (args, host) => {
-    const questions = list(args.questions).map(judgeQuestion).filter((question) => question !== null);
-
-    if (questions.length === 0) return { content: 'Ask at least one question.' };
-
-    const image = args.camera === true ? await host.look() : null;
-
-    if (args.camera === true && image === null) return { content: 'The camera is off. Ask them to tap the camera button.' };
-
-    const result = await host.judge({
-      state: { context: str(args.context) || 'the image' },
-      questions: Object.fromEntries(questions.map((question, index) => [`q${index + 1}`, question])),
-      ...(image === null ? {} : { images: [image] }),
-    });
-
-    return { content: `Answers with probabilities: ${JSON.stringify(rec(result).answers ?? result).slice(0, 1500)}` };
-  },
-};
-
 const MCP_ACTIONS = ['list', 'connect', 'call'] as const;
 
 const MCP_RESULT_LIMIT = 3000;
@@ -471,7 +407,7 @@ const mcp: Definition = {
   name: 'mcp',
   label: (args) => (args.action === 'connect' ? 'Connecting a server' : args.action === 'call' ? `Using ${str(args.tool, 'a tool')}` : 'Checking my tools'),
   description: [
-    'Use any MCP server the person has connected, or connect a new one. This is how you reach tools you do not have built in: code runners, judges, search, their own services.',
+    'Use any MCP server the person has connected, or connect a new one. This is how you reach tools you do not have built in: code runners, search, docs, their own services.',
     'action "list" shows connected servers and every tool with its arguments. Call it first when you are unsure.',
     'action "connect" adds a server by name and https url, with an optional bearer token. It stays connected.',
     'action "call" runs one tool: server (name or id), tool, args.',
@@ -518,10 +454,9 @@ const runCode: Definition = {
     'Run JavaScript on your own durable workbench, a sandbox with no internet. Use it to compute, simulate, generate data, write and keep files, or chain several tools in one go.',
     'The body is an async function. Return a value. console.log works. await hark.<capability>(input) reaches:',
     '- read_file({path}), write_file({path, content}), list_files({}), delete_file({path}): files that persist between calls and sessions.',
-    '- judge({context, questions:[{question, kind, options}]}): calibrated probabilities from the judgment model.',
     '- imagine({prompt}): paint an image, returns a data URL.',
     '- mcp_tools({}), mcp_call({server, tool, args}): every connected MCP server.',
-    'Good for generating particle code or SVG for show_form, saving a scene as a file to replay later, or batch judging.',
+    'Good for generating particle code or SVG for show_form, saving a scene as a file to replay later, or chaining MCP calls.',
   ].join('\n'),
   parameters: object({ code: { type: 'string', description: 'The async function body.' } }, ['code']),
   run: async (args, host) => ({ content: (await host.runCode(str(args.code))).slice(0, MCP_RESULT_LIMIT) }),
@@ -546,7 +481,6 @@ export const TOOLS: readonly Definition[] = [
   imagine,
   changeVoice,
   showForm,
-  judge,
   mcp,
   runCode,
   rest,

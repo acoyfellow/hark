@@ -25,7 +25,7 @@ const POINTS: readonly Point[] = [
   {
     icon: 'M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7',
     title: 'Bring your own MCP servers',
-    body: 'Say &ldquo;connect my server&rdquo; and give it a URL. hark keeps it and calls its tools by voice. Judges like odds, docs, code runners, your own services.',
+    body: 'Say &ldquo;connect my server&rdquo; and give it a URL. hark keeps it and calls its tools by voice. Docs, search, code runners, your own services.',
   },
   {
     icon: 'M16 18l6-6-6-6M8 6l-6 6 6 6',
