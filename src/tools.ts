@@ -376,7 +376,7 @@ const showForm: Definition = {
     const problems = checked.filter(isProblem).map((beat) => beat.problem);
     const good = checked.filter((beat): beat is Beat => !isProblem(beat));
 
-    if (good.length === 0) return { content: `Nothing was shown: ${problems.join('; ') || 'give at least one beat'}. Call show_form again now with the fix.` };
+    if (good.length === 0) return { content: `Nothing was shown: ${problems.join('; ') || 'the beats were empty, probably cut off; send a shorter one'}. Call show_form again now with the fix.` };
 
     const beats = await Promise.all(
       good.map(async (beat) => (beat.kind === 'painting' ? { ...beat, value: await host.imagine(`${beat.value}, bold silhouette, strong contrast, dramatic light`) } : beat)),

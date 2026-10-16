@@ -77,6 +77,8 @@ const thinkingOptions = (brain: Brain): Record<string, unknown> =>
 
 const SIGNED_OUT = /sign-in expired/u;
 
+const replyTokenBudget = (brain: Brain) => (isGatewayBrain(brain) ? 4000 : THINKS_BEFORE_TOOLS.includes(brain) ? 2400 : 2000);
+
 export class Hark extends VoiceAgent<Env> {
   private callers = new Map<string, Caller>();
 
@@ -268,12 +270,12 @@ export class Hark extends VoiceAgent<Env> {
     ];
 
     try {
-      const stream = await live.chat({ model: input.brain, messages, tools: toolSchemas(), stream: true, max_tokens: 1600, temperature: 0.7, ...thinkingOptions(input.brain) }, AbortSignal.timeout(90_000));
+      const stream = await live.chat({ model: input.brain, messages, tools: toolSchemas(), stream: true, max_tokens: replyTokenBudget(input.brain), temperature: 0.7, ...thinkingOptions(input.brain) }, AbortSignal.timeout(90_000));
       const raw = await new Response(stream).text();
       const argumentText = [...raw.matchAll(/"arguments"\s*:\s*"((?:[^"\\]|\\.)*)"/gu)].map((match) => JSON.parse(`"${match[1] ?? ''}"`) as string).join('');
       const said = [...raw.matchAll(/"content"\s*:\s*"((?:[^"\\]|\\.)*)"/gu)].map((match) => JSON.parse(`"${match[1] ?? ''}"`) as string).join('');
 
-      return { brain: input.brain, ms: Date.now() - started, said: said.slice(0, 300), tools: [...raw.matchAll(/"name"\s*:\s*"([a-z_]+)"/gu)].map((match) => match[1]), arguments: argumentText };
+      return { brain: input.brain, ms: Date.now() - started, finish: [...raw.matchAll(/"finish_reason"\s*:\s*"([a-z_]+)"/gu)].map((match) => match[1]), said: said.slice(0, 300), tools: [...raw.matchAll(/"name"\s*:\s*"([a-z_]+)"/gu)].map((match) => match[1]), arguments: argumentText };
     } catch (cause) {
       return { brain: input.brain, ms: Date.now() - started, error: cause instanceof Error ? cause.message.slice(0, 400) : String(cause) };
     }
@@ -573,7 +575,7 @@ export class Hark extends VoiceAgent<Env> {
     const ports: ReplyPorts = {
       chat: async (messages, signal) => {
         const ask = (brain: Brain) =>
-          live.chat({ model: brain, messages, tools: toolSchemas(), stream: true, max_tokens: THINKS_BEFORE_TOOLS.includes(brain) ? 2400 : 900, temperature: 0.7, ...thinkingOptions(brain) }, signal);
+          live.chat({ model: brain, messages, tools: toolSchemas(), stream: true, max_tokens: replyTokenBudget(brain), temperature: 0.7, ...thinkingOptions(brain) }, signal);
         const chosen = this.brainInUse();
 
         try {
