@@ -1,0 +1,23 @@
+.guardrail/deploys/2026-10-16T02-28-53-433Z.json
+  s_ca5a6532cca4b3::t_2bafb0b5944f0e 1-43
+src/computer.ts
+  s_ca5a6532cca4b3::t_3c85b017b52329 32-37,40-42,76-77,80-90,93-95
+src/hark.ts
+  s_ca5a6532cca4b3::t_8ef22056dc7dfa 81-84,133,386,392-397,399-400,405-421,690-696,698,707
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "a3bcfe377e84ae53e5a79ec269db865124559359",
+  "prompts": {},
+  "sessions": {
+    "s_ca5a6532cca4b3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a13c32-5367-7000-8a26-f0799dfcdedc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
