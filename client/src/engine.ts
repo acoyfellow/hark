@@ -10,6 +10,8 @@ const MIC_LEVEL_NEVER_REACHED = 2;
 
 const MAX_REDIALS = 20;
 
+const REDIAL_DELAY_MS = 300;
+
 const isLostTranscriber = (message: string) => message.toLowerCase().includes('speech recognition connection was lost');
 
 export class MicrophoneRefused extends Error {}
@@ -99,7 +101,8 @@ export const startEngine = async (hooks: EngineHooks, camera: boolean): Promise<
 
     if (isLostTranscriber(error.message) && !stopped && redials < MAX_REDIALS) {
       redials += 1;
-      void client.startCall().catch(() => hooks.frame({ _tag: 'Fault', reason: error.message, fatal: false }));
+      client.endCall();
+      setTimeout(() => void client.startCall().catch(() => hooks.frame({ _tag: 'Fault', reason: error.message, fatal: false })), REDIAL_DELAY_MS);
 
       return;
     }
