@@ -32,6 +32,7 @@ export type ToolHost = {
   readonly setIdle: (beats: readonly Beat[]) => void;
   readonly openWorkspace: (path: string | null) => void;
   readonly showTools: () => void;
+  readonly instructions: { readonly get: () => string; readonly set: (text: string) => string };
   readonly panels: { readonly list: () => string; readonly change: (change: PanelChange) => string };
   readonly setVoice: (voice: Voice) => void;
   readonly fetch: typeof fetch;
@@ -687,6 +688,30 @@ export const capabilityReport = (servers: readonly { readonly name: string; read
     ...LIMITS,
   ].join('\n');
 
+const instructionsTool: Definition = {
+  name: 'instructions',
+  label: (args) => (str(args.action) === 'get' ? 'Reading my instructions' : 'Updating my instructions'),
+  description: [
+    'Their own standing instructions for you, kept on their account and added to your system prompt every turn. Use it when they say "edit your system prompt", "from now on ...", "always ...", "never ...", "stop doing ...", "what are your instructions", or "reset your prompt".',
+    'action get: read them back. add: append one instruction (best for "from now on" and "always"). set: replace them all with text. reset: clear them back to your defaults.',
+    'Your built-in safety and voice rules cannot be changed, only added to. Confirm the change in one short sentence.',
+  ].join('\n'),
+  parameters: object({ action: { type: 'string', enum: ['get', 'add', 'set', 'reset'] }, text: { type: 'string' } }, ['action']),
+  run: async (args, host) => {
+    const action = str(args.action, 'get');
+    const current = host.instructions.get();
+    if (action === 'get') return { content: current === '' ? 'No instructions of their own yet; only your defaults.' : `Their instructions:\n${current}` };
+    if (action === 'reset') {
+      host.instructions.set('');
+      return { content: 'Cleared. You are back to your defaults.' };
+    }
+    const text = str(args.text).trim();
+    if (text === '') return { content: 'Nothing to save: say what the instruction should be.' };
+    const saved = host.instructions.set(action === 'add' && current !== '' ? `${current}\n- ${text}` : action === 'add' ? `- ${text}` : text);
+    return { content: `Saved. It applies from your next reply. Now:\n${saved}` };
+  },
+};
+
 const capabilities: Definition = {
   name: 'capabilities',
   label: () => 'Checking what I can do',
@@ -735,6 +760,7 @@ const panelsTool: Definition = {
 
 export const TOOLS: readonly Definition[] = [
   capabilities,
+  instructionsTool,
   panelsTool,
   lookUp,
   setTimer,

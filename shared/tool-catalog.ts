@@ -22,6 +22,7 @@ export const TOOL_CATALOG: readonly CatalogTool[] = [
   { name: 'cancel_timer', title: 'Cancel a timer', group: 'Time', say: 'Cancel the tea timer.' },
   { name: 'change_voice', title: 'Change voice', group: 'Voice', say: 'Switch to a deeper voice.' },
   { name: 'rest', title: 'Sleep', group: 'Voice', say: 'That is all, thanks.' },
+  { name: 'instructions', title: 'Your instructions', group: 'Voice', say: 'From now on, keep answers to one sentence.' },
   { name: 'capabilities', title: 'What I can do', group: 'Voice', say: 'What can you do?' },
   { name: 'mcp', title: 'Your MCP servers', group: 'Find', say: 'What can my docs server do?' },
 ];

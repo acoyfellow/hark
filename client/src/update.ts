@@ -113,6 +113,7 @@ const onFrame = (model: Model, frame: ServerFrame): Return =>
       }),
       Sleep: ({ reason }): Return => ({ model: sleep(model, Option.some(reason)) }),
       Idle: ({ beats }): Return => ({ model: modifyFields(model, { idle: () => beats }) }),
+      Instructions: ({ text }): Return => ({ model: modifyFields(model, { instructions: () => text, instructionsDraft: () => Option.none() }) }),
       ShowTools: (): Return => openSheet(modifyFields(model, { tab: () => 'tools', drawer: () => false })),
       Panels: ({ panels, drawer }): Return => ({ model: modifyFields(model, { panels: () => panels, drawer: (open) => drawer ?? open }) }),
       OpenWorkspace: ({ path }): Return => ({
@@ -181,6 +182,12 @@ export const update = (model: Model, message: Message): Return =>
       return configure(model, { ...current, engine, voice });
     },
     ClickedSignOut: () => ({ model: sleep(model, Option.none()), commands: [SignOut()] }),
+    TypedInstructions: ({ text }) => ({ model: modifyFields(model, { instructionsDraft: () => Option.some(text) }) }),
+    SavedInstructions: () => {
+      const text = Option.getOrElse(model.instructionsDraft, () => model.instructions);
+      return { model: modifyFields(model, { instructions: () => text, instructionsDraft: () => Option.none() }), commands: model.connected ? [Send({ frame: { _tag: 'SetInstructions', text } })] : [] };
+    },
+    ResetInstructions: () => ({ model: modifyFields(model, { instructions: () => '', instructionsDraft: () => Option.none() }), commands: model.connected ? [Send({ frame: { _tag: 'SetInstructions', text: '' } })] : [] }),
     ClickedTools: () => (model.sheet && model.tab === 'tools' ? { model: modifyFields(model, { sheet: () => false }) } : openSheet(modifyFields(model, { tab: () => 'tools', drawer: () => false }))),
     ClickedDrawer: () => ({ model: modifyFields(model, { drawer: (open) => !open }) }),
     ClickedPanel: ({ id, action }) => ({

@@ -61,6 +61,12 @@ const actionsIn = (calls: readonly ToolCall[]) =>
     }
   }, 0);
 
+const STANDING = new RegExp(String.raw`\b(?:from now on|going forward|always|never|stop (?:calling|saying|doing|using)|don'?t ever|call me|(?:system )?prompt|your instructions)\b`, 'iu');
+
+export const setsARule = (heard: string) => STANDING.test(heard);
+
+export const SAVE_THE_RULE = 'They gave you a standing instruction and you did not save it, so you will forget it. Call the tool named instructions now, for example {"action":"add","text":"Keep every answer to one sentence."}. Use set to change or remove a rule, reset to clear all. No other tool. Then confirm in a few words.';
+
 export const finishTheList = (steps: readonly string[], done: number) =>
   `They asked for ${steps.length} things and you did the first ${done}. Still missing, in order: ${steps.slice(done).map((step, index) => `${done + index + 1}. ${step}`).join(' ')}. Do only these missing steps now with tool calls. Do not redo earlier steps and do not talk about it.`;
 
@@ -124,6 +130,7 @@ export async function* reply(
   let listed = 0;
   let actions = 0;
   const steps = stepsAsked(lastUserText(history));
+  const ruled = setsARule(lastUserText(history));
 
   try {
     for (let round = 0; round < MAX_ROUNDS && !signal.aborted; round += 1) {
@@ -196,6 +203,13 @@ export async function* reply(
         nudged = true;
         result.nudged = true;
         conversation.push({ role: 'assistant', content: text }, { role: 'user', content: KEEP_YOUR_WORD });
+        continue;
+      }
+
+      if (calls.length === 0 && !lastRound && !nudged && result.tools.length === 0 && ruled) {
+        nudged = true;
+        result.nudged = true;
+        conversation.push({ role: 'assistant', content: text === '' ? null : text }, { role: 'user', content: SAVE_THE_RULE });
         continue;
       }
 

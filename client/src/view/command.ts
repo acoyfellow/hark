@@ -1,6 +1,6 @@
 import { Option } from 'effect';
 import type { Html, HtmlBuilder } from 'foldkit/html';
-import { BRAINS, DEFAULT_BRAIN, DEFAULT_ENGINE, DEFAULT_VOICE, ENGINES, type McpServer, type Settings, voicesFor } from '../../../shared/protocol';
+import { BRAINS, DEFAULT_BRAIN, DEFAULT_ENGINE, DEFAULT_VOICE, ENGINES, MAX_INSTRUCTIONS, type McpServer, type Settings, voicesFor } from '../../../shared/protocol';
 import { TOOL_CATALOG, TOOL_GROUPS, type CatalogTool } from '../../../shared/tool-catalog';
 import { Message } from '../message';
 import type { Model, PushState, SettingsTab } from '../model';
@@ -13,7 +13,7 @@ type Tab = { readonly id: SettingsTab; readonly label: string; readonly hint: st
 const TABS: readonly Tab[] = [
   { id: 'account', label: 'Account', hint: 'What is running, sign out', icon: 'user', words: 'account sign out cloudflare running models route memories push notifications' },
   { id: 'voice', label: 'Voice', hint: 'How hark sounds', icon: 'wave', words: 'voice aura speak sound engine quick rich' },
-  { id: 'brain', label: 'Brain', hint: 'Which model thinks', icon: 'brain', words: 'brain model think llm phonellm gpt claude glm' },
+  { id: 'brain', label: 'Brain', hint: 'Which model thinks, your instructions', icon: 'brain', words: 'brain model think llm phonellm gpt claude glm system prompt instructions personality rules' },
   { id: 'tools', label: 'Tools', hint: 'What hark can do, MCP servers', icon: 'tools', words: 'tools mcp servers connect capabilities do' },
 ];
 
@@ -153,7 +153,28 @@ const brainTab = (h: H, model: Model): readonly Html[] => {
   const viaGateway = brains.filter((brain) => brain.id.startsWith('gateway/'));
   const list = (items: typeof brains) => h.div([h.Class('grid gap-2')], items.map((brain) => choice(h, settings.brain === brain.id, brain.label, brain.note, Message.PickedBrain({ brain: brain.id }))));
 
+  const draft = Option.getOrElse(model.instructionsDraft, () => model.instructions);
+  const dirty = Option.isSome(model.instructionsDraft) && draft !== model.instructions;
+
   return [
+    section(h, 'Your instructions', [
+      h.p([h.Class('mb-2 text-[12px] leading-snug text-white/45')], ['Added to hark\'s system prompt every turn. Its safety and voice rules always stay. Or say "from now on, ..." or "reset your prompt".']),
+      h.textarea([
+        h.Id('instructions'),
+        h.Value(draft),
+        h.Placeholder('e.g. Call me Jordan. Keep answers to one sentence. Always show a shape.'),
+        h.Class('min-h-[96px] w-full resize-y rounded-xl border border-white/[0.09] bg-white/[0.03] px-3.5 py-3 text-[13px] leading-relaxed text-white outline-none placeholder:text-white/30 focus:border-ember/50'),
+        h.OnInput((text) => Message.TypedInstructions({ text })),
+      ]),
+      h.div(
+        [h.Class('mt-2 flex items-center gap-2')],
+        [
+          h.button([h.Type('button'), h.Id('save-instructions'), h.Disabled(!dirty), h.Class('rounded-full bg-ember px-4 py-1.5 text-[12.5px] font-medium text-black disabled:opacity-30'), h.OnClick(Message.SavedInstructions())], ['Save']),
+          h.button([h.Type('button'), h.Id('reset-instructions'), h.Disabled(model.instructions === '' && !dirty), h.Class('rounded-full border border-white/10 px-4 py-1.5 text-[12.5px] text-white/70 disabled:opacity-30'), h.OnClick(Message.ResetInstructions())], ['Reset to default']),
+          h.span([h.Class('ml-auto font-mono text-[10.5px] text-white/35')], [`${draft.length} / ${MAX_INSTRUCTIONS}`]),
+        ],
+      ),
+    ]),
     ...(onAccount.length === 0 ? [] : [section(h, 'Workers AI on your account', [list(onAccount)])]),
     ...(viaGateway.length === 0 ? [] : [section(h, 'Through your AI Gateway', [list(viaGateway)])]),
     ...(brains.length === 0 ? [h.p([h.Class('text-[13px] text-white/45')], ['No brain matches that.'])] : []),

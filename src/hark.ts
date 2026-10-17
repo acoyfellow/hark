@@ -14,6 +14,7 @@ import {
   decodeClientFrame,
   encodeServerFrame,
   type McpServer,
+  MAX_INSTRUCTIONS,
   Panel,
   type ServerFrame,
   type Settings,
@@ -28,7 +29,12 @@ import { refreshedToken, TOKEN_REFRESH_MARGIN_MS } from './auth/refresh';
 import { DIRECTORY_NAME, type Grant } from './directory';
 import { type Env, LOCAL_HEADER, TRACE_HEADER, LOCAL_OWNER, OWNER_HEADER } from './env';
 import { added as withPanel, changed, keepsAPanel, listed as panelList, type PanelChange } from './panels';
-import { systemPrompt } from './prompt';
+import { instructionsReminder, systemPrompt } from './prompt';
+
+const remindOf = (instructions: string): ChatMessage[] => {
+  const reminder = instructionsReminder(instructions);
+  return reminder === null ? [] : [{ role: 'system', content: reminder }];
+};
 import { Schema } from 'effect';
 import { type ReplyPorts, type ReplyResult, reply } from './reply';
 import { speakable } from './sentences';
@@ -150,6 +156,17 @@ export class Hark extends VoiceAgent<Env> {
     this.sql`CREATE TABLE IF NOT EXISTS workspace_chunks (part INTEGER PRIMARY KEY, data TEXT NOT NULL)`;
   }
 
+  private instructions(): string {
+    return this.sql<{ value: string }>`SELECT value FROM settings WHERE key = 'instructions'`[0]?.value ?? '';
+  }
+
+  private saveInstructions(text: string) {
+    const trimmed = text.trim().slice(0, MAX_INSTRUCTIONS);
+    this.sql`INSERT OR REPLACE INTO settings (key, value) VALUES ('instructions', ${trimmed})`;
+    for (const each of this.getConnections()) this.send(each, { _tag: 'Instructions', text: trimmed });
+    return trimmed;
+  }
+
   private panels(): Panel[] {
     const raw = this.sql<{ value: string }>`SELECT value FROM settings WHERE key = 'panels'`[0]?.value ?? '[]';
     const decoded = Schema.decodeUnknownOption(Schema.fromJsonString(Schema.Array(Panel)))(raw);
@@ -251,6 +268,9 @@ export class Hark extends VoiceAgent<Env> {
         return;
       case 'AddServer':
         void this.addServer(frame.name, frame.url, frame.token, this.origin, frame.resource ?? '').then((outcome) => this.send(connection, { _tag: 'ServerNote', note: outcome.note, authUrl: outcome.authUrl }));
+        return;
+      case 'SetInstructions':
+        this.saveInstructions(frame.text);
         return;
       case 'Panel':
         this.changePanels(connection, { action: frame.action, which: frame.id });
@@ -681,6 +701,7 @@ export class Hark extends VoiceAgent<Env> {
       });
       this.send(connection, { _tag: 'Idle', beats: this.idleBeats() });
       this.send(connection, { _tag: 'Panels', panels: this.panels() });
+      this.send(connection, { _tag: 'Instructions', text: this.instructions() });
 
       return true;
     } catch (cause) {
@@ -878,6 +899,7 @@ export class Hark extends VoiceAgent<Env> {
       },
       openWorkspace: (path) => this.send(connection, { _tag: 'OpenWorkspace', path }),
       showTools: () => this.send(connection, { _tag: 'ShowTools' }),
+      instructions: { get: () => this.instructions(), set: (text) => this.saveInstructions(text) },
       panels: {
         list: () => {
           this.savePanels(connection, this.panels(), true);
@@ -924,9 +946,11 @@ export class Hark extends VoiceAgent<Env> {
           memories: this.memories(),
           camera: caller.camera,
           firstTurn: caller.firstTurn,
+          instructions: this.instructions(),
         }),
       },
       ...context.messages.map((message): ChatMessage => ({ role: message.role === 'assistant' ? 'assistant' : 'user', content: message.content })),
+      ...remindOf(this.instructions()),
       { role: 'user', content: transcript },
     ];
 

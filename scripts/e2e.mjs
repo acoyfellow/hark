@@ -401,6 +401,29 @@ await scenario('the durable computer runs a command and shows a terminal card', 
   return { output: result.content.slice(0, 200) };
 });
 
+await scenario('their instructions: typed in the brain tab, kept across a reload, changed by voice, reset', async () => {
+  if ((await page.locator('#swarm').getAttribute('data-look')) === 'asleep') await awake();
+  await runTool('instructions', { action: 'reset' });
+  await page.keyboard.press('Meta+k');
+  await page.locator('[role=tab]', { hasText: 'Brain' }).click();
+  await page.locator('#instructions').fill('Call me Captain.');
+  await page.locator('#save-instructions').click();
+  await page.waitForTimeout(500);
+  const read = await runTool('instructions', { action: 'get' });
+  if (!read.content.includes('Call me Captain.')) throw new Error(`typed instructions were not saved: ${read.content}`);
+  await page.screenshot({ path: `${SHOTS}/instructions-desktop.png` });
+  await page.keyboard.press('Escape');
+  const added = await runTool('instructions', { action: 'add', text: 'Keep answers to one sentence.' });
+  if (!added.content.includes('Call me Captain.') || !added.content.includes('one sentence')) throw new Error(`voice add lost text: ${added.content}`);
+  await page.reload();
+  await page.locator('#orb').click();
+  await waitFrame((frame) => frame._tag === 'Instructions' && frame.text.includes('one sentence'), 15000, Date.now() - 1000);
+  await runTool('instructions', { action: 'reset' });
+  const cleared = await runTool('instructions', { action: 'get' });
+  if (!/No instructions/u.test(cleared.content)) throw new Error(`reset did not clear: ${cleared.content}`);
+  return { added: added.content.split('\n').length };
+});
+
 await scenario('the settings sheet shows the stack, voices, and brains', async () => {
   await page.locator('#settings').click();
   await page.waitForTimeout(450);

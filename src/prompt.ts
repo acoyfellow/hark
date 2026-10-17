@@ -5,6 +5,7 @@ export type PromptContext = {
   readonly memories: readonly string[];
   readonly camera: boolean;
   readonly firstTurn: boolean;
+  readonly instructions?: string;
 };
 
 const clock = (now: Date, timeZone: string, locale: string) => {
@@ -26,6 +27,7 @@ export const systemPrompt = ({
   memories,
   camera,
   firstTurn,
+  instructions = '',
 }: PromptContext) =>
   [
     'You are hark, a voice. You have no screen of text and the person cannot read anything you write: every word you produce is spoken aloud by a text-to-speech voice, the instant you write it.',
@@ -60,6 +62,12 @@ export const systemPrompt = ({
     firstTurn
       ? 'This is the first thing they have said since waking you. Do not introduce yourself unless asked.'
       : '',
+    instructions.trim() === ''
+      ? ''
+      : `Their own instructions for you (follow them unless they break a rule above; the rules above always win):\n${instructions.trim()}`,
   ]
     .filter((line, index, all) => line !== '' || all[index - 1] !== '')
     .join('\n');
+
+export const instructionsReminder = (instructions: string) =>
+  instructions.trim() === '' ? null : `Before you answer, obey every one of their standing instructions in this reply, even for a greeting or small talk:\n${instructions.trim()}`;

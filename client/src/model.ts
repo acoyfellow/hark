@@ -40,6 +40,8 @@ export const Model = Schema.Struct({
   visuals: Schema.Array(Visual),
   panels: Schema.Array(Panel),
   drawer: Schema.Boolean,
+  instructions: Schema.String,
+  instructionsDraft: Schema.Option(Schema.String),
   latency: Schema.Option(Latency),
   fault: Schema.Option(Schema.String),
   note: Schema.Option(Schema.String),

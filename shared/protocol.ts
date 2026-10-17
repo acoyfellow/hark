@@ -164,6 +164,8 @@ export const Visual = Schema.Union([
 
 export type Visual = typeof Visual.Type;
 
+export const MAX_INSTRUCTIONS = 2000;
+
 export const PANEL_SIZES = ['small', 'medium', 'large'] as const;
 
 export const PanelSize = Schema.Literals(PANEL_SIZES);
@@ -224,6 +226,7 @@ export const ServerFrame = Schema.Union([
   Schema.TaggedStruct('Idle', { beats: Schema.Array(Beat) }),
   Schema.TaggedStruct('OpenWorkspace', { path: Schema.NullOr(Schema.String) }),
   Schema.TaggedStruct('ShowTools', {}),
+  Schema.TaggedStruct('Instructions', { text: Schema.String }),
   Schema.TaggedStruct('Panels', { panels: Schema.Array(Panel), drawer: Schema.optional(Schema.Boolean) }),
 ]);
 
@@ -244,6 +247,7 @@ export const ClientFrame = Schema.Union([
   Schema.TaggedStruct('RemoveServer', { id: Schema.String }),
   Schema.TaggedStruct('ListServers', {}),
   Schema.TaggedStruct('Panel', { id: Schema.String, action: PanelAction }),
+  Schema.TaggedStruct('SetInstructions', { text: Schema.String }),
 ]);
 
 export type ClientFrame = typeof ClientFrame.Type;
