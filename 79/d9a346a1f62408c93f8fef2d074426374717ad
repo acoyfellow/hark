@@ -1,0 +1,51 @@
+client/src/command.ts
+  s_ea178a5ab7ff56::t_7767bd83534f86 85-164
+client/src/main.ts
+  s_ea178a5ab7ff56::t_4382f3c2dc87db 35-37
+client/src/message.ts
+  s_ea178a5ab7ff56::t_364aab38762d4e 36-38
+client/src/model.ts
+  s_ea178a5ab7ff56::t_42829220f1e588 44-46
+client/src/update.ts
+  s_ea178a5ab7ff56::t_f3238310788841 5,116-119,195-197
+client/src/view/command.ts
+  s_ea178a5ab7ff56::t_79f1bafcea5a42 107-122
+client/src/view/index.ts
+  s_ea178a5ab7ff56::t_88e823314bf459 122-135
+receipts/e2e-local.json
+  s_ea178a5ab7ff56::t_2dd5768dd1ee21 4-7,9-10,16,21,34,39,41,43,55,60,64,85,90,92,98,100,106,111,116,121,126,131,133-134,141,151,159,161,167,172-181,185,190,192,208,228,248,259,264
+scripts/e2e.mjs
+  s_ea178a5ab7ff56::t_e36e592ec9fed1 98,428-492
+scripts/v6-live.mjs
+  s_ea178a5ab7ff56::t_a9b7f1e63114b3 4
+scripts/v6/l7-passkey.ts
+  s_ea178a5ab7ff56::t_1a9a7b0507d4a6 1-77
+shared/protocol.ts
+  s_ea178a5ab7ff56::t_9353df0eea40d5 230-233,255-258
+src/auth/sign-in-page.ts
+  s_ea178a5ab7ff56::t_fc67338770e740 91-93,103
+src/hark.ts
+  s_ea178a5ab7ff56::t_c0149979840449 33,146-149,164-239,297-303,361-373,465,805,1003
+src/site/docs-page.ts
+  s_ea178a5ab7ff56::t_ce33bc0bd2ddf7 33,78-79,82-83,85
+src/tools.ts
+  s_ea178a5ab7ff56::t_b854bcebcba817 35,809-823,834-840
+test/unit/passkey.test.ts
+  s_ea178a5ab7ff56::t_bf85a229da90e0 1-100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "79d9a346a1f62408c93f8fef2d074426374717ad",
+  "prompts": {},
+  "sessions": {
+    "s_ea178a5ab7ff56": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a14446-f4ef-749e-8408-b0c86e1608dd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
