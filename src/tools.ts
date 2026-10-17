@@ -1,5 +1,6 @@
 import { shapeToolCall } from './tool-call-shape';
 import { KIT_NAMES, modelProblem } from '../shared/model-parts';
+import { secondsOf } from './routines';
 import { isEmptyWidget, widgetOf } from '../shared/widget-parse';
 import type { PanelChange } from './panels';
 import { TOOL_CATALOG, TOOL_GROUPS } from '../shared/tool-catalog';
@@ -32,6 +33,11 @@ export type ToolHost = {
   readonly setIdle: (beats: readonly Beat[]) => void;
   readonly openWorkspace: (path: string | null) => void;
   readonly showTools: () => void;
+  readonly routines?: {
+    readonly list: () => string;
+    readonly add: (task: string, schedule: { readonly every: number | null; readonly at: string | null }, limit: number | null) => Promise<string>;
+    readonly remove: (which: string) => Promise<string>;
+  };
   readonly approve?: (call: { readonly tool: string; readonly args: Record<string, unknown> }, summary: string) => Promise<string | null>;
   readonly instructions: { readonly get: () => string; readonly set: (text: string) => string };
   readonly panels: { readonly list: () => string; readonly change: (change: PanelChange) => string };
@@ -689,6 +695,30 @@ export const capabilityReport = (servers: readonly { readonly name: string; read
     ...LIMITS,
   ].join('\n');
 
+const routinesTool: Definition = {
+  name: 'routines',
+  label: (args) => (str(args.action) === 'add' ? 'Setting up a routine' : str(args.action) === 'remove' ? 'Stopping a routine' : 'Checking your routines'),
+  description: [
+    'Repeated and long tasks that keep running on their Durable Object when the page is closed, and push the result to their phone. Use it for "every morning tell me ...", "every hour check ...", "every 2 minutes ...", "keep working on that and ping me", "remind me daily".',
+    'action add: task is what to do each time, in their words ("check my workers for errors and summarise"). Give every ("2 minutes", "hour", "day") or at (a clock time like "8am" for daily). times limits the number of runs ("twice"). action list. action remove with which (a number, words of the task, or "all").',
+    'A run can read their account and the web, and write files on their computer, but never changes their account. Confirm in one short sentence with when it next runs, and say they will get a push.',
+  ].join('\n'),
+  parameters: object({ action: { type: 'string', enum: ['add', 'list', 'remove'] }, task: { type: 'string' }, every: { type: 'string' }, at: { type: 'string' }, times: { type: 'number' }, which: { type: 'string' } }, ['action']),
+  run: async (args, host) => {
+    if (host.routines === undefined) return { content: 'Routines are not available here.' };
+    const action = str(args.action, 'list');
+    if (action === 'list') return { content: host.routines.list() };
+    if (action === 'remove') return { content: await host.routines.remove(str(args.which, 'all')) };
+    const task = str(args.task).trim();
+    if (task === '') return { content: 'Not set: say what the routine should do.' };
+    const every = str(args.every) === '' ? null : secondsOf(str(args.every));
+    const at = str(args.at) === '' ? null : str(args.at);
+    if (every === null && at === null) return { content: 'Not set: say how often (every 2 minutes, every hour) or a daily time (8am).' };
+    const times = Number(args.times);
+    return { content: await host.routines.add(task, { every, at }, Number.isFinite(times) && times > 0 ? Math.round(times) : null) };
+  },
+};
+
 const instructionsTool: Definition = {
   name: 'instructions',
   label: (args) => (str(args.action) === 'get' ? 'Reading my instructions' : 'Updating my instructions'),
@@ -761,6 +791,7 @@ const panelsTool: Definition = {
 
 export const TOOLS: readonly Definition[] = [
   capabilities,
+  routinesTool,
   instructionsTool,
   panelsTool,
   lookUp,

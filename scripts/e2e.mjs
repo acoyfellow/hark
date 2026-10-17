@@ -445,6 +445,31 @@ await scenario('the computer lists workers through hark and writes a summary; it
   return { listed: summary.content.slice(0, 120) };
 });
 
+await scenario('a routine every 2 minutes is scheduled on the Durable Object, runs twice, keeps each result as a panel, pushes it encrypted, and stops', async () => {
+  if ((await page.locator('#swarm').getAttribute('data-look')) === 'asleep') await awake();
+  const routines = (body) => fetch(`${BASE}/__routines`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then((response) => response.json());
+  const key = await fetch(`${BASE}/push/key`).then((response) => response.text());
+  if (key.length < 80) throw new Error(`no VAPID key: ${key}`);
+  await routines({ subscribe: { endpoint: `${FAKE}/push/e2e-device`, p256dh: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM', auth: 'tBHItJI5svbpez7KI4CCXg' } });
+  await runTool('routines', { action: 'remove', which: 'all' });
+  const added = await runTool('routines', { action: 'add', task: 'check my workers and summarise', every: '2 minutes', times: 2 });
+  if (!/Set\. Every 2 minutes, 2 times/u.test(added.content)) throw new Error(`routine not set: ${added.content}`);
+  const before = await routines({});
+  if (before.schedules.length !== 1 || before.schedules[0].type !== 'interval') throw new Error(`no interval alarm: ${JSON.stringify(before.schedules)}`);
+  const pushesBefore = await fetch(`${FAKE}/__pushes`).then((response) => response.json());
+  await routines({ run: '1' });
+  const middle = await routines({});
+  await routines({ run: '1' });
+  const after = await routines({});
+  const pushes = (await fetch(`${FAKE}/__pushes`).then((response) => response.json())).slice(pushesBefore.length);
+  if (middle.routines[0]?.runs !== 1) throw new Error(`first run not counted: ${JSON.stringify(middle.routines)}`);
+  if (after.routines.length !== 0 || after.schedules.length !== 0) throw new Error(`the routine did not stop after two runs: ${JSON.stringify(after)}`);
+  if (pushes.length !== 2 || !pushes.every((push) => push.encoding === 'aes128gcm' && push.vapid && push.bytes > 100)) throw new Error(`expected two encrypted pushes: ${JSON.stringify(pushes)}`);
+  const panels = await runTool('panels', { action: 'list' });
+  if ((panels.content.match(/check my workers/gu) ?? []).length < 2) throw new Error(`the two runs are not panels: ${panels.content.slice(0, 300)}`);
+  return { pushes: pushes.length, alarm: before.schedules[0].type };
+});
+
 await scenario('their instructions: typed in the brain tab, kept across a reload, changed by voice, reset', async () => {
   if ((await page.locator('#swarm').getAttribute('data-look')) === 'asleep') await awake();
   await runTool('instructions', { action: 'reset' });

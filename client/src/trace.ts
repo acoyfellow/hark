@@ -6,7 +6,7 @@ const SPEAKING_STUCK_MS = 45_000;
 
 const THINKING_STUCK_MS = 30_000;
 
-const tracing = () => LOCAL_HOSTS.has(location.hostname);
+const tracing = () => LOCAL_HOSTS.has(location.hostname) || location.hostname.endsWith('coey.dev');
 
 const queue: Record<string, unknown>[] = [];
 

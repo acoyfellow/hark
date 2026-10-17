@@ -253,6 +253,7 @@ export const ClientFrame = Schema.Union([
   Schema.TaggedStruct('Panel', { id: Schema.String, action: PanelAction }),
   Schema.TaggedStruct('SetInstructions', { text: Schema.String }),
   Schema.TaggedStruct('SetGuard', { on: Schema.Boolean }),
+  Schema.TaggedStruct('Subscribe', { endpoint: Schema.String, p256dh: Schema.String, auth: Schema.String }),
   Schema.TaggedStruct('PasskeyCreated', { id: Schema.String, credential: Schema.String, publicKey: Schema.String, clientData: Schema.String }),
   Schema.TaggedStruct('PasskeySigned', { id: Schema.String, clientData: Schema.String, authenticator: Schema.String, signature: Schema.String }),
   Schema.TaggedStruct('PasskeyDeclined', { id: Schema.String, reason: Schema.optional(Schema.String) }),

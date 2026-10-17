@@ -30,6 +30,8 @@ import { DIRECTORY_NAME, type Grant } from './directory';
 import { type Env, LOCAL_HEADER, TRACE_HEADER, LOCAL_OWNER, OWNER_HEADER } from './env';
 import { added as withPanel, changed, keepsAPanel, listed as panelList, type PanelChange } from './panels';
 import { instructionsReminder, systemPrompt } from './prompt';
+import { dailyCron, describeRoutine, MAX_ROUTINES, MAX_RUNS, MIN_EVERY_SECONDS, type Routine, ROUTINE_PROMPT, ROUTINE_SAFE_TOOLS, zoneOffsetMinutes } from './routines';
+import { makeVapidKeys, type PushNote, type PushSubscriptionKeys, sendPush, type VapidKeys } from './web-push';
 import { Approvals, APPROVAL_SECONDS, callChallenge, randomChallenge, type StoredPasskey, verifyAssertion, verifyRegistration } from './passkey';
 
 const refuse = (message: string, status = 403) => ({ status, body: JSON.stringify({ success: false, errors: [{ code: status, message }] }) });
@@ -159,8 +161,131 @@ export class Hark extends VoiceAgent<Env> {
     this.sql`CREATE TABLE IF NOT EXISTS memories (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, at INTEGER NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS missed (label TEXT NOT NULL, at INTEGER NOT NULL)`;
+    this.sql`CREATE TABLE IF NOT EXISTS push_subs (endpoint TEXT PRIMARY KEY, p256dh TEXT NOT NULL, auth TEXT NOT NULL, at INTEGER NOT NULL)`;
+    this.sql`CREATE TABLE IF NOT EXISTS push_log (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, title TEXT NOT NULL, status INTEGER NOT NULL, sent INTEGER NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS files (path TEXT PRIMARY KEY, content TEXT NOT NULL, at INTEGER NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS workspace_chunks (part INTEGER PRIMARY KEY, data TEXT NOT NULL)`;
+  }
+
+  async pushKey(): Promise<string> {
+    return (await this.vapid()).publicKey;
+  }
+
+  private async vapid(): Promise<VapidKeys> {
+    const raw = this.sql<{ value: string }>`SELECT value FROM settings WHERE key = 'vapid'`[0]?.value;
+    if (raw !== undefined) return JSON.parse(raw) as VapidKeys;
+    const made = await makeVapidKeys();
+    this.sql`INSERT OR REPLACE INTO settings (key, value) VALUES ('vapid', ${JSON.stringify(made)})`;
+    return made;
+  }
+
+  async notify(note: PushNote): Promise<{ readonly sent: number; readonly failed: number }> {
+    const keys = await this.vapid();
+    const subs = this.sql<PushSubscriptionKeys>`SELECT endpoint, p256dh, auth FROM push_subs`;
+    let sent = 0;
+    let failed = 0;
+    for (const sub of subs) {
+      const result = await sendPush(sub, keys, note, 'mailto:hark@users.noreply.github.com').catch(() => ({ status: 0, gone: false }));
+      if (result.gone) this.sql`DELETE FROM push_subs WHERE endpoint = ${sub.endpoint}`;
+      if (result.status >= 200 && result.status < 300) sent += 1;
+      else failed += 1;
+      this.sql`INSERT INTO push_log (at, title, status, sent) VALUES (${Date.now()}, ${note.title.slice(0, 120)}, ${result.status}, ${result.status >= 200 && result.status < 300 ? 1 : 0})`;
+    }
+    return { sent, failed };
+  }
+
+  async routinesProbe(input: { readonly run?: string; readonly subscribe?: PushSubscriptionKeys; readonly add?: { readonly task: string; readonly every: number; readonly times: number }; readonly clear?: boolean }) {
+    if (input.clear === true) await this.removeRoutine('all');
+    const added = input.add === undefined ? null : await this.addRoutine(input.add.task, { every: input.add.every, at: null }, input.add.times, 'UTC');
+    if (input.subscribe !== undefined) this.sql`INSERT OR REPLACE INTO push_subs (endpoint, p256dh, auth, at) VALUES (${input.subscribe.endpoint}, ${input.subscribe.p256dh}, ${input.subscribe.auth}, ${Date.now()})`;
+    if (input.run !== undefined) {
+      const routine = this.routines().find((each, index) => each.id === input.run || String(index + 1) === input.run);
+      if (routine !== undefined) await this.routineRun({ id: routine.id });
+    }
+    return { added, routines: this.routines(), schedules: this.getSchedules().filter((each) => each.callback === 'routineRun').map((each) => ({ id: each.id, type: each.type, time: each.time })) };
+  }
+
+  pushLog() {
+    return this.sql<{ at: number; title: string; status: number; sent: number }>`SELECT at, title, status, sent FROM push_log ORDER BY id DESC LIMIT 20`;
+  }
+
+  private routines(): Routine[] {
+    const raw = this.sql<{ value: string }>`SELECT value FROM settings WHERE key = 'routines'`[0]?.value;
+    return raw === undefined ? [] : (JSON.parse(raw) as Routine[]);
+  }
+
+  private saveRoutines(routines: readonly Routine[]) {
+    this.sql`INSERT OR REPLACE INTO settings (key, value) VALUES ('routines', ${JSON.stringify(routines)})`;
+  }
+
+  private listRoutines() {
+    const all = this.routines();
+    return all.length === 0 ? 'No routines yet.' : all.map((routine, index) => `${index + 1}. ${describeRoutine(routine)}`).join('\n');
+  }
+
+  private async addRoutine(task: string, when: { readonly every: number | null; readonly at: string | null }, limit: number | null, timeZone: string) {
+    const all = this.routines();
+    if (all.length >= MAX_ROUTINES) return `Not set: they already have ${MAX_ROUTINES} routines. Remove one first.`;
+    const id = crypto.randomUUID();
+    const every = when.every === null ? null : Math.max(MIN_EVERY_SECONDS, when.every);
+    const cron = every === null && when.at !== null ? dailyCron(when.at, zoneOffsetMinutes(timeZone)) : null;
+    if (every === null && cron === null) return `Not set: I could not read the time ${when.at ?? ''}.`;
+    const scheduled = every === null ? await this.schedule(cron ?? '0 8 * * *', 'routineRun', { id }) : await this.scheduleEvery(every, 'routineRun', { id });
+    this.saveRoutines([...all, { id, task: task.slice(0, 500), every, at: every === null ? when.at : null, made: Date.now(), runs: 0, limit: limit === null ? null : Math.min(MAX_RUNS, limit), schedule: scheduled.id }]);
+    const subs = this.sql<{ n: number }>`SELECT COUNT(*) AS n FROM push_subs`[0]?.n ?? 0;
+    return `Set. ${every === null ? `Every day at ${when.at ?? ''}` : `Every ${every >= 3600 ? `${every / 3600} hours` : `${Math.round(every / 60)} minutes`}`}${limit === null ? '' : `, ${limit} times`}. ${subs > 0 ? 'Each result is pushed to their phone.' : 'Push is not on yet: tell them to turn on notifications in Settings, Account.'}`;
+  }
+
+  private async removeRoutine(which: string) {
+    const all = this.routines();
+    const lowered = which.toLowerCase().trim();
+    const number = Number(lowered);
+    const doomed = lowered === 'all' ? all : all.filter((routine, index) => index + 1 === number || (lowered.length > 2 && routine.task.toLowerCase().includes(lowered)));
+    if (doomed.length === 0) return `No routine matches ${which}. ${this.listRoutines()}`;
+    for (const routine of doomed) await this.cancelSchedule(routine.schedule);
+    this.saveRoutines(all.filter((routine) => !doomed.includes(routine)));
+    return `Stopped ${doomed.length === 1 ? doomed[0]!.task : `${doomed.length} routines`}.`;
+  }
+
+  async routineRun(payload: { id: string }) {
+    const all = this.routines();
+    const routine = all.find((each) => each.id === payload.id);
+    if (routine === undefined) return;
+    const done = routine.runs + 1;
+    const finished = routine.limit !== null && done >= routine.limit;
+    this.saveRoutines(all.map((each) => (each.id === routine.id ? { ...each, runs: done } : each)));
+    if (finished) await this.cancelSchedule(routine.schedule);
+    const said = await this.headlessTurn(ROUTINE_PROMPT(routine.task, routine.runs)).catch((cause: unknown) => `The routine could not run: ${cause instanceof Error ? cause.message.slice(0, 160) : String(cause)}`);
+    const id = crypto.randomUUID();
+    const visual: Visual = { _tag: 'Widget', id, widget: { id, kind: 'report', tone: 'neutral', title: routine.task.slice(0, 80), body: said.slice(0, 1200), stats: [{ label: 'run', value: routine.limit === null ? String(done) : `${done} of ${routine.limit}`, tone: 'neutral' }], columns: [], rows: [], series: [], code: '', image: null, links: [] } };
+    this.savePanels(null, withPanel(this.panels(), visual, Date.now()));
+    for (const each of this.getConnections()) this.send(each, { _tag: 'Show', visual });
+    if (finished) this.saveRoutines(this.routines().filter((each) => each.id !== routine.id));
+    await this.notify({ title: routine.task.slice(0, 60), body: said.slice(0, 180), href: `/?panel=${id}` });
+  }
+
+  private async headlessTurn(prompt: string): Promise<string> {
+    const live = await this.liveForBench();
+    const connection = { id: 'routine', send: () => undefined, close: () => undefined } as unknown as Connection;
+    const caller: Caller = { owner: this.name, local: this.name === LOCAL_OWNER, traced: false, timeZone: 'UTC', locale: 'en-US', camera: false, firstTurn: false };
+    const host: ToolHost = { ...this.toolHost(connection, caller), approve: async () => 'a routine cannot change anything', signal: AbortSignal.timeout(120_000) };
+    const result: ReplyResult = { sleep: false, tools: [], firstTextAt: null, error: null };
+    const brain = this.brainInUse();
+    const ports: ReplyPorts = {
+      chat: (messages, signal) => live.chat({ model: brain, messages, tools: toolSchemas().filter((schema) => ROUTINE_SAFE_TOOLS.has(schema.function.name)), stream: true, max_tokens: replyTokenBudget(brain), temperature: temperatureFor(brain), ...thinkingOptions(brain) }, signal),
+      label: (call) => toolLabel(call.name, parseArguments(call.arguments)),
+      tool: (call) => (ROUTINE_SAFE_TOOLS.has(call.name) ? runTool(call.name, parseArguments(call.arguments), host) : Promise.resolve({ content: 'Not available in a routine.' })),
+      doing: () => undefined,
+      show: () => undefined,
+      fail: () => undefined,
+    };
+    const history: ChatMessage[] = [
+      { role: 'system', content: systemPrompt({ now: new Date(), timeZone: 'UTC', locale: 'en-US', memories: this.memories(), camera: false, firstTurn: false, instructions: this.instructions() }) },
+      { role: 'user', content: prompt },
+    ];
+    let said = '';
+    for await (const piece of reply(ports, history, AbortSignal.timeout(120_000), result)) said += piece;
+    return said.trim() === '' ? 'Done, with nothing to report.' : said.trim();
   }
 
   private passkey(): StoredPasskey | null {
@@ -333,6 +458,7 @@ export class Hark extends VoiceAgent<Env> {
 
   private onFrame(connection: Connection, frame: ClientFrame) {
     const caller = this.caller(connection);
+    if (frame._tag !== 'Hello' && frame._tag !== 'Played') console.info(JSON.stringify({ trace: 'frame-in', tag: frame._tag }));
 
     switch (frame._tag) {
       case 'Hello':
@@ -361,6 +487,9 @@ export class Hark extends VoiceAgent<Env> {
         return;
       case 'SetInstructions':
         void this.guarded(connection, { tool: 'instructions', args: { action: 'set', text: frame.text } }, 'change your instructions').then((refused) => (refused === null ? this.saveInstructions(frame.text) : this.send(connection, { _tag: 'Instructions', text: this.instructions() })));
+        return;
+      case 'Subscribe':
+        this.sql`INSERT OR REPLACE INTO push_subs (endpoint, p256dh, auth, at) VALUES (${frame.endpoint.slice(0, 1000)}, ${frame.p256dh.slice(0, 200)}, ${frame.auth.slice(0, 100)}, ${Date.now()})`;
         return;
       case 'SetGuard':
         void this.setGuard(connection, frame.on);
@@ -1016,6 +1145,7 @@ export class Hark extends VoiceAgent<Env> {
       },
       openWorkspace: (path) => this.send(connection, { _tag: 'OpenWorkspace', path }),
       showTools: () => this.send(connection, { _tag: 'ShowTools' }),
+      routines: { list: () => this.listRoutines(), add: (task, when, limit) => this.addRoutine(task, when, limit, caller.timeZone), remove: (which) => this.removeRoutine(which) },
       approve: (call, summary) => this.guarded(connection, call, summary, this.turnSignal ?? undefined),
       instructions: { get: () => this.instructions(), set: (text) => this.saveInstructions(text) },
       panels: {

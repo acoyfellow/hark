@@ -147,6 +147,8 @@ const reply = (messages) => {
     return { deltas: words(answers[asked] ?? 'Done.'), calls: [] };
   }
 
+  if (text.includes('scheduled run of a routine')) return { deltas: words(`All 2 workers are healthy, run ${/run number (\d+)/.exec(text)?.[1] ?? '?'}.`), calls: [] };
+
   if (text.includes('timer') && text.includes('finished')) return { deltas: words('Your tea is ready.'), calls: [] };
 
   if (text.includes('lovelace')) return { deltas: words('Let me check. '), calls: [{ name: 'look_up', args: { topic: 'Ada Lovelace' } }] };
@@ -169,13 +171,28 @@ const reply = (messages) => {
 const authorized = (request) =>
   request.headers.authorization?.startsWith('Bearer ') && request.headers['cf-aig-authorization'] === undefined && !(request.url ?? '').includes('workers-ai');
 
+const pushes = [];
+
 const server = createServer(async (request, response) => {
   const url = new URL(request.url ?? '/', `http://127.0.0.1:${PORT}`);
   const body = await readBody(request);
 
+  if (url.pathname === '/__pushes') {
+    response.writeHead(200, { 'content-type': 'application/json' });
+    response.end(JSON.stringify(pushes));
+    return;
+  }
+
   if (url.pathname === '/__log') {
     response.writeHead(200, { 'content-type': 'application/json' });
     response.end(JSON.stringify(log));
+    return;
+  }
+
+  if (url.pathname.startsWith('/push/')) {
+    pushes.push({ path: url.pathname, encoding: request.headers['content-encoding'], vapid: (request.headers.authorization ?? '').startsWith('vapid t='), bytes: body.length, at: Date.now() });
+    response.writeHead(201);
+    response.end();
     return;
   }
 

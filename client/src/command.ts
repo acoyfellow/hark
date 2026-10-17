@@ -47,6 +47,25 @@ export const SendHome = Command.define('SendHome', {
   execute: Navigation.load('/').pipe(Effect.as(Message.CompletedSignOut())),
 });
 
+const keyBytes = (text: string) => {
+  const padded = text.replaceAll('-', '+').replaceAll('_', '/').padEnd(Math.ceil(text.length / 4) * 4, '=');
+  return Uint8Array.from(atob(padded), (char) => char.codePointAt(0) ?? 0);
+};
+
+export const subscribePush = async (): Promise<ClientFrame | null> => {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted' || !('serviceWorker' in navigator)) return null;
+  const registration = await navigator.serviceWorker.register('/sw.js');
+  await navigator.serviceWorker.ready;
+  const response = await fetch('/push/key').catch(() => null);
+  if (response?.ok !== true) return null;
+  const key = await response.text();
+  const existing = await registration.pushManager.getSubscription();
+  const subscription = existing ?? (await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(key) }));
+  const json = subscription.toJSON();
+  if (json.endpoint === undefined || json.keys?.p256dh === undefined || json.keys.auth === undefined) return null;
+  return { _tag: 'Subscribe', endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth };
+};
+
 const askForPush = async () => {
   if (typeof Notification === 'undefined') return 'unsupported' as const;
 
@@ -54,6 +73,14 @@ const askForPush = async () => {
 
   return answer === 'granted' || answer === 'denied' ? answer : ('default' as const);
 };
+
+export const SubscribePush = Command.define('SubscribePush', {
+  messages: [Message.CompletedSend],
+  execute: Effect.promise(() => subscribePush().catch(() => null)).pipe(
+    Effect.flatMap((frame) => (frame === null ? Effect.void : sendFrame(frame))),
+    Effect.as(Message.CompletedSend()),
+  ),
+});
 
 export const AskPush = Command.define('AskPush', {
   messages: [Message.ChangedPush],
@@ -126,8 +153,8 @@ const createPasskey = async (id: string, challenge: string, rpId: string, user: 
     const publicKey = response?.getPublicKey();
     if (made === null || response === undefined || publicKey === null || publicKey === undefined) return { _tag: 'PasskeyDeclined', id };
     return { _tag: 'PasskeyCreated', id, credential: made.id, publicKey: text64(publicKey), clientData: text64(response.clientDataJSON) };
-  } catch {
-    return { _tag: 'PasskeyDeclined', id };
+  } catch (cause) {
+    return { _tag: 'PasskeyDeclined', id, reason: cause instanceof Error ? `${cause.name}: ${cause.message}`.slice(0, 160) : String(cause) };
   }
 };
 

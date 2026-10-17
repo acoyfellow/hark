@@ -17,7 +17,7 @@ export { HarkBridge, HarkEgress } from './workbench';
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 
-const PUBLIC = /^\/(brand|icons|audio|app)\/|^\/(manifest\.webmanifest|robots\.txt|favicon\.ico)$/u;
+const PUBLIC = /^\/(brand|icons|audio|app)\/|^\/(manifest\.webmanifest|robots\.txt|favicon\.ico|sw\.js)$/u;
 
 const SITE_PAGES: Record<string, () => string> = { '/docs': docsPage, '/brand': brandPage };
 
@@ -27,7 +27,7 @@ const sitePage = (request: Request) => {
   return page === undefined ? null : htmlResponse(page());
 };
 
-const KNOWN_ROUTES = /^\/(|oauth\/(login|callback|logout|me)|mcp\/callback|callback|workspace\/(terminal|tree|file)|__[a-z]+)$/u;
+const KNOWN_ROUTES = /^\/(|oauth\/(login|callback|logout|me)|mcp\/callback|callback|workspace\/(terminal|tree|file)|push\/key|sw\.js|__[a-z]+)$/u;
 
 const isKnownRoute = (pathname: string) => KNOWN_ROUTES.test(pathname) || AGENT_PATH.test(pathname);
 
@@ -71,7 +71,7 @@ const voiceSocket = async (request: Request, env: Env, owner: string, local: boo
 
   headers.set(OWNER_HEADER, owner);
   headers.set(LOCAL_HEADER, local ? '1' : '0');
-  headers.set(TRACE_HEADER, isLoopback(request) ? '1' : '0');
+  headers.set(TRACE_HEADER, '1');
 
   const agent = await getAgentByName(env.HARK, owner);
 
@@ -114,7 +114,15 @@ const route = async (request: Request, env: Env, owner: string, local: boolean):
 
   if (pathname === '/workspace/file' && request.method === 'GET') return new Response(await (await getAgentByName(env.HARK, owner)).workspaceFile(new URL(request.url).searchParams.get('path') ?? ''), { headers: { 'content-type': 'text/plain; charset=utf-8' } });
 
-  if (isLoopback(request) && pathname === '/__trace' && request.method === 'POST') return browserTrace(request);
+  if (pathname === '/__trace' && request.method === 'POST' && !isCrossOrigin(request)) return browserTrace(request);
+
+  if (pathname === '/push/key' && request.method === 'GET') return new Response(await (await getAgentByName(env.HARK, owner)).pushKey(), { headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' } });
+
+  if (isLoopback(request) && pathname === '/__routines' && request.method === 'POST') return Response.json(await (await getAgentByName(env.HARK, owner)).routinesProbe(await request.json()));
+
+  if (isLoopback(request) && pathname === '/__pushlog' && request.method === 'GET') return Response.json(await (await getAgentByName(env.HARK, owner)).pushLog());
+
+  if (isLoopback(request) && pathname === '/__notify' && request.method === 'POST') return Response.json(await (await getAgentByName(env.HARK, owner)).notify(await request.json()));
 
 
 
