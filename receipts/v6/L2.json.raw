@@ -1,0 +1,117 @@
+{
+  "lane": "L2",
+  "brain": "@cf/daily-co/phonellm-mini-alpha-2",
+  "passed": 10,
+  "total": 10,
+  "pass": true,
+  "outcomes": [
+    {
+      "prompt": "count to five, then go square, then go circle",
+      "ok": true,
+      "listed": true,
+      "events": [
+        "one",
+        "two",
+        "three",
+        "four",
+        "five",
+        "solid:square",
+        "solid:circle"
+      ]
+    },
+    {
+      "prompt": "show a heart, then a star, then a moon",
+      "ok": true,
+      "listed": false,
+      "events": [
+        "solid:heart",
+        "solid:star",
+        "solid:moon"
+      ]
+    },
+    {
+      "prompt": "count down from three then do fireworks",
+      "ok": true,
+      "listed": false,
+      "events": [
+        "3",
+        "2",
+        "1",
+        "emoji:3",
+        "emoji:2",
+        "emoji:1",
+        "emoji:🎆"
+      ]
+    },
+    {
+      "prompt": "spell the word dog one letter at a time",
+      "ok": true,
+      "listed": false,
+      "events": [
+        "d",
+        "o",
+        "g"
+      ]
+    },
+    {
+      "prompt": "make a cube, then a sphere, then a torus",
+      "ok": true,
+      "listed": false,
+      "events": [
+        "solid:cube",
+        "solid:sphere",
+        "solid:torus"
+      ]
+    },
+    {
+      "prompt": "show the sun rising, then a cloud, then rain",
+      "ok": true,
+      "listed": true,
+      "events": [
+        "painting:a sunrise over a calm horizon, ",
+        "emoji:☁️",
+        "emoji:🌧️"
+      ]
+    },
+    {
+      "prompt": "set a timer for one minute and remember that I like jazz",
+      "ok": true,
+      "listed": true,
+      "events": [
+        "set_timer",
+        "remember"
+      ]
+    },
+    {
+      "prompt": "show the word hi, then the word bye",
+      "ok": true,
+      "listed": false,
+      "events": [
+        "hi",
+        "bye"
+      ]
+    },
+    {
+      "prompt": "draw a triangle, then a square, then a pentagon, then a circle",
+      "ok": true,
+      "listed": false,
+      "events": [
+        "draw:triangle",
+        "draw:square",
+        "draw:pentagon",
+        "draw:circle"
+      ]
+    },
+    {
+      "prompt": "show the numbers one, two, three, four in order",
+      "ok": true,
+      "listed": false,
+      "events": [
+        "one",
+        "two",
+        "three",
+        "four"
+      ]
+    }
+  ]
+}
