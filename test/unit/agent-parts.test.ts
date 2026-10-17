@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FILLERS, KEEP_YOUR_WORD, madeAPromise, RECOVERY, type ReplyPorts, type ReplyResult, reply } from '../../src/reply';
+import { FILLERS, KEEP_YOUR_WORD, madeAPromise, stepsAsked, RECOVERY, type ReplyPorts, type ReplyResult, reply } from '../../src/reply';
 import { UserSpeech } from '../../src/speech';
 import type { ToolCall } from '../../src/sse';
 import type { Upstream } from '../../src/upstream';
@@ -167,5 +167,26 @@ describe('hark keeps its word', () => {
     const result: ReplyResult = { sleep: false, tools: [], firstTextAt: null, error: null };
     await collect(reply(stubborn, [], new AbortController().signal, result));
     expect(stubborn.seen.length).toBe(2);
+  });
+});
+
+describe('hark finishes the list', () => {
+  it('splits a multi-step ask and expands counting', () => {
+    expect(stepsAsked('count to three, then go square')).toEqual(['count to three (1)', 'count to three (2)', 'count to three (3)', 'go square']);
+    expect(stepsAsked('what is the weather')).toEqual(['what is the weather']);
+  });
+
+  it('asks once for the missing steps after a partial turn', async () => {
+    const result: ReplyResult = { sleep: false, tools: [], firstTextAt: null, error: null };
+    const p = ports([
+      { deltas: [], calls: [{ id: 'a', name: 'set_timer', arguments: '{}' }] },
+      { deltas: ['Timer set.'] },
+      { deltas: [], calls: [{ id: 'b', name: 'remember', arguments: '{}' }] },
+      { deltas: [' Noted.'] },
+    ]);
+    await collect(reply(p, [{ role: 'user', content: 'set a timer and remember jazz' }], new AbortController().signal, result));
+    expect(result.tools).toEqual(['set_timer', 'remember']);
+    expect(result.listed).toBe(true);
+    expect(JSON.stringify(p.seen[2])).toContain('Still missing');
   });
 });

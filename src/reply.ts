@@ -15,7 +15,7 @@ export type ReplyPorts = {
   readonly fail: (reason: string) => void;
 };
 
-export type ReplyResult = { sleep: boolean; tools: string[]; firstTextAt: number | null; error: string | null; nudged?: boolean };
+export type ReplyResult = { sleep: boolean; tools: string[]; firstTextAt: number | null; error: string | null; nudged?: boolean; listed?: boolean };
 
 const FILLER_DELAY_MS = 500;
 
@@ -23,13 +23,50 @@ export const FILLERS = ['One moment.', 'Let me check on that.', 'Give me a secon
 
 export const RECOVERY = 'Sorry, I lost that. Could you say it again?';
 
-const MAX_ROUNDS = 4;
+const MAX_ROUNDS = 6;
 
 const PROMISE = /\b(let me|i'?ll|i will|i'?m going to|here'?s|here is|watch|coming up|one sec|hang on|give me a (?:sec|second|moment))\b/iu;
 
 export const KEEP_YOUR_WORD = 'You just told them you would do something, but you called no tool, so nothing happened. Call the tool now. Do not repeat what you said and do not apologise.';
 
 export const madeAPromise = (text: string) => PROMISE.test(text);
+
+const STEP_SPLIT = new RegExp(String.raw`,?\s*\b(?:and then|then|after that|and also|and)\b\s*|,\s+`, 'iu');
+
+const COUNT_TO = /\bcount (?:to|up to) (\w+)|\bcount down from (\w+)/iu;
+
+const NUMBER_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+
+const numberOf = (word: string) => (/^\d+$/u.test(word) ? Number(word) : NUMBER_WORDS.indexOf(word.toLowerCase()));
+
+export const stepsAsked = (said: string): readonly string[] => {
+  const parts = said.split(STEP_SPLIT).map((part) => part.trim()).filter((part) => part.split(/\s+/u).length >= 1 && part !== '');
+  return parts.flatMap((part) => {
+    const counted = COUNT_TO.exec(part);
+    const total = counted === null ? -1 : numberOf(counted[1] ?? counted[2] ?? '');
+    return total > 1 && total <= 12 ? Array.from({ length: total }, (_, index) => `${part} (${index + 1})`) : [part];
+  });
+};
+
+const actionsIn = (calls: readonly ToolCall[]) =>
+  calls.reduce((total, call) => {
+    if (call.name !== 'show_form') return total + 1;
+    try {
+      const beats = (JSON.parse(call.arguments) as { beats?: unknown }).beats;
+      return total + (Array.isArray(beats) ? Math.max(1, beats.length) : 1);
+    } catch {
+      return total + 1;
+    }
+  }, 0);
+
+export const finishTheList = (steps: readonly string[], done: number) =>
+  `They asked for ${steps.length} things and you did the first ${done}. Still missing, in order: ${steps.slice(done).map((step, index) => `${done + index + 1}. ${step}`).join(' ')}. Do only these missing steps now with tool calls. Do not redo earlier steps and do not talk about it.`;
+
+const lastUserText = (history: readonly ChatMessage[]) => {
+  const last = history.toReversed().find((message) => message.role === 'user');
+  if (last === undefined || last.role !== 'user') return '';
+  return typeof last.content === 'string' ? last.content : last.content.map((part) => (part.type === 'text' ? part.text : '')).join(' ');
+};
 
 let fillerIndex = -1;
 
@@ -82,6 +119,9 @@ export async function* reply(
   const conversation: ChatMessage[] = [...history];
   let said = false;
   let nudged = false;
+  let listed = 0;
+  let actions = 0;
+  const steps = stepsAsked(lastUserText(history));
 
   try {
     for (let round = 0; round < MAX_ROUNDS && !signal.aborted; round += 1) {
@@ -157,7 +197,16 @@ export async function* reply(
         continue;
       }
 
+      if (calls.length === 0 && !lastRound && listed < 2 && steps.length > 1 && actions > 0 && actions < steps.length) {
+        listed += 1;
+        result.listed = true;
+        conversation.push({ role: 'assistant', content: text === '' ? null : text }, { role: 'user', content: finishTheList(steps, actions) });
+        continue;
+      }
+
       if (calls.length === 0 || lastRound) return;
+
+      actions += actionsIn(calls);
 
       conversation.push({
         role: 'assistant',

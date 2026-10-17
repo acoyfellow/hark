@@ -266,7 +266,7 @@ const isMotion = (value: string): value is FormMotion => FORM_MOTIONS.some((moti
 
 const SHORT_WORD = 16;
 
-const MAX_BEATS = 6;
+const MAX_BEATS = 12;
 
 const MAX_PATH = 4000;
 
@@ -333,7 +333,8 @@ const showForm: Definition = {
   label: (args) => (list(args.beats).length > 1 ? 'Putting on a show' : 'Shaping it'),
   description: [
     'The glowing ember swarm on their screen is your body and your face. This is how you show things, joke, and feel. Use it often and boldly, in nearly every answer, while you talk.',
-    'Send one beat for a single shape, or up to six beats to play a little movie: a seed that sprouts into a flower, a rocket that becomes a star, a countdown 3 2 1 then fireworks.',
+    'Send one beat for a single shape, or up to twelve beats to play a movie: a seed that sprouts into a flower, a rocket that becomes a star, a countdown 3 2 1 then fireworks.',
+    'When they ask for several things in a row ("count to ten, then go square, then a circle"), put every step in ONE call as beats, in the order they asked. Counting to ten is ten word beats. Never drop or merge a step.',
     'Kinds of beat:',
     '- "emoji": one emoji, traced in embers.',
     `- "word": a short word or number, up to ${SHORT_WORD} letters.`,
