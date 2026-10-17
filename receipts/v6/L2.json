@@ -1,6 +1,7 @@
 {
   "lane": "L2",
-  "commit": "afb168578a0f25491cbe8076c39fc9f1f94340bd",
-  "at": "2026-10-17T14:29:58.479Z",
-  "pass": false
+  "commit": "368fbef97583324a0a813777207e85b5d153a85c",
+  "at": "2026-10-17T14:31:06.280Z",
+  "pass": true,
+  "raw": "receipts/v6/L2.json.raw"
 }

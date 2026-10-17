@@ -1,21 +1,22 @@
 {
   "lane": "L2",
   "brain": "@cf/daily-co/phonellm-mini-alpha-2",
-  "passed": 7,
+  "passed": 9,
   "total": 10,
-  "pass": false,
+  "pass": true,
   "outcomes": [
     {
       "prompt": "count to five, then go square, then go circle",
-      "ok": false,
-      "listed": true,
+      "ok": true,
+      "listed": false,
       "events": [
         "1",
         "2",
         "3",
         "4",
         "5",
-        "solid:square"
+        "solid:square",
+        "solid:circle"
       ]
     },
     {
@@ -36,19 +37,15 @@
         "emoji:3",
         "emoji:2",
         "emoji:1",
-        "code:const t=1; out[0]=Math.cos(t*2*Math",
+        "code:const t=1; out[0]=Math.cos(t*Math.P",
         "emoji:🎉"
       ]
     },
     {
       "prompt": "spell the word dog one letter at a time",
-      "ok": true,
+      "ok": false,
       "listed": false,
-      "events": [
-        "d",
-        "o",
-        "g"
-      ]
+      "events": []
     },
     {
       "prompt": "make a cube, then a sphere, then a torus",
@@ -57,16 +54,17 @@
       "events": [
         "solid:cube",
         "solid:sphere",
-        "solid:torus",
-        "solid:cube"
+        "solid:torus"
       ]
     },
     {
       "prompt": "show the sun rising, then a cloud, then rain",
-      "ok": false,
-      "listed": true,
+      "ok": true,
+      "listed": false,
       "events": [
-        "emoji:☁️"
+        "svg:<svg viewBox=\"0 0 100 100\"><rect wid",
+        "svg:<svg viewBox=\"0 0 100 100\"><ellipse ",
+        "svg:<svg viewBox=\"0 0 100 100\"><path d=\""
       ]
     },
     {
@@ -80,10 +78,11 @@
     },
     {
       "prompt": "show the word hi, then the word bye",
-      "ok": false,
-      "listed": true,
+      "ok": true,
+      "listed": false,
       "events": [
-        "hi"
+        "hi",
+        "bye"
       ]
     },
     {
