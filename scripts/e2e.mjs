@@ -95,6 +95,7 @@ export const normalize = (raw) => {
 page.on('websocket', (socket) => {
   socket.on('framesent', ({ payload }) => {
     if (typeof payload === 'string' && payload.includes('"type":"interrupt"')) frames.push({ at: Date.now(), frame: { _tag: 'Interrupt', from: 'client' } });
+    if (typeof payload === 'string' && payload.includes('"_tag":"SetGuard"')) frames.push({ at: Date.now(), frame: { _tag: 'SentSetGuard', payload } });
   });
   socket.on('framereceived', ({ payload }) => {
     if (typeof payload === 'string') for (const frame of normalize(JSON.parse(payload))) frames.push({ at: Date.now(), frame });
@@ -422,6 +423,71 @@ await scenario('their instructions: typed in the brain tab, kept across a reload
   const cleared = await runTool('instructions', { action: 'get' });
   if (!/No instructions/u.test(cleared.content)) throw new Error(`reset did not clear: ${cleared.content}`);
   return { added: added.content.split('\n').length };
+});
+
+await scenario('biometrics for changes: turn on with a passkey, a write waits for one signature and runs once, a failed check stops it, turning off needs the passkey', async () => {
+  if (new URL(BASE).hostname !== 'localhost') return { skipped: 'WebAuthn needs BASE on localhost' };
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('WebAuthn.enable');
+  const { authenticatorId } = await cdp.send('WebAuthn.addVirtualAuthenticator', { options: { protocol: 'ctap2', transport: 'internal', hasResidentKey: true, hasUserVerification: true, isUserVerified: true, automaticPresenceSimulation: true } });
+  let lastRefused = '';
+  let checked = '';
+  const turnOff = async () => {
+    await page.keyboard.press('Escape');
+    if ((await page.locator('#swarm').getAttribute('data-look')) === 'asleep') await awake();
+    await waitFrame((frame) => frame._tag === 'Guard' && frame.on === true, 15000, 0);
+    const offAt = Date.now();
+    await page.keyboard.press('Meta+k');
+    await page.locator('[role=tab]', { hasText: 'Account' }).click();
+    await page.waitForFunction(() => document.querySelector('[data-sheet-open]')?.getAttribute('data-sheet-open') === 'true', null, { timeout: 5000 });
+    checked = String(await page.locator('#guard').getAttribute('aria-checked'));
+    await page.locator('#guard').click();
+    await waitFrame((frame) => frame._tag === 'Guard' && frame.on === false, 15000, offAt).catch((cause) => {
+      const seen = frames.filter((each) => each.at >= offAt && String(each.frame._tag).startsWith('Passkey') || each.at >= offAt && (each.frame._tag === 'Guard' || each.frame._tag === 'SentSetGuard')).map((each) => JSON.stringify(each.frame).slice(0, 160));
+      throw new Error(`${cause.message} after ${seen.join(' | ')} checked=${checked} refused=${lastRefused}`);
+    });
+    if (!frames.some((each) => each.at >= offAt && each.frame._tag === 'PasskeyAsk')) throw new Error('turning off did not ask for the passkey');
+    await page.keyboard.press('Escape');
+    await runTool('instructions', { action: 'reset' });
+  };
+  try {
+    if ((await page.locator('#swarm').getAttribute('data-look')) === 'asleep') await awake();
+    await runTool('instructions', { action: 'reset' });
+    const started = Date.now();
+    await page.keyboard.press('Meta+k');
+    await page.locator('[role=tab]', { hasText: 'Account' }).click();
+    await page.locator('#guard').click();
+    await waitFrame((frame) => frame._tag === 'Guard' && frame.on === true, 15000, started);
+    await page.screenshot({ path: `${SHOTS}/guard-on-desktop.png` });
+    await page.keyboard.press('Escape');
+    const asked = Date.now();
+    const added = await runTool('instructions', { action: 'add', text: 'Signed rule.' });
+    if (!added.content.includes('Signed rule.')) throw new Error(`signed write did not run: ${added.content}`);
+    await waitFrame((frame) => frame._tag === 'PasskeyDone' && frame.ok, 5000, asked);
+    const asks = frames.filter((each) => each.at >= asked && each.frame._tag === 'PasskeyAsk').length;
+    const done = frames.filter((each) => each.at >= asked && each.frame._tag === 'PasskeyDone' && each.frame.ok).length;
+    if (asks !== 1 || done !== 1) throw new Error(`expected one ask and one approval, saw ${asks} and ${done}`);
+    const read = await runTool('instructions', { action: 'get' });
+    if ((read.content.match(/Signed rule\./gu) ?? []).length !== 1) throw new Error('the signed write ran more than once');
+    const reads = await runTool('panels', { action: 'list' });
+    if (/Not done/u.test(reads.content)) throw new Error('a read asked for the passkey');
+    await cdp.send('WebAuthn.setAutomaticPresenceSimulation', { authenticatorId, enabled: false });
+    const refusing = runTool('instructions', { action: 'reset' });
+    await page.locator('#approval').waitFor({ timeout: 5000 });
+    await page.screenshot({ path: `${SHOTS}/approval-desktop.png` });
+    await page.locator('#decline').click();
+    const refused = await refusing;
+    await cdp.send('WebAuthn.setAutomaticPresenceSimulation', { authenticatorId, enabled: true });
+    lastRefused = refused.content.slice(0, 120);
+    if (!/Not done/u.test(refused.content)) throw new Error(`a declined approval still ran: ${refused.content}`);
+    await turnOff();
+    return { asks, done, refused: refused.content.slice(0, 80) };
+  } catch (cause) {
+    await turnOff().catch(() => undefined);
+    throw cause;
+  } finally {
+    await cdp.send('WebAuthn.removeVirtualAuthenticator', { authenticatorId });
+  }
 });
 
 await scenario('the settings sheet shows the stack, voices, and brains', async () => {

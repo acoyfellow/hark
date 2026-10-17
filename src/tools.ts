@@ -32,6 +32,7 @@ export type ToolHost = {
   readonly setIdle: (beats: readonly Beat[]) => void;
   readonly openWorkspace: (path: string | null) => void;
   readonly showTools: () => void;
+  readonly approve?: (call: { readonly tool: string; readonly args: Record<string, unknown> }, summary: string) => Promise<string | null>;
   readonly instructions: { readonly get: () => string; readonly set: (text: string) => string };
   readonly panels: { readonly list: () => string; readonly change: (change: PanelChange) => string };
   readonly setVoice: (voice: Voice) => void;
@@ -805,6 +806,21 @@ export const toolLabel = (calledName: string, calledArgs: Record<string, unknown
   return TOOLS.find((tool) => tool.name === name)?.label(args) ?? 'Working on it';
 };
 
+const WRITES = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const MCP_READS = new Set(['list', 'describe']);
+const RUN_CODE_DELETES = new RegExp(String.raw`\b(?:rm|unlink|rmdir|delete)\b|\.unlink|\.rm\(|\.delete\(`, 'iu');
+
+export const needsPasskey = (name: string, args: Record<string, unknown>): string | null => {
+  if (name === 'cloudflare' && WRITES.has(str(args.method, 'GET').toUpperCase())) return `${str(args.method).toUpperCase()} ${str(args.path)}`;
+  if (name === 'terminal') return `run ${str(args.command).slice(0, 80)}`;
+  if (name === 'files' && str(args.action) === 'write') return `write ${str(args.path)}`;
+  if (name === 'run_code' && RUN_CODE_DELETES.test(str(args.code))) return 'run code that deletes files';
+  if (name === 'mcp' && !MCP_READS.has(str(args.action, 'list'))) return `${str(args.action)} ${str(args.server)} ${str(args.tool)}`.trim();
+  if (name === 'instructions' && str(args.action, 'get') !== 'get') return `${str(args.action)} your instructions`;
+  if (name === 'panels' && (str(args.action) === 'delete' || str(args.action) === 'delete_all')) return `${str(args.action).replace('_', ' ')} panels`;
+  return null;
+};
+
 export const runTool = async (
   calledName: string,
   calledArgs: Record<string, unknown>,
@@ -814,6 +830,13 @@ export const runTool = async (
   const tool = TOOLS.find((each) => each.name === name);
 
   if (tool === undefined) return { content: `There is no tool called ${name}.` };
+
+  const guarded = needsPasskey(name, args);
+
+  if (guarded !== null && host.approve !== undefined) {
+    const refused = await host.approve({ tool: name, args }, guarded);
+    if (refused !== null) return { content: `Not done: ${refused}. Tell them in a few words; do not retry unless they ask.` };
+  }
 
   try {
     return await tool.run(args, host);

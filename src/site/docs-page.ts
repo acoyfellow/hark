@@ -30,7 +30,7 @@ const SECTIONS: readonly DocSection[] = [
 <tr><td>&ldquo;Paint me a lighthouse in a storm.&rdquo;</td><td>A FLUX picture on screen.</td></tr>
 <tr><td>&ldquo;Build me a 3D rocket.&rdquo;</td><td>The embers sculpt it and spin it.</td></tr>
 <tr><td>&ldquo;Scaffold a node project and run it.&rdquo;</td><td>A terminal card from your own durable Linux box.</td></tr>
-<tr><td>&ldquo;Give me a status report on my account.&rdquo;</td><td>A report card. Changes will need your passkey (<a href="#approvals">planned</a>).</td></tr>
+<tr><td>&ldquo;Give me a status report on my account.&rdquo;</td><td>A report card. With biometrics on, changes need your passkey (<a href="#approvals">how</a>).</td></tr>
 <tr><td>&ldquo;Connect my server&rdquo; and a URL</td><td>Your MCP server&rsquo;s tools, by voice.</td></tr>
 </tbody></table>`,
   },
@@ -75,15 +75,14 @@ const SECTIONS: readonly DocSection[] = [
     id: 'approvals',
     number: '06',
     title: 'Approvals: your passkey, not your voice',
-    body: `${PLANNED}
-<p>Anyone in the room can talk to hark, and so can a web page it reads or an agent connected to it. So nothing that matters runs on words. Changing your account, running a command or code, calling or connecting an MCP server, and deleting memory all wait for a passkey: Face ID, Touch ID, Windows Hello or a security key.</p>
+    body: `<p>Anyone in the room can talk to hark, and so can a web page it reads or an agent connected to it. Turn on <strong>Account &rsaquo; Biometrics for changes</strong> and words alone stop being enough. It is off until you turn it on; hark captures nothing at sign-in.</p>
+<p>While it is on, these wait for your passkey (Face ID, Touch ID, Windows Hello or a security key): Cloudflare API calls that POST, PUT, PATCH or DELETE; terminal commands; file writes; code that deletes files; MCP tool calls and connections; changes to your instructions; and panel deletes. Turning it off needs the passkey too.</p>
 <ol>
 <li>Ask for it: &ldquo;delete the pasta-timer worker&rdquo;.</li>
-<li>hark says it needs your approval and shows a card with exactly what will change.</li>
-<li>Tap Approve. Your device asks for your face, finger or PIN.</li>
-<li>The signature covers that one action. hark checks it in your Durable Object and runs it once.</li>
+<li>hark shows a card with exactly what will run, and your device asks for your face, finger or PIN.</li>
+<li>The passkey signs a hash of that one call. Your Durable Object checks the signature, the site, the user check and the counter, then runs it once.</li>
 </ol>
-<p>Talk over hark, decline, or wait a minute, and nothing runs. Reads, timers, memories, voices and pictures never need approval. There is no voiceprint and no face matching.</p>`,
+<p>Talk over hark, decline, or wait a minute, and nothing runs. Reads, timers, memories, voices and pictures never ask. There is no voiceprint and no face matching. While the setting is off, account changes still wait for a clear spoken yes.</p>`,
   },
   {
     id: 'reach',

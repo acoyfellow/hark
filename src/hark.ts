@@ -30,6 +30,7 @@ import { DIRECTORY_NAME, type Grant } from './directory';
 import { type Env, LOCAL_HEADER, TRACE_HEADER, LOCAL_OWNER, OWNER_HEADER } from './env';
 import { added as withPanel, changed, keepsAPanel, listed as panelList, type PanelChange } from './panels';
 import { instructionsReminder, systemPrompt } from './prompt';
+import { Approvals, APPROVAL_SECONDS, callChallenge, randomChallenge, type StoredPasskey, verifyAssertion, verifyRegistration } from './passkey';
 
 const remindOf = (instructions: string): ChatMessage[] => {
   const reminder = instructionsReminder(instructions);
@@ -142,6 +143,10 @@ export class Hark extends VoiceAgent<Env> {
 
   private snaps = new Map<string, (src: string | null) => void>();
 
+  private approvals = new Approvals();
+
+  private signed = new Map<string, (refused: string | null) => void>();
+
   override tts = new UserSpeech(
     () => this.live,
     () => this.settings(),
@@ -154,6 +159,82 @@ export class Hark extends VoiceAgent<Env> {
     this.sql`CREATE TABLE IF NOT EXISTS missed (label TEXT NOT NULL, at INTEGER NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS files (path TEXT PRIMARY KEY, content TEXT NOT NULL, at INTEGER NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS workspace_chunks (part INTEGER PRIMARY KEY, data TEXT NOT NULL)`;
+  }
+
+  private passkey(): StoredPasskey | null {
+    const raw = this.sql<{ value: string }>`SELECT value FROM settings WHERE key = 'passkey'`[0]?.value;
+    return raw === undefined ? null : (JSON.parse(raw) as StoredPasskey);
+  }
+
+  private guardOn() {
+    return this.passkey() !== null;
+  }
+
+  private rpId() {
+    return new URL(this.origin ?? "http://localhost").hostname;
+  }
+
+  private settle(connection: Connection, id: string, refused: string | null) {
+    this.approvals.drop(id);
+    this.signed.get(id)?.(refused);
+    this.signed.delete(id);
+    this.send(connection, { _tag: 'PasskeyDone', id, ok: refused === null, reason: refused ?? '' });
+  }
+
+  private broadcastGuard() {
+    for (const each of this.getConnections()) this.send(each, { _tag: 'Guard', on: this.guardOn() });
+  }
+
+  private async setGuard(connection: Connection, on: boolean) {
+    if (on === this.guardOn()) return this.send(connection, { _tag: 'Guard', on });
+    if (!on) {
+      const refused = await this.guarded(connection, { tool: 'guard', args: { on: false } }, 'turn off biometrics for changes');
+      if (refused === null) this.sql`DELETE FROM settings WHERE key = 'passkey'`;
+      return this.broadcastGuard();
+    }
+    const id = crypto.randomUUID();
+    const challenge = randomChallenge();
+    this.approvals.begin(id, { purpose: 'register', challenge, expires: Date.now() + APPROVAL_SECONDS * 1000, summary: 'register' });
+    this.send(connection, { _tag: 'PasskeyCreate', id, challenge, rpId: this.rpId(), user: this.name });
+  }
+
+  private finishRegistration(connection: Connection, frame: { readonly id: string; readonly credential: string; readonly publicKey: string; readonly clientData: string }) {
+    const claim = this.approvals.claim(frame.id, Date.now());
+    if (!claim.ok || claim.pending.purpose !== 'register') return this.send(connection, { _tag: 'PasskeyDone', id: frame.id, ok: false, reason: 'that sign-up expired' });
+    const verdict = verifyRegistration({ clientData: frame.clientData, challenge: claim.pending.challenge, origin: this.origin ?? "", publicKey: frame.publicKey });
+    if (!verdict.ok) return this.send(connection, { _tag: 'PasskeyDone', id: frame.id, ok: false, reason: verdict.problem });
+    const stored: StoredPasskey = { credential: frame.credential, publicKey: frame.publicKey, counter: 0 };
+    this.sql`INSERT OR REPLACE INTO settings (key, value) VALUES ('passkey', ${JSON.stringify(stored)})`;
+    this.send(connection, { _tag: 'PasskeyDone', id: frame.id, ok: true, reason: '' });
+    this.broadcastGuard();
+  }
+
+  private async finishApproval(connection: Connection, frame: { readonly id: string; readonly clientData: string; readonly authenticator: string; readonly signature: string }) {
+    const stored = this.passkey();
+    const claim = this.approvals.claim(frame.id, Date.now());
+    if (stored === null || !claim.ok) return this.settle(connection, frame.id, claim.ok ? 'no passkey is set up' : `the approval was ${claim.problem === 'expired' ? 'too late, over a minute' : 'already used or cancelled'}`);
+    const verdict = await verifyAssertion({ ...frame, challenge: claim.pending.challenge, origin: this.origin ?? "", rpId: this.rpId(), stored });
+    if (verdict.ok) this.sql`INSERT OR REPLACE INTO settings (key, value) VALUES ('passkey', ${JSON.stringify({ ...stored, counter: verdict.counter })})`;
+    this.settle(connection, frame.id, verdict.ok ? null : verdict.problem);
+  }
+
+  private async guarded(connection: Connection, call: { readonly tool: string; readonly args: Record<string, unknown> }, summary: string, signal?: AbortSignal): Promise<string | null> {
+    const stored = this.passkey();
+    if (stored === null) return null;
+    const id = crypto.randomUUID();
+    const challenge = await callChallenge(call, id);
+    this.approvals.begin(id, { purpose: 'approve', challenge, expires: Date.now() + APPROVAL_SECONDS * 1000, summary });
+    this.send(connection, { _tag: 'PasskeyAsk', id, challenge, rpId: this.rpId(), credential: stored.credential, summary, seconds: APPROVAL_SECONDS });
+    return await new Promise<string | null>((resolve) => {
+      const timer = setTimeout(() => this.settle(connection, id, 'the passkey was not used within a minute'), APPROVAL_SECONDS * 1000 + 2000);
+      const stop = () => this.settle(connection, id, 'they talked over it, so it was cancelled');
+      signal?.addEventListener('abort', stop, { once: true });
+      this.signed.set(id, (refused) => {
+        clearTimeout(timer);
+        signal?.removeEventListener('abort', stop);
+        resolve(refused);
+      });
+    });
   }
 
   private instructions(): string {
@@ -213,6 +294,13 @@ export class Hark extends VoiceAgent<Env> {
     for (const resolve of this.snaps.values()) resolve(null);
 
     this.snaps.clear();
+
+    for (const [id, resolve] of this.signed) {
+      this.approvals.drop(id);
+      resolve('the page closed');
+    }
+
+    this.signed.clear();
   }
 
   override onMessage(connection: Connection, message: WSMessage) {
@@ -270,7 +358,19 @@ export class Hark extends VoiceAgent<Env> {
         void this.addServer(frame.name, frame.url, frame.token, this.origin, frame.resource ?? '').then((outcome) => this.send(connection, { _tag: 'ServerNote', note: outcome.note, authUrl: outcome.authUrl }));
         return;
       case 'SetInstructions':
-        this.saveInstructions(frame.text);
+        void this.guarded(connection, { tool: 'instructions', args: { action: 'set', text: frame.text } }, 'change your instructions').then((refused) => (refused === null ? this.saveInstructions(frame.text) : this.send(connection, { _tag: 'Instructions', text: this.instructions() })));
+        return;
+      case 'SetGuard':
+        void this.setGuard(connection, frame.on);
+        return;
+      case 'PasskeyCreated':
+        this.finishRegistration(connection, frame);
+        return;
+      case 'PasskeySigned':
+        void this.finishApproval(connection, frame);
+        return;
+      case 'PasskeyDeclined':
+        this.settle(connection, frame.id, frame.reason === undefined || frame.reason.startsWith('NotAllowedError') ? `they cancelled the passkey${frame.reason === undefined ? '' : ` (${frame.reason.slice(0, 120)})`}` : `the passkey failed (${frame.reason.slice(0, 60)})`);
         return;
       case 'Panel':
         this.changePanels(connection, { action: frame.action, which: frame.id });
@@ -362,7 +462,7 @@ export class Hark extends VoiceAgent<Env> {
 
     if (tool === undefined) return { error: `no tool ${name}` };
 
-    const result = await tool.run(args, this.toolHost(connection, this.caller(connection)));
+    const result = await runTool(name, args, this.toolHost(connection, this.caller(connection)));
 
     if (result.visual !== undefined) this.show(connection, result.visual);
 
@@ -702,6 +802,7 @@ export class Hark extends VoiceAgent<Env> {
       this.send(connection, { _tag: 'Idle', beats: this.idleBeats() });
       this.send(connection, { _tag: 'Panels', panels: this.panels() });
       this.send(connection, { _tag: 'Instructions', text: this.instructions() });
+      this.send(connection, { _tag: 'Guard', on: this.guardOn() });
 
       return true;
     } catch (cause) {
@@ -899,6 +1000,7 @@ export class Hark extends VoiceAgent<Env> {
       },
       openWorkspace: (path) => this.send(connection, { _tag: 'OpenWorkspace', path }),
       showTools: () => this.send(connection, { _tag: 'ShowTools' }),
+      approve: (call, summary) => this.guarded(connection, call, summary, this.turnSignal ?? undefined),
       instructions: { get: () => this.instructions(), set: (text) => this.saveInstructions(text) },
       panels: {
         list: () => {

@@ -2,7 +2,7 @@ import { Match, Option } from 'effect';
 import type { Command, Update } from 'foldkit';
 import { modifyFields } from 'foldkit/struct';
 import { DEFAULT_BRAIN, DEFAULT_ENGINE, DEFAULT_VOICE, type ServerFrame, type Settings, type Visual, voicesFor } from '../../shared/protocol';
-import { AskPush, LoadFile, LoadTree, SendHome, Send, SignOut, Snap } from './command';
+import { AskPush, CreatePasskey, LoadFile, LoadTree, SendHome, Send, SignOut, SignPasskey, Snap, StopPasskey } from './command';
 import { Message } from './message';
 import { MAX_VISUALS, type Model, type SettingsTab } from './model';
 import type { Resources } from './resources';
@@ -113,6 +113,10 @@ const onFrame = (model: Model, frame: ServerFrame): Return =>
       }),
       Sleep: ({ reason }): Return => ({ model: sleep(model, Option.some(reason)) }),
       Idle: ({ beats }): Return => ({ model: modifyFields(model, { idle: () => beats }) }),
+      Guard: ({ on }): Return => ({ model: modifyFields(model, { guard: () => on }) }),
+      PasskeyCreate: ({ id, challenge, rpId, user }): Return => ({ model: modifyFields(model, { passkeyNote: () => 'Making your passkey…' }), commands: [CreatePasskey({ id, challenge, rpId, user })] }),
+      PasskeyAsk: ({ id, challenge, rpId, credential, summary }): Return => ({ model: modifyFields(model, { approving: () => Option.some({ id, challenge, rpId, credential, summary }), passkeyNote: () => '' }), commands: [SignPasskey({ id, challenge, rpId, credential })] }),
+      PasskeyDone: ({ ok, reason }): Return => ({ model: modifyFields(model, { approving: () => Option.none(), passkeyNote: () => (ok ? '' : reason) }) }),
       Instructions: ({ text }): Return => ({ model: modifyFields(model, { instructions: () => text, instructionsDraft: () => Option.none() }) }),
       ShowTools: (): Return => openSheet(modifyFields(model, { tab: () => 'tools', drawer: () => false })),
       Panels: ({ panels, drawer }): Return => ({ model: modifyFields(model, { panels: () => panels, drawer: (open) => drawer ?? open }) }),
@@ -188,6 +192,9 @@ export const update = (model: Model, message: Message): Return =>
       return { model: modifyFields(model, { instructions: () => text, instructionsDraft: () => Option.none() }), commands: model.connected ? [Send({ frame: { _tag: 'SetInstructions', text } })] : [] };
     },
     ResetInstructions: () => ({ model: modifyFields(model, { instructions: () => '', instructionsDraft: () => Option.none() }), commands: model.connected ? [Send({ frame: { _tag: 'SetInstructions', text: '' } })] : [] }),
+    ToggledGuard: () => ({ model: modifyFields(model, { passkeyNote: () => '' }), commands: model.connected ? [Send({ frame: { _tag: 'SetGuard', on: !model.guard } })] : [] }),
+    ClickedApprove: () => Option.match(model.approving, { onNone: () => ({ model }), onSome: (ask) => ({ model, commands: [SignPasskey({ id: ask.id, challenge: ask.challenge, rpId: ask.rpId, credential: ask.credential })] }) }),
+    ClickedDecline: () => Option.match(model.approving, { onNone: () => ({ model }), onSome: (ask) => ({ model: modifyFields(model, { approving: () => Option.none() }), commands: [StopPasskey(), Send({ frame: { _tag: 'PasskeyDeclined', id: ask.id, reason: 'NotAllowedError: they tapped No' } })] }) }),
     ClickedTools: () => (model.sheet && model.tab === 'tools' ? { model: modifyFields(model, { sheet: () => false }) } : openSheet(modifyFields(model, { tab: () => 'tools', drawer: () => false }))),
     ClickedDrawer: () => ({ model: modifyFields(model, { drawer: (open) => !open }) }),
     ClickedPanel: ({ id, action }) => ({

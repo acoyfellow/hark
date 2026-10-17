@@ -119,6 +119,20 @@ const stage = (h: H, model: Model): Html =>
       ),
       visuals(h, model),
       drawer(h, model),
+      ...Option.match(model.approving, {
+        onNone: () => [],
+        onSome: (ask) => [
+          h.div(
+            [h.Id('approval'), h.Role('alertdialog'), h.AriaLabel('Approve with your passkey'), h.Class('fixed bottom-28 left-1/2 z-40 flex w-[min(92vw,440px)] -translate-x-1/2 items-center gap-3 rounded-2xl border border-ember/40 bg-[#0b0b0b]/95 px-4 py-3 shadow-2xl backdrop-blur')],
+            [
+              h.span([h.Class('grid size-9 flex-none place-items-center rounded-full bg-ember/15 text-ember')], [icon(h, 'user', 'size-4')]),
+              h.span([h.Class('flex min-w-0 flex-1 flex-col')], [h.span([h.Class('text-[13px] font-medium')], ['Your passkey, to allow:']), h.span([h.Class('truncate font-mono text-[12px] text-white/60')], [ask.summary])]),
+              h.button([h.Type('button'), h.Id('approve'), h.Class('rounded-full bg-ember px-3.5 py-1.5 text-[12.5px] font-medium text-black'), h.OnClick(Message.ClickedApprove())], ['Approve']),
+              h.button([h.Type('button'), h.Id('decline'), h.Class('rounded-full border border-white/10 px-3 py-1.5 text-[12.5px] text-white/70'), h.OnClick(Message.ClickedDecline())], ['No']),
+            ],
+          ),
+        ],
+      }),
     ],
   );
 

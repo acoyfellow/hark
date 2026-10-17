@@ -104,6 +104,22 @@ const accountTab = (h: H, model: Model): readonly Html[] => {
         ],
       ),
     ]),
+    section(h, 'Biometrics for changes', [
+      h.button(
+        [h.Type('button'), h.Id('guard'), h.Role('switch'), h.AriaChecked(model.guard), h.Class('flex w-full items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3.5 py-3 text-left hover:border-ember/40'), h.OnClick(Message.ToggledGuard())],
+        [
+          h.span(
+            [h.Class('flex min-w-0 flex-1 flex-col')],
+            [
+              h.span([h.Class('text-[13.5px] font-medium')], [model.guard ? 'On: changes need your passkey' : 'Off: a spoken yes is enough']),
+              h.span([h.Class('text-[12px] leading-snug text-white/45')], ['Account changes, commands, file writes, MCP calls, prompt edits and deletes wait for Face ID, Touch ID or a security key. Each signature covers one exact call, once, for a minute. Turning it off needs the passkey too.']),
+            ],
+          ),
+          h.span([h.Class(`relative h-6 w-10 flex-none rounded-full transition ${model.guard ? 'bg-ember' : 'bg-white/15'}`)], [h.span([h.Class(`absolute top-0.5 size-5 rounded-full bg-white transition-all ${model.guard ? 'left-[18px]' : 'left-0.5'}`)], [])]),
+        ],
+      ),
+      ...(model.passkeyNote === '' ? [] : [h.p([h.Id('passkey-note'), h.Class('mt-2 text-[12px] text-white/55')], [model.passkeyNote])]),
+    ]),
     section(h, 'Running on your Cloudflare', [
       h.div(
         [h.Class('divide-y divide-white/[0.06] rounded-xl border border-white/[0.07] px-3.5')],

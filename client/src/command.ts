@@ -82,3 +82,83 @@ export const LoadFile = Command.define('LoadFile', {
   messages: [Message.GotFile],
   execute: ({ path }) => Effect.promise(() => fetchFile(path)).pipe(Effect.map((text) => Message.GotFile({ path, text }))),
 });
+
+const bytes = (text: string) => {
+  const padded = text.replaceAll('-', '+').replaceAll('_', '/').padEnd(Math.ceil(text.length / 4) * 4, '=');
+  return Uint8Array.from(atob(padded), (char) => char.codePointAt(0) ?? 0);
+};
+
+const text64 = (buffer: ArrayBuffer) => btoa(String.fromCodePoint(...new Uint8Array(buffer))).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+
+let ceremony: AbortController | null = null;
+let pending: Promise<unknown> = Promise.resolve();
+
+const settled = async () => {
+  ceremony?.abort();
+  await pending.catch(() => undefined);
+};
+
+const freshCeremony = () => {
+  ceremony = new AbortController();
+  return ceremony.signal;
+};
+
+const tracked = <T>(work: Promise<T>) => {
+  pending = work;
+  return work;
+};
+
+const createPasskey = async (id: string, challenge: string, rpId: string, user: string): Promise<ClientFrame> => {
+  try {
+    await settled();
+    const made = (await tracked(navigator.credentials.create({
+      signal: freshCeremony(),
+      publicKey: {
+        challenge: bytes(challenge),
+        rp: { id: rpId, name: 'hark' },
+        user: { id: new TextEncoder().encode(user.slice(0, 64) || 'hark'), name: 'hark', displayName: 'hark' },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+        authenticatorSelection: { userVerification: 'required', residentKey: 'preferred' },
+        timeout: 60_000,
+      },
+    }))) as PublicKeyCredential | null;
+    const response = made?.response as AuthenticatorAttestationResponse | undefined;
+    const publicKey = response?.getPublicKey();
+    if (made === null || response === undefined || publicKey === null || publicKey === undefined) return { _tag: 'PasskeyDeclined', id };
+    return { _tag: 'PasskeyCreated', id, credential: made.id, publicKey: text64(publicKey), clientData: text64(response.clientDataJSON) };
+  } catch {
+    return { _tag: 'PasskeyDeclined', id };
+  }
+};
+
+const signPasskey = async (id: string, challenge: string, rpId: string, credential: string): Promise<ClientFrame> => {
+  try {
+    await settled();
+    const got = (await tracked(navigator.credentials.get({
+      signal: freshCeremony(),
+      publicKey: { challenge: bytes(challenge), rpId, allowCredentials: [{ type: 'public-key', id: bytes(credential) }], userVerification: 'required', timeout: 60_000 },
+    }))) as PublicKeyCredential | null;
+    const response = got?.response as AuthenticatorAssertionResponse | undefined;
+    if (got === null || response === undefined) return { _tag: 'PasskeyDeclined', id, reason: 'NotAllowedError: no passkey' };
+    return { _tag: 'PasskeySigned', id, clientData: text64(response.clientDataJSON), authenticator: text64(response.authenticatorData), signature: text64(response.signature) };
+  } catch (cause) {
+    return { _tag: 'PasskeyDeclined', id, reason: cause instanceof Error ? `${cause.name}: ${cause.message}`.slice(0, 160) : String(cause) };
+  }
+};
+
+export const CreatePasskey = Command.define('CreatePasskey', {
+  args: { id: Schema.String, challenge: Schema.String, rpId: Schema.String, user: Schema.String },
+  messages: [Message.CompletedSend],
+  execute: ({ id, challenge, rpId, user }) => Effect.promise(() => createPasskey(id, challenge, rpId, user)).pipe(Effect.flatMap(sendFrame), Effect.as(Message.CompletedSend())),
+});
+
+export const SignPasskey = Command.define('SignPasskey', {
+  args: { id: Schema.String, challenge: Schema.String, rpId: Schema.String, credential: Schema.String },
+  messages: [Message.CompletedSend],
+  execute: ({ id, challenge, rpId, credential }) => Effect.promise(() => signPasskey(id, challenge, rpId, credential)).pipe(Effect.flatMap(sendFrame), Effect.as(Message.CompletedSend())),
+});
+
+export const StopPasskey = Command.define('StopPasskey', {
+  messages: [Message.CompletedSend],
+  execute: Effect.promise(settled).pipe(Effect.as(Message.CompletedSend())),
+});

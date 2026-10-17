@@ -88,9 +88,9 @@ const SECURITY_GUARANTEES: readonly SecurityGuarantee[] = [
   { status: 'shipped', name: 'Your token never leaves your Durable Object', line: 'The browser holds a signed session cookie and nothing else. No route hands out the token.' },
   { status: 'shipped', name: 'Every model call is yours', line: 'Hearing, thinking and speaking run on your Workers AI, through your own AI Gateway.' },
   { status: 'shipped', name: 'Audio and camera are never stored', line: 'History keeps words. A camera frame becomes &ldquo;(showed you a camera frame)&rdquo;.' },
-  { status: 'planned', name: 'A passkey for anything that changes things', line: 'Account changes, commands, MCP calls and deletions wait for Face ID, Touch ID or a security key. A spoken yes is not enough.' },
-  { status: 'planned', name: 'One signature, one action', line: 'The passkey signs the exact call. It runs once, expires in a minute, and talking over hark cancels it.' },
-  { status: 'planned', name: 'No voiceprint, no face match', line: 'A voice can be cloned and a face can be filmed. hark never stores either, and never trusts them.' },
+  { status: 'shipped', name: 'A passkey for anything that changes things', line: 'Turn on biometrics for changes and account changes, commands, file writes, MCP calls and deletions wait for Face ID, Touch ID or a security key. A spoken yes is not enough.' },
+  { status: 'shipped', name: 'One signature, one action', line: 'The passkey signs the exact call. It runs once, expires in a minute, and talking over hark cancels it.' },
+  { status: 'shipped', name: 'No voiceprint, no face match', line: 'A voice can be cloned and a face can be filmed. hark never stores either, and never trusts them.' },
 ];
 
 const STATUS_LABEL: Record<SecurityGuarantee['status'], string> = { shipped: 'Shipped', planned: 'Planned' };
@@ -100,7 +100,7 @@ const securityGroup = (status: SecurityGuarantee['status']) =>
     .map((guarantee) => definition(guarantee.name, guarantee.line, guarantee.status))
     .join('')}</dl></section>`;
 
-const SECURITY = `<section class="${SECTION} scroll-mt-6" id="security" aria-labelledby="security-title">${sectionHead('Security', 'security-title', 'It listens to anyone.', 'It acts only for you.')}<p class="${LEAD} -mt-4 mb-9">Anyone in the room can talk to hark: a roommate, a TV, a web page it reads aloud. So words alone never change your account. Read the full model, threats and open findings in <a href="https://github.com/acoyfellow/hark/blob/main/SECURITY.md">SECURITY.md</a>.</p><div class="grid gap-4 md:grid-cols-2">${securityGroup('shipped')}${securityGroup('planned')}</div></section>`;
+const SECURITY = `<section class="${SECTION} scroll-mt-6" id="security" aria-labelledby="security-title">${sectionHead('Security', 'security-title', 'It listens to anyone.', 'It acts only for you.')}<p class="${LEAD} -mt-4 mb-9">Anyone in the room can talk to hark: a roommate, a TV, a web page it reads aloud. So words alone never change your account. Read the full model, threats and open findings in <a href="https://github.com/acoyfellow/hark/blob/main/SECURITY.md">SECURITY.md</a>.</p><div class="grid gap-4">${securityGroup('shipped')}</div></section>`;
 
 const PIXEL = 2;
 

@@ -227,6 +227,10 @@ export const ServerFrame = Schema.Union([
   Schema.TaggedStruct('OpenWorkspace', { path: Schema.NullOr(Schema.String) }),
   Schema.TaggedStruct('ShowTools', {}),
   Schema.TaggedStruct('Instructions', { text: Schema.String }),
+  Schema.TaggedStruct('Guard', { on: Schema.Boolean }),
+  Schema.TaggedStruct('PasskeyCreate', { id: Schema.String, challenge: Schema.String, rpId: Schema.String, user: Schema.String }),
+  Schema.TaggedStruct('PasskeyAsk', { id: Schema.String, challenge: Schema.String, rpId: Schema.String, credential: Schema.String, summary: Schema.String, seconds: Schema.Number }),
+  Schema.TaggedStruct('PasskeyDone', { id: Schema.String, ok: Schema.Boolean, reason: Schema.String }),
   Schema.TaggedStruct('Panels', { panels: Schema.Array(Panel), drawer: Schema.optional(Schema.Boolean) }),
 ]);
 
@@ -248,6 +252,10 @@ export const ClientFrame = Schema.Union([
   Schema.TaggedStruct('ListServers', {}),
   Schema.TaggedStruct('Panel', { id: Schema.String, action: PanelAction }),
   Schema.TaggedStruct('SetInstructions', { text: Schema.String }),
+  Schema.TaggedStruct('SetGuard', { on: Schema.Boolean }),
+  Schema.TaggedStruct('PasskeyCreated', { id: Schema.String, credential: Schema.String, publicKey: Schema.String, clientData: Schema.String }),
+  Schema.TaggedStruct('PasskeySigned', { id: Schema.String, clientData: Schema.String, authenticator: Schema.String, signature: Schema.String }),
+  Schema.TaggedStruct('PasskeyDeclined', { id: Schema.String, reason: Schema.optional(Schema.String) }),
 ]);
 
 export type ClientFrame = typeof ClientFrame.Type;
