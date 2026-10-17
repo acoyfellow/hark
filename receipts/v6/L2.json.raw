@@ -1,22 +1,21 @@
 {
   "lane": "L2",
   "brain": "@cf/daily-co/phonellm-mini-alpha-2",
-  "passed": 10,
+  "passed": 7,
   "total": 10,
-  "pass": true,
+  "pass": false,
   "outcomes": [
     {
       "prompt": "count to five, then go square, then go circle",
-      "ok": true,
+      "ok": false,
       "listed": true,
       "events": [
-        "one",
-        "two",
-        "three",
-        "four",
-        "five",
-        "solid:square",
-        "solid:circle"
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "solid:square"
       ]
     },
     {
@@ -34,13 +33,11 @@
       "ok": true,
       "listed": false,
       "events": [
-        "3",
-        "2",
-        "1",
         "emoji:3",
         "emoji:2",
         "emoji:1",
-        "emoji:🎆"
+        "code:const t=1; out[0]=Math.cos(t*2*Math",
+        "emoji:🎉"
       ]
     },
     {
@@ -60,17 +57,16 @@
       "events": [
         "solid:cube",
         "solid:sphere",
-        "solid:torus"
+        "solid:torus",
+        "solid:cube"
       ]
     },
     {
       "prompt": "show the sun rising, then a cloud, then rain",
-      "ok": true,
+      "ok": false,
       "listed": true,
       "events": [
-        "painting:a sunrise over a calm horizon, ",
-        "emoji:☁️",
-        "emoji:🌧️"
+        "emoji:☁️"
       ]
     },
     {
@@ -84,11 +80,10 @@
     },
     {
       "prompt": "show the word hi, then the word bye",
-      "ok": true,
-      "listed": false,
+      "ok": false,
+      "listed": true,
       "events": [
-        "hi",
-        "bye"
+        "hi"
       ]
     },
     {
@@ -107,10 +102,10 @@
       "ok": true,
       "listed": false,
       "events": [
-        "one",
-        "two",
-        "three",
-        "four"
+        "emoji:1",
+        "emoji:2",
+        "emoji:3",
+        "emoji:4"
       ]
     }
   ]

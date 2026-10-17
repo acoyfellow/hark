@@ -1,0 +1,79 @@
+{
+  "lane": "L6",
+  "brain": "@cf/daily-co/phonellm-mini-alpha-2",
+  "passed": 8,
+  "total": 8,
+  "pass": true,
+  "outcomes": [
+    {
+      "prompt": "edit your system prompt: call me Captain from now on",
+      "ok": true,
+      "called": true,
+      "tools": [
+        "instructions"
+      ],
+      "said": "Aye aye, Captain. I'll answer to that name from now on.\n\nAye aye, Captain. I'll answer to that name from now on."
+    },
+    {
+      "prompt": "from now on always keep your answers to one sentence",
+      "ok": true,
+      "called": true,
+      "tools": [
+        "instructions"
+      ],
+      "said": "Got it — one sentence from now on. Let me know what you'd like to do.Let me set that up for you now.\n\nDone — I'll keep answers to one sentence from now on."
+    },
+    {
+      "prompt": "what are your instructions",
+      "ok": true,
+      "called": true,
+      "tools": [
+        "instructions"
+      ],
+      "said": "Let me pull up my instructions for you.\n\nGot it. I'm here to help — sharp, warm, and ready to jump into anything you need."
+    },
+    {
+      "prompt": "reset your prompt back to default",
+      "ok": true,
+      "called": true,
+      "tools": [
+        "instructions"
+      ],
+      "said": "Let me reset that for you.\n\nAll set. I'm back to the default way of talking."
+    },
+    {
+      "prompt": "stop calling me Captain",
+      "ok": true,
+      "called": true,
+      "tools": [
+        "instructions"
+      ],
+      "said": "Sorry, that's not me. I'm Hark, your friendly AI companion. How can I help you today?Let me pull up your standing instructions.\n\nGot it, I've saved your instructions. How can I help you today?"
+    },
+    {
+      "prompt": "hi, how are you?",
+      "ok": true,
+      "called": false,
+      "tools": [],
+      "said": "Good morning, Captain! I'm doing great, thanks for asking. How can I help you today?"
+    },
+    {
+      "prompt": "what is two plus two?",
+      "ok": true,
+      "called": false,
+      "tools": [
+        "show_form"
+      ],
+      "said": "Arrr, four, me hearties! Let me paint that for you real quick.\n\nThere it be, four shining embers in the shape of a four. Anything else I can do for ye?"
+    },
+    {
+      "prompt": "tell me about the moon",
+      "ok": true,
+      "called": false,
+      "tools": [
+        "look_up"
+      ],
+      "said": "Let me check.\n\nThe moon is our only natural satellite, a rocky world about a quarter the size of Earth that orbits us every twenty-seven days."
+    }
+  ]
+}
