@@ -279,6 +279,33 @@ await scenario('a 3D model beat sculpts an object in the swarm', async () => {
   await page.screenshot({ path: `${SHOTS}/model-rocket-desktop.png` });
 });
 
+await scenario('ten objects and one scene are built as 3D models, each held still for a screenshot', async () => {
+  const kits = ['rocket', 'house', 'chair', 'car', 'tree', 'robot', 'snowman', 'castle', 'mug', 'plane'];
+  if ((await page.locator('#swarm').getAttribute('data-look')) === 'asleep') await awake();
+  const states = [];
+  const box = await page.locator('#swarm').boundingBox();
+  const clip = { x: box.x + box.width / 2 - 330, y: box.y + box.height / 2 - 330, width: 660, height: 660 };
+  const ours = (value) => page.locator('#swarm').evaluate((node, wanted) => node.dataset.held === '1' && node.dataset.shaped === 'form' && (node.dataset.formBeats ?? '').includes(wanted), value);
+  const capture = async (value, name, marker = value) => {
+    for (let attempt = 0; attempt < 16; attempt += 1) {
+      if ((await page.locator('#swarm').getAttribute('data-look')) === 'asleep') await awake();
+      await runTool('show_form', { beats: [{ kind: 'model', seconds: 12, motion: 'still', value }], hold: true });
+      await page.waitForTimeout(2600);
+      const calm = attempt >= 10 || (await page.locator('#swarm').evaluate((node) => node.dataset.look !== 'speaking'));
+      if (calm && (await ours(marker))) {
+        await page.screenshot({ path: `${SHOTS}/model3d-${name}.png`, clip });
+        if (await ours(marker)) return attempt;
+      }
+    }
+    const seen = await page.locator('#swarm').evaluate((node) => `${node.dataset.look}|${node.dataset.shaped}|${node.dataset.held}|${(node.dataset.formBeats ?? '').slice(0, 80)}`);
+    throw new Error(`${name} kept being replaced on screen: ${seen}`);
+  };
+  for (const kit of kits) states.push(await capture(kit, kit));
+  states.push(await capture(JSON.stringify({ scene: [{ use: 'house', at: [-0.9, 0, -0.2] }, { use: 'tree', at: [1, 0, 0], scale: 0.8 }, { use: 'car', at: [0.1, -0.75, 0.7], scale: 0.45 }] }), 'scene', 'scene'));
+  await runTool('show_form', { hold: false });
+  return { kits: kits.length + 1, states };
+});
+
 await scenario('stay still holds a pink heart perfectly still, and a pink heart default survives a reload', async () => {
   const look = await page.locator('#swarm').getAttribute('data-look');
   if (look === 'asleep') await awake();

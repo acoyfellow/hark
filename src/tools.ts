@@ -1,5 +1,5 @@
 import { shapeToolCall } from './tool-call-shape';
-import { modelProblem } from '../shared/model-parts';
+import { KIT_NAMES, modelProblem } from '../shared/model-parts';
 import { isEmptyWidget, widgetOf } from '../shared/widget-parse';
 import type { PanelChange } from './panels';
 import { TOOL_CATALOG, TOOL_GROUPS } from '../shared/tool-catalog';
@@ -229,7 +229,7 @@ const imagine: Definition = {
   name: 'imagine',
   label: () => 'Painting it',
   description:
-    'Draw a picture and put it on their screen. Use when they ask to draw, paint, imagine, picture, or show something that does not exist yet.',
+    'Paint a picture with an image model and put it on their screen. Only when they ask for a picture, painting, photo, image or illustration. For "show me a rocket", "make a house", "build a castle" or any object or scene, use show_form with a model instead.',
   parameters: object(
     {
       prompt: {
@@ -298,7 +298,7 @@ const beatOf = (raw: unknown): Beat | BeatProblem => {
   const still = isMotion(motion) ? motion : 'still';
   const tint = tintOf(str(item.tint));
   const asWord = (text: string): Beat => ({ kind: 'word', value: text.slice(0, SHORT_WORD), seconds, motion: still });
-  const asPainting = (prompt: string): Beat => ({ kind: 'painting', value: prompt, seconds, motion: still });
+  const asPainting = (prompt: string): Beat => (modelProblem(prompt) === null ? { kind: 'model', value: prompt, seconds, motion: 'spin' } : { kind: 'painting', value: prompt, seconds, motion: still });
 
   if (value === '') return { problem: 'every beat needs a value' };
 
@@ -356,10 +356,10 @@ const showForm: Definition = {
     '- "draw": anything at all. Write SVG path data on a 0 to 100 canvas (M L Q C A Z commands, strokes are drawn as glowing lines). Draw a cat, a bicycle, a map, a face, a punchline. Be inventive.',
     '- "svg": a whole <svg viewBox="0 0 100 100"> scene with fills, strokes, text, gradients. Brightness becomes glow. Best for scenes, lettering, logos, diagrams.',
     '- "code": the most powerful kind. A JavaScript function body that moves every particle every frame, for any animation: orbits, waves, a beating heart, a running dog, a rocket launch, a clock, fireworks, a DNA helix. It receives (i, n, t, out): particle index i of n, time t in seconds. Write out[0], out[1], out[2] (x, y, z, about -1 to 1) and out[3] (brightness 0 to 1). Math is available. No DOM, no network. Example: const a=i/n*Math.PI*2+t; out[0]=Math.cos(a)*0.8; out[1]=Math.sin(a*2)*0.4; out[2]=0; out[3]=0.8;',
-    '- "model": a real 3D model you build from parts, like a sculptor. Value is JSON: an array of up to 40 parts, each {"shape": sphere|box|cylinder|cone|torus|capsule, "at": [x,y,z], "size": [x,y,z] half-extents, "turn": [x,y,z] degrees, "glow": 0.1 to 1}. y is up. It is rendered in embers and spins so they see it from every side. Use it for any object: a rocket, a car, a robot, a house, a chair, a snowman, a molecule, a guitar. Build it carefully with enough parts to be recognisable. Example rocket: [{"shape":"cylinder","at":[0,0,0],"size":[0.2,0.6,0.2]},{"shape":"cone","at":[0,0.8,0],"size":[0.2,0.2,0.2]},{"shape":"box","at":[0.25,-0.5,0],"size":[0.08,0.15,0.02]},{"shape":"box","at":[-0.25,-0.5,0],"size":[0.08,0.15,0.02]}]',
-    '- "painting": a short image prompt; a real picture is painted and the swarm becomes it. Slow (a few seconds), so use it for the big moments.',
+    `- "model": the default for any object, animal, vehicle, building or scene. A real 3D model in embers that turns so they see every side. Fastest: a kit name as the value, one of ${KIT_NAMES.join(', ')}. For a scene, JSON {"scene":[{"use":"house","at":[-0.8,0,0]},{"use":"tree","at":[0.9,0,0.2],"scale":0.8},{"use":"car","at":[0,-0.6,0.8],"scale":0.5}]}. For anything else build it from up to 80 parts: {"shape": sphere|box|cylinder|cone|torus|capsule|wedge|pyramid|disc, "at": [x,y,z], "size": [x,y,z] half-extents, "turn": [x,y,z] degrees, "glow": 0.1 to 1, "cut": true to carve a hole such as a door, window or the inside of a cup}. y is up, the object fits about -1 to 1. Mix kits and parts in one scene. Motion "spin" turns it, "still" holds a three-quarter view, "tumble" orbits the camera over it.`,
+    '- "painting": a short image prompt; a real picture is painted and the swarm becomes it. Only when they say picture, paint, painting, photo or image. Never for an object or a scene: build a model instead.',
     `Each beat has seconds (1 to 12) and motion: ${FORM_MOTIONS.join(', ')}.`,
-    'If someone asks you to make, show, draw or animate anything, always try. Prefer model for objects and 3D, code for motion, svg for scenes. Never refuse.',
+    'If someone asks you to make, show, build or animate anything, always try. Use model first for any thing or place, code for motion, svg for lettering and diagrams. Never refuse.',
     `Each beat may have tint: a color for the embers, a #rrggbb hex or one of ${Object.keys(NAMED_TINTS).join(', ')}. Use it whenever they name a color ("a pink heart").`,
     'Set hold to true to keep the last beat on screen until something else replaces it, even while you talk. Use it for "stay still", "go solid", "hold that", "keep it", long stories, and any time they want it to stay. Combine with motion "still" for a perfectly still shape. Call with hold false and no beats when they say "move again" or "let go".',
     'Set idle to true to make these beats your new resting shape: what the swarm loops whenever nothing else is showing, until changed again. Use it when they say "make that your default", "stay as X", "idle as X". Set idle true with no beats to go back to the plain ring.',

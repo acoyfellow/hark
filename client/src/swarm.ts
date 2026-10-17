@@ -35,6 +35,7 @@ type Shape = {
   readonly scale: number;
   readonly picture: boolean;
   readonly solid: boolean;
+  readonly model?: boolean;
   readonly motion: Motion;
   readonly bornAt: number;
   readonly program: Program | null;
@@ -74,7 +75,7 @@ const beatsOf = (raw: string): BeatData[] => {
 
 const PROGRAM_PLACEHOLDER: Dot[] = [[0, 0, 0, 0.7]];
 
-const dotsFor = async (beat: BeatData): Promise<{ dots: Dot[]; picture: boolean; solid: boolean; code: boolean }> => {
+const dotsFor = async (beat: BeatData): Promise<{ dots: Dot[]; picture: boolean; solid: boolean; code: boolean; model?: boolean }> => {
   if (beat.kind === 'code') return { dots: PROGRAM_PLACEHOLDER, picture: false, solid: true, code: true };
 
   if (beat.kind === 'svg') return { dots: await svgDots(beat.value), picture: false, solid: false, code: false };
@@ -87,7 +88,7 @@ const dotsFor = async (beat: BeatData): Promise<{ dots: Dot[]; picture: boolean;
 
   if (beat.kind === 'solid') return { dots: solidDots(beat.value), picture: false, solid: true, code: false };
 
-  if (beat.kind === 'model') return { dots: modelDots(beat.value), picture: false, solid: true, code: false };
+  if (beat.kind === 'model') return { dots: modelDots(beat.value), picture: false, solid: true, code: false, model: true };
 
   const flat = beat.kind === 'emoji' ? emojiDots(beat.value) : beat.kind === 'word' ? wordDots(beat.value) : beat.kind === 'draw' ? drawingDots(beat.value) : iconDots(beat.value);
 
@@ -98,13 +99,13 @@ const PICTURE_HOLD_MS = 2600;
 
 const VERTEX = `
 attribute float tone; attribute float seed; attribute float heat; attribute float formed;
-uniform float uTime; uniform float uLevel; uniform float uDpr; uniform float uBoost; uniform float uStill;
+uniform float uTime; uniform float uLevel; uniform float uDpr; uniform float uBoost; uniform float uStill; uniform float uFine;
 varying float vTone; varying float vAlpha;
 void main() {
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * mv;
   float twinkle = mix(0.75 + 0.25 * sin(uTime * 2.0 + seed * 40.0), 0.9, uStill);
-  gl_PointSize = (1.3 + seed * 1.8 + formed * (0.8 + uBoost) + heat * 2.8 + uLevel * 1.2 * (1.0 - uStill)) * uDpr * (14.0 / -mv.z);
+  gl_PointSize = mix(1.0, 0.7, uFine * formed) * (1.3 + seed * 1.8 + formed * (0.8 + uBoost) + heat * 2.8 + uLevel * 1.2 * (1.0 - uStill)) * uDpr * (14.0 / -mv.z);
   vTone = clamp(tone + heat * 0.35, 0.0, 1.0);
   vAlpha = twinkle * mix(0.32 + 0.6 * tone, 0.85 + 0.7 * tone, formed);
 }`;
@@ -183,6 +184,7 @@ export const startSwarm = (host: HTMLElement) => {
     blending: AdditiveBlending,
     uniforms: {
       uBoost: { value: 0 },
+      uFine: { value: 0 },
       uStill: { value: 0 },
       uTint: { value: new Color('#ffffff') },
       uTintMix: { value: 0 },
@@ -249,6 +251,7 @@ export const startSwarm = (host: HTMLElement) => {
     state.used = shape.program !== null ? PROGRAM_PARTICLES : Math.min(count, Math.round(shape.dots.length * (shape.picture ? 1 : shape.solid ? 1.4 : 0.9)));
     material.uniforms.uBoost!.value = shape.picture ? 0.7 : 0.35;
     material.uniforms.uStill!.value = shape.motion === 'still' ? 1 : 0;
+    material.uniforms.uFine!.value = shape.model ? 1 : 0;
     material.uniforms.uTintMix!.value = shape.tint === null ? 0 : 1;
     if (shape.tint !== null) (material.uniforms.uTint!.value as Color).copy(shape.tint);
 
@@ -263,6 +266,7 @@ export const startSwarm = (host: HTMLElement) => {
     state.shape = null;
     material.uniforms.uBoost!.value = 0;
     material.uniforms.uStill!.value = 0;
+    material.uniforms.uFine!.value = 0;
     material.uniforms.uTintMix!.value = 0;
   };
 
@@ -279,7 +283,7 @@ export const startSwarm = (host: HTMLElement) => {
     state.idling = idling;
     const prepared = await Promise.all(beats.map(async (beat) => ({ beat, ...(await dotsFor(beat)) })));
 
-    for (const [index, { beat, dots, picture, solid, code }] of prepared.entries()) {
+    for (const [index, { beat, dots, picture, solid, code, model }] of prepared.entries()) {
       if (show !== state.show) return;
 
       if (dots.length === 0) continue;
@@ -289,7 +293,7 @@ export const startSwarm = (host: HTMLElement) => {
 
       const program = code ? startProgram(beat.value, PROGRAM_PARTICLES) : null;
 
-      hold({ dots, picture, solid, program, tint: tintColor(beat.tint), motion: code ? 'still' : motionOf(beat.motion), bornAt: performance.now(), scale: code ? SCALES.program : picture ? SCALES.picture : solid ? SCALES.solid : SCALES.flat }, millis);
+      hold({ dots, picture, solid, model: model === true, program, tint: tintColor(beat.tint), motion: code ? 'still' : motionOf(beat.motion), bornAt: performance.now(), scale: code ? SCALES.program : picture ? SCALES.picture : solid ? SCALES.solid : SCALES.flat }, millis);
       if (held && last) {
         state.held = true;
         return;
@@ -388,12 +392,13 @@ export const startSwarm = (host: HTMLElement) => {
       const burst = motion === 'explode' ? 1 + Math.max(0, age - 1.2) * 2.2 : 1;
       const scale = shape.scale * voice * pulse * burst;
       const yaw = shape.solid && motion === 'still' ? 0.5 : shape.solid ? age * (motion === 'spin' || motion === 'tumble' ? 1.4 : 0.35) : motion === 'spin' ? Math.sin(age * 1.6) * 0.9 : motion === 'sway' ? Math.sin(age * 2) * 0.35 : 0;
-      const pitch = shape.solid && motion === 'still' ? 0.35 : shape.solid ? 0.35 + (motion === 'tumble' ? age * 0.9 : Math.sin(age * 0.5) * 0.25) : 0;
+      const pitch = shape.solid && motion === 'still' ? 0.35 : shape.solid ? 0.35 + (motion === 'tumble' ? Math.sin(age * 0.4) * 0.45 : Math.sin(age * 0.5) * 0.25) : 0;
       const lift = motion === 'bounce' ? Math.abs(Math.sin(age * 4)) * 0.7 : 0;
+      const dolly = shape.solid && motion === 'tumble' ? 1 + Math.sin(age * 0.6) * 0.18 : 1;
       const depth = shape.solid ? 1 : 0.25;
-      const x0 = dot[0] * scale;
-      const y0 = dot[1] * scale;
-      const z0 = dot[2] * scale * depth;
+      const x0 = dot[0] * scale * dolly;
+      const y0 = dot[1] * scale * dolly;
+      const z0 = dot[2] * scale * depth * dolly;
       const x1 = x0 * Math.cos(yaw) + z0 * Math.sin(yaw);
       const z1 = -x0 * Math.sin(yaw) + z0 * Math.cos(yaw);
       const y1 = y0 * Math.cos(pitch) - z1 * Math.sin(pitch);

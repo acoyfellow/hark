@@ -84,6 +84,25 @@ const nextFiller = () => {
   return FILLERS[fillerIndex] ?? FILLERS[0];
 };
 
+const ASKED_FOR_A_PICTURE = new RegExp(String.raw`\b(?:picture|paint(?:ing)?|photo(?:graph)?|image|illustrat\w*|render(?:ing)?|portrait|imagine)\b`, 'iu');
+
+export const askedForAPicture = (heard: string) => ASKED_FOR_A_PICTURE.test(heard);
+
+const subjectOf = (raw: string) => {
+  try {
+    const prompt = (JSON.parse(raw) as { prompt?: unknown }).prompt;
+    return typeof prompt === 'string' ? prompt : '';
+  } catch {
+    return '';
+  }
+};
+
+export const asModel = (call: ToolCall, heard: string): ToolCall => {
+  if (call.name !== 'imagine' || askedForAPicture(heard)) return call;
+  const subject = subjectOf(call.arguments) || heard;
+  return { ...call, name: 'show_form', arguments: JSON.stringify({ beats: [{ kind: 'model', value: subject.slice(0, 200), seconds: 8, motion: 'spin' }], hold: true }) };
+};
+
 const reasonOf = (cause: unknown) => (cause instanceof Error ? cause.message : String(cause));
 
 const runTools = (ports: ReplyPorts, calls: readonly ToolCall[]) =>
@@ -131,6 +150,7 @@ export async function* reply(
   let actions = 0;
   const steps = stepsAsked(lastUserText(history));
   const ruled = setsARule(lastUserText(history));
+  const heard = lastUserText(history);
 
   try {
     for (let round = 0; round < MAX_ROUNDS && !signal.aborted; round += 1) {
@@ -230,7 +250,7 @@ export async function* reply(
         tool_calls: calls.map((call) => ({ id: call.id, type: 'function', function: { name: call.name, arguments: call.arguments } })),
       });
 
-      const pending = runTools(ports, calls);
+      const pending = runTools(ports, calls.map((call) => asModel(call, heard)));
 
       if (!said && (await Promise.race([pending.then(() => 'done' as const), delay(FILLER_DELAY_MS, signal)])) === 'late') {
         said = true;

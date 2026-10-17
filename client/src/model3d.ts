@@ -1,9 +1,15 @@
-import { MODEL_SHAPES, type Part, partsOf, type Vec } from '../../shared/model-parts';
+import { MODEL_SHAPES, type Part, partsOf, turned, type Vec } from '../../shared/model-parts';
 import type { Dot } from './shapes';
 
 const TAU = Math.PI * 2;
 
-const MODEL_DOTS = 12000;
+const DOTS_PER_AREA = 110000;
+
+const MIN_DOTS = 4000;
+
+const MAX_DOTS = 14000;
+
+const EDGE_TONE = 0.5;
 
 const unitSurface = (shape: (typeof MODEL_SHAPES)[number], u: number, v: number): Vec => {
   const a = u * TAU;
@@ -43,6 +49,28 @@ const unitSurface = (shape: (typeof MODEL_SHAPES)[number], u: number, v: number)
 
       return [(1 + tube * Math.cos(b)) * Math.cos(a), tube * Math.sin(b), (1 + tube * Math.cos(b)) * Math.sin(a)];
     }
+    case 'wedge': {
+      const side = Math.floor(u * 4);
+      const p = (u * 4 - side) * 2 - 1;
+      if (side === 0) return [p, -1, v * 2 - 1];
+      if (side === 1) return [p, -1 + v * 2, -1 + v];
+      if (side === 2) return [p, -1 + v * 2, 1 - v];
+      const w = Math.random() * (1 - v);
+      return [side === 3 && Math.random() < 0.5 ? 1 : -1, -1 + v * 2, (w * 2 - (1 - v))];
+    }
+    case 'pyramid': {
+      const r = 1 - v;
+      const edge = u * 4;
+      const face = Math.floor(edge);
+      const p = (edge - face) * 2 - 1;
+      const corners: Vec[] = [[p * r, 0, r], [r, 0, -p * r], [-p * r, 0, -r], [-r, 0, p * r]];
+      const point = corners[face] ?? corners[0]!;
+      return [point[0], v * 2 - 1, point[2]];
+    }
+    case 'disc': {
+      const r = Math.sqrt(v);
+      return [Math.cos(a) * r, 0, Math.sin(a) * r];
+    }
     case 'capsule': {
       const y = v * 2 - 1;
       const cap = Math.abs(y) > 0.5 ? Math.sqrt(Math.max(0, 1 - ((Math.abs(y) - 0.5) / 0.5) ** 2)) : 1;
@@ -52,14 +80,30 @@ const unitSurface = (shape: (typeof MODEL_SHAPES)[number], u: number, v: number)
   }
 };
 
-const rotate = ([x, y, z]: Vec, [rx, ry, rz]: Vec): Vec => {
-  const [cx, sx, cy, sy, cz, sz] = [Math.cos(rx), Math.sin(rx), Math.cos(ry), Math.sin(ry), Math.cos(rz), Math.sin(rz)];
-  const y1 = y * cx - z * sx;
-  const z1 = y * sx + z * cx;
-  const x2 = x * cy + z1 * sy;
-  const z2 = -x * sy + z1 * cy;
+const rotate = turned;
 
-  return [x2 * cz - y1 * sz, x2 * sz + y1 * cz, z2];
+const unturned = (point: Vec, [rx, ry, rz]: Vec): Vec => {
+  const [x, y, z] = point;
+  const [cz, sz] = [Math.cos(-rz), Math.sin(-rz)];
+  const x1 = x * cz - y * sz;
+  const y1 = x * sz + y * cz;
+  const [cy, sy] = [Math.cos(-ry), Math.sin(-ry)];
+  const x2 = x1 * cy + z * sy;
+  const z2 = -x1 * sy + z * cy;
+  const [cx, sx] = [Math.cos(-rx), Math.sin(-rx)];
+
+  return [x2, y1 * cx - z2 * sx, y1 * sx + z2 * cx];
+};
+
+const inside = (point: Vec, part: Part) => {
+  const [x, y, z] = unturned([point[0] - part.at[0], point[1] - part.at[1], point[2] - part.at[2]], part.turn);
+  const [ax, ay, az] = [x / Math.max(0.001, Math.abs(part.size[0])), y / Math.max(0.001, Math.abs(part.size[1])), z / Math.max(0.001, Math.abs(part.size[2]))];
+
+  if (part.shape === 'sphere') return ax * ax + ay * ay + az * az < 0.98;
+
+  if (part.shape === 'cylinder') return ax * ax + az * az < 0.98 && Math.abs(ay) < 0.99;
+
+  return Math.abs(ax) < 0.99 && Math.abs(ay) < 0.99 && Math.abs(az) < 0.99;
 };
 
 const areaOf = (part: Part) => {
@@ -69,7 +113,9 @@ const areaOf = (part: Part) => {
 };
 
 export const modelDots = (value: string): Dot[] => {
-  const parts = partsOf(value);
+  const every = partsOf(value);
+  const parts = every.filter((part) => !part.cut);
+  const cuts = every.filter((part) => part.cut);
 
   if (parts.length === 0) return [];
 
@@ -77,16 +123,18 @@ export const modelDots = (value: string): Dot[] => {
   const total = areas.reduce((sum, area) => sum + area, 0);
   const extent = Math.max(0.3, ...parts.map((part) => Math.max(...part.at.map(Math.abs)) + Math.max(...part.size.map(Math.abs))));
   const fit = 0.36 / extent;
+  const budget = Math.round(Math.min(MAX_DOTS, Math.max(MIN_DOTS, total * fit * fit * DOTS_PER_AREA)));
 
   return parts.flatMap((part, index) => {
-    const share = Math.max(60, Math.round((areas[index]! / total) * MODEL_DOTS));
+    const share = Math.max(60, Math.round((areas[index]! / total) * budget));
 
     return Array.from({ length: share }, () => {
       const local = unitSurface(part.shape, Math.random(), Math.random());
       const scaled: Vec = [local[0] * part.size[0], local[1] * part.size[1], local[2] * part.size[2]];
       const [x, y, z] = rotate(scaled, part.turn);
+      const point: Vec = [x + part.at[0], y + part.at[1], z + part.at[2]];
 
-      return [(x + part.at[0]) * fit, (y + part.at[1]) * fit, (z + part.at[2]) * fit, part.glow] as const;
-    });
+      return cuts.some((cut) => inside(point, cut)) ? null : ([point[0] * fit, point[1] * fit, point[2] * fit, part.glow * EDGE_TONE] as const);
+    }).filter((dot) => dot !== null);
   });
 };
