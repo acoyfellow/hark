@@ -1,0 +1,39 @@
+{
+  "lane": "L8",
+  "passed": 6,
+  "total": 6,
+  "realContainer": "local Docker against the fake API; production container check is asked of the owner",
+  "pass": true,
+  "outcomes": [
+    {
+      "name": "the public site does not serve the computer proxy",
+      "ok": true,
+      "detail": "404"
+    },
+    {
+      "name": "the proxy host only exists inside the container",
+      "ok": true,
+      "detail": "unreachable Error: Unable to connect. Is the computer able to access the"
+    },
+    {
+      "name": "the shell has a placeholder, not a token",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "a real workers list exists on the account the proxy reads",
+      "ok": true,
+      "detail": "395 workers"
+    },
+    {
+      "name": "local container: list workers and write a summary, read only, no prompt",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "local container: a write stops at the passkey and runs once signed",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}
