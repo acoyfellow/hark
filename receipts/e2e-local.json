@@ -1,24 +1,24 @@
 {
   "kind": "hark.e2e",
   "target": "local",
-  "base": "http://127.0.0.1:8796",
-  "at": "2026-10-16T11:13:25.765Z",
-  "passed": 22,
-  "total": 22,
+  "base": "http://127.0.0.1:8791",
+  "at": "2026-10-17T13:53:05.506Z",
+  "passed": 25,
+  "total": 25,
   "speech": {
-    "count": 2549,
-    "bytes": 4272000
+    "count": 5103,
+    "bytes": 8397600
   },
   "results": [
     {
       "name": "the page renders asleep with the ear and no chat box",
       "ok": true,
-      "ms": 2900
+      "ms": 3426
     },
     {
       "name": "tapping the ear opens the line to the account and starts listening",
       "ok": true,
-      "ms": 1392,
+      "ms": 1663,
       "detail": {
         "account": "Local account",
         "settings": {
@@ -31,17 +31,17 @@
     {
       "name": "a spoken question gets a tool call, an article card, and a spoken answer",
       "ok": true,
-      "ms": 4447,
+      "ms": 4711,
       "detail": {
         "latency": {
           "total": 0,
-          "model": 134,
-          "speech": 62,
+          "model": 124,
+          "speech": 66,
           "eager": true,
-          "leadMs": 305
+          "leadMs": 289
         },
-        "firstSpeechMs": 1464,
-        "packets": 138
+        "firstSpeechMs": 3391,
+        "packets": 137
       }
     },
     {
@@ -52,16 +52,16 @@
     {
       "name": "remember stores a fact and shows it",
       "ok": true,
-      "ms": 5720
+      "ms": 5871
     },
     {
       "name": "show_form plays a two-beat particle movie (3D heart, then a drawing), with no card",
       "ok": true,
-      "ms": 2024,
+      "ms": 2112,
       "detail": {
         "form": {
           "_tag": "Form",
-          "id": "d02daea3-6cd0-4eed-b2ee-dc26c8f13aa1",
+          "id": "1b8ca8dc-4bba-4269-9ed1-ecfc3d7d786d",
           "beats": [
             {
               "kind": "solid",
@@ -82,68 +82,88 @@
     {
       "name": "paint forms the picture in the swarm first, then hands it to a card",
       "ok": true,
-      "ms": 9894
+      "ms": 10145
     },
     {
       "name": "talking over a long answer interrupts it (barge-in)",
       "ok": true,
-      "ms": 12483,
+      "ms": 11686,
       "detail": {
-        "interruptedAfterMs": 7361
+        "interruptedAfterMs": 7224
       }
     },
     {
       "name": "a timer counts down and hark announces it when it ends (Durable Object alarm)",
       "ok": true,
-      "ms": 4379,
+      "ms": 4990,
       "detail": {
-        "announcedAfterMs": 2794
+        "announcedAfterMs": 3341
       }
     },
     {
       "name": "with the camera on, asking about it takes one frame and looks",
       "ok": true,
-      "ms": 7519
+      "ms": 7033
     },
     {
       "name": "saying goodbye puts hark to sleep and closes the microphone",
       "ok": true,
-      "ms": 6426
+      "ms": 8886
     },
     {
       "name": "one tap wakes it again after it slept, and it listens",
       "ok": true,
-      "ms": 1378
+      "ms": 5430
     },
     {
       "name": "report and alert widgets appear beside the swarm",
       "ok": true,
-      "ms": 2513
+      "ms": 3373
     },
     {
       "name": "a 3D model beat sculpts an object in the swarm",
       "ok": true,
-      "ms": 2165
+      "ms": 2523
+    },
+    {
+      "name": "stay still holds a pink heart perfectly still, and a pink heart default survives a reload",
+      "ok": true,
+      "ms": 39309,
+      "detail": {
+        "drift": 1.71,
+        "pinkish": 32,
+        "tries": 3
+      }
+    },
+    {
+      "name": "panels: six cards stack, the drawer lists them, and voice reopens, deletes and resizes",
+      "ok": true,
+      "ms": 5646,
+      "detail": {
+        "listed": 6,
+        "open": 4,
+        "after": 5
+      }
     },
     {
       "name": "the durable computer runs a command and shows a terminal card",
       "ok": true,
-      "ms": 1515,
+      "ms": 2366,
       "detail": {
-        "output": "$ cd /workspace && ls -la && node -v\ntotal 8\ndrwxr-xr-x 1 root root 4096 Oct 16 02:29 .\ndrwxr-xr-x 1 root root 4096 Oct 16 11:09 ..\nv22.23.3"
+        "output": "$ cd /workspace && ls -la && node -v\ntotal 8\ndrwxr-xr-x 1 root root 4096 Oct 16 13:58 .\ndrwxr-xr-x 1 root root 4096 Oct 17 13:52 ..\nv22.23.3"
       }
     },
     {
       "name": "the settings sheet shows the stack, voices, and brains",
       "ok": true,
-      "ms": 5163
+      "ms": 6610
     },
     {
       "name": "every upstream call went straight to Workers AI with the account token",
       "ok": true,
-      "ms": 3,
+      "ms": 5,
       "detail": {
-        "calls": 949,
+        "calls": 2853,
         "kinds": [
           "listen",
           "completions",
@@ -159,7 +179,7 @@
     {
       "name": "the desktop layout keeps cards off the ear and nothing overflows",
       "ok": true,
-      "ms": 31,
+      "ms": 35,
       "detail": {
         "overflowX": false,
         "cardsOverOrb": 0,
@@ -179,7 +199,7 @@
     {
       "name": "the phone layout renders asleep, then talks and shows a card",
       "ok": true,
-      "ms": 9792,
+      "ms": 9127,
       "detail": {
         "overflowX": false,
         "cardsOverOrb": 0,
@@ -199,7 +219,7 @@
     {
       "name": "the phone never zooms or scrolls: double tap, pinch and swipe leave scale 1 and scroll 0",
       "ok": true,
-      "ms": 6353,
+      "ms": 6905,
       "detail": {
         "scale": 1,
         "scrollTop": 0,
@@ -210,7 +230,12 @@
     {
       "name": "the landing page offers Sign in with Cloudflare on desktop and phone",
       "ok": true,
-      "ms": 11584
+      "ms": 11685
+    },
+    {
+      "name": "Sign out in Settings leaves the app for the sign-in page",
+      "ok": true,
+      "ms": 15041
     },
     {
       "name": "no uncaught page errors",

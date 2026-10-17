@@ -30,3 +30,10 @@ describe('small voice models that call a beat kind as if it were a tool', () => 
     expect(shapeToolCall('teleport', { to: 'mars' }, KNOWN)).toEqual({ name: 'teleport', args: { to: 'mars' } });
   });
 });
+
+describe('panel calls the brain names oddly', () => {
+  it('routes a bare panel verb to the panels tool and repairs a key=value key', () => {
+    expect(shapeToolCall('close_all', {}, ['panels'])).toEqual({ name: 'panels', args: { action: 'close_all' } });
+    expect(shapeToolCall('panels', { 'action=list': '' }, ['panels'])).toEqual({ name: 'panels', args: { action: 'list' } });
+  });
+});

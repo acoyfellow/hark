@@ -6,6 +6,7 @@ export const TOOL_CATALOG: readonly CatalogTool[] = [
   { name: 'show_form', title: 'Shape the swarm', group: 'Make', say: 'Show me a 3D rocket.' },
   { name: 'imagine', title: 'Paint a picture', group: 'Make', say: 'Paint me a lighthouse at dusk.' },
   { name: 'show_widget', title: 'Live cards', group: 'Make', say: 'Give me a report on my Workers.' },
+  { name: 'panels', title: 'Your panels', group: 'Make', say: 'Show my panels. Open the forecast again.' },
   { name: 'run_code', title: 'Scratch workbench', group: 'Make', say: 'Simulate a thousand coin flips.' },
   { name: 'terminal', title: 'Terminal', group: 'Your computer', say: 'Run node -v in my computer.' },
   { name: 'files', title: 'Files', group: 'Your computer', say: 'What files are in my workspace?' },

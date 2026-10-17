@@ -27,9 +27,11 @@ const MAX_ROUNDS = 6;
 
 const PROMISE = /\b(let me|i'?ll|i will|i'?m going to|here'?s|here is|watch|coming up|one sec|hang on|give me a (?:sec|second|moment))\b/iu;
 
-export const KEEP_YOUR_WORD = 'You just told them you would do something, but you called no tool, so nothing happened. Call the tool now. Do not repeat what you said and do not apologise.';
+const CLAIM = /\b(?:i'?ve|i have|i just)\s+(?:removed|deleted|closed|opened|pinned|resized|saved|set|cancelled|canceled|changed|made|drawn|painted|shown|added|started|stopped|sent|created|updated|moved)\b|\b(?:done|deleted|removed|closed)[.!]/iu;
 
-export const madeAPromise = (text: string) => PROMISE.test(text);
+export const KEEP_YOUR_WORD = 'You just told them you would do something, or that you did it, but you called no tool, so nothing happened. Call the tool now. Do not repeat what you said and do not apologise.';
+
+export const madeAPromise = (text: string) => PROMISE.test(text) || CLAIM.test(text);
 
 const STEP_SPLIT = new RegExp(String.raw`,?\s*\b(?:and then|then|after that|and also|and)\b\s*|,\s+`, 'iu');
 

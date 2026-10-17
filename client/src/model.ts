@@ -1,5 +1,5 @@
 import { Schema } from 'effect';
-import { Latency, McpServer, Presence, Settings, Visual, Beat } from '../../shared/protocol';
+import { Latency, McpServer, Panel, Presence, Settings, Visual, Beat } from '../../shared/protocol';
 
 export const Look = Schema.Union([Schema.Literal('asleep'), Presence]);
 
@@ -38,6 +38,8 @@ export const Model = Schema.Struct({
   settings: Schema.Option(Settings),
   doing: Schema.Option(Schema.String),
   visuals: Schema.Array(Visual),
+  panels: Schema.Array(Panel),
+  drawer: Schema.Boolean,
   latency: Schema.Option(Latency),
   fault: Schema.Option(Schema.String),
   note: Schema.Option(Schema.String),

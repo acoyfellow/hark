@@ -1,7 +1,8 @@
 import { shapeToolCall } from './tool-call-shape';
 import { modelProblem } from '../shared/model-parts';
 import { isEmptyWidget, widgetOf } from '../shared/widget-parse';
-import { WIDGET_KINDS, WIDGET_TONES, type Beat, FAST_VOICES, FORM_ICONS, FORM_KINDS, FORM_MOTIONS, FORM_SOLIDS, RICH_VOICES, VOICES, type FormKind, type FormMotion, type Visual, type Voice } from '../shared/protocol';
+import type { PanelChange } from './panels';
+import { PANEL_SIZES, WIDGET_KINDS, WIDGET_TONES, type Beat, FAST_VOICES, FORM_ICONS, FORM_KINDS, FORM_MOTIONS, FORM_SOLIDS, RICH_VOICES, VOICES, type FormKind, type FormMotion, type Visual, type Voice } from '../shared/protocol';
 
 export type ToolOutcome = {
   readonly content: string;
@@ -29,6 +30,7 @@ export type ToolHost = {
   readonly screenshot: (url: string) => Promise<{ readonly image: string; readonly title: string; readonly text: string }>;
   readonly setIdle: (beats: readonly Beat[]) => void;
   readonly openWorkspace: (path: string | null) => void;
+  readonly panels: { readonly list: () => string; readonly change: (change: PanelChange) => string };
   readonly setVoice: (voice: Voice) => void;
   readonly fetch: typeof fetch;
   readonly id: () => string;
@@ -665,7 +667,43 @@ const showWidget: Definition = {
   },
 };
 
+const PANEL_VERBS = ['list', 'open', 'close', 'delete', 'pin', 'unpin', 'resize', 'close_all', 'delete_all'] as const;
+
+const panelsTool: Definition = {
+  name: 'panels',
+  label: (args) => (str(args.action) === 'list' ? 'Showing your panels' : 'Arranging panels'),
+  description: [
+    'Every card you show (articles, pictures, timers, memories, widgets) is kept as a panel. Panels stack on the right; older ones go to a drawer they can open. Use this to manage them by voice.',
+    'action list: show the drawer and get the numbered list. open: bring one back. close: hide it (stays in the drawer). delete: remove it for good. pin: keep it open. unpin. resize: size small, medium or large ("make it bigger" is large, "smaller" is small). close_all, delete_all.',
+    'which: copy the number or the words THEY said. "number two" is which "2". "the deploy report" is which "deploy report". "that one" or "it" is which "last". Never guess a different number.',
+    'Examples: "show my panels" {action:list}. "open the forecast again" {action:open, which:"forecast"}. "delete number two" {action:delete, which:"2"}. "make the lighthouse bigger" {action:resize, which:"lighthouse", size:"large"}. "make that smaller" {action:resize, which:"last", size:"small"}. "pin the deploy report" {action:pin, which:"deploy report"}. "close all" {action:close_all}.',
+    'Do not call list first unless they asked to see the list. When they ask to delete, close, open, pin or resize a panel, call this tool right away; never just say you did it.',
+  ].join('\n'),
+  parameters: object(
+    {
+      action: { type: 'string', enum: [...PANEL_VERBS] },
+      which: { type: 'string', description: 'Number, title words, or "last".' },
+      size: { type: 'string', enum: [...PANEL_SIZES] },
+    },
+    ['action'],
+  ),
+  run: async (args, host) => {
+    const asked = str(args.action, 'list');
+    const which = str(args.which, 'last');
+    const action = asked !== 'resize' && PANEL_SIZES.some((each) => each === str(args.size)) ? 'resize' : asked;
+    if (action === 'list') return { content: `${host.panels.list()}\nThe drawer is open on their screen. Tell them how many there are in one short sentence. Do not open any unless they ask.` };
+    if (action === 'close_all' || action === 'delete_all') return { content: host.panels.change({ action }) };
+    if (action === 'resize') {
+      const size = PANEL_SIZES.find((each) => each === str(args.size)) ?? 'large';
+      return { content: host.panels.change({ action, which, size }) };
+    }
+    if (action === 'open' || action === 'close' || action === 'delete' || action === 'pin' || action === 'unpin') return { content: host.panels.change({ action, which }) };
+    return { content: `Unknown action ${action}. Use one of ${PANEL_VERBS.join(', ')}.` };
+  },
+};
+
 export const TOOLS: readonly Definition[] = [
+  panelsTool,
   lookUp,
   setTimer,
   cancelTimer,

@@ -147,6 +147,7 @@ await scenario('tapping the ear opens the line to the account and starts listeni
 
   const ready = await waitFrame((frame) => frame._tag === 'Ready');
 
+  await fetch(`${BASE}/__tool`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'panels', args: { action: 'delete_all' } }) });
   await waitFrame((frame) => frame._tag === 'Presence' && frame.presence === 'listening');
 
   return { account: ready.frame.account, settings: ready.frame.settings };
@@ -334,6 +335,38 @@ await scenario('stay still holds a pink heart perfectly still, and a pink heart 
   await runTool('show_form', { idle: true, beats: [] });
   if (!idle.includes('pink') && !idle.includes('#ff5fa2')) throw new Error(`the default did not survive a reload: ${idle.slice(0, 120)}`);
   return { drift: Number(drift.toFixed(2)), pinkish, tries };
+});
+
+await scenario('panels: six cards stack, the drawer lists them, and voice reopens, deletes and resizes', async () => {
+  if ((await page.locator('#swarm').getAttribute('data-look')) === 'asleep') await awake();
+  await runTool('panels', { action: 'delete_all' });
+  for (let index = 1; index <= 6; index += 1) await runTool('remember', { fact: `panel fact ${index}` });
+  await runTool('panels', { action: 'list' });
+  await page.locator('#drawer').waitFor({ timeout: 10000 });
+  const rows = () => page.locator('#drawer [data-panel]').evaluateAll((items) => items.map((item) => ({ id: item.getAttribute('data-panel'), open: item.getAttribute('data-panel-open') === '1', text: item.textContent ?? '' })));
+  const before = await rows();
+  if (before.length < 6) throw new Error(`drawer lists ${before.length} panels, wanted 6`);
+  if (before.filter((row) => row.open).length > 4) throw new Error('more than four panels open at once');
+  const second = await runTool('panels', { action: 'open', which: '2' });
+  await page.waitForTimeout(400);
+  const afterOpen = await rows();
+  const reopened = afterOpen.find((row) => row.text.includes('panel fact 2'));
+  if (reopened?.open !== true) throw new Error(`panel 2 did not reopen: ${second.content}`);
+  await runTool('panels', { action: 'delete', which: '4' });
+  await page.waitForTimeout(400);
+  const afterDelete = await rows();
+  if (afterDelete.some((row) => row.text.includes('panel fact 4'))) throw new Error('panel 4 is still listed');
+  await runTool('panels', { action: 'resize', which: 'panel fact 2', size: 'large' });
+  await page.waitForFunction(() => document.querySelector('[data-size=large]') !== null, null, { timeout: 5000 });
+  await page.screenshot({ path: `${SHOTS}/panels-drawer-desktop.png` });
+  const beforeClick = await rows();
+  await page.locator('#drawer [aria-label^="Delete"]').first().click();
+  await page.waitForTimeout(600);
+  const afterClick = await rows();
+  if (afterClick.length !== beforeClick.length - 1) throw new Error(`the trash button did not delete (${beforeClick.length} -> ${afterClick.length})`);
+  await page.locator('#panels').click();
+  await runTool('panels', { action: 'delete_all' });
+  return { listed: before.length, open: before.filter((row) => row.open).length, after: afterClick.length };
 });
 
 await scenario('the durable computer runs a command and shows a terminal card', async () => {

@@ -164,6 +164,20 @@ export const Visual = Schema.Union([
 
 export type Visual = typeof Visual.Type;
 
+export const PANEL_SIZES = ['small', 'medium', 'large'] as const;
+
+export const PanelSize = Schema.Literals(PANEL_SIZES);
+
+export type PanelSize = typeof PanelSize.Type;
+
+export const Panel = Schema.Struct({ id: Schema.String, title: Schema.String, kind: Schema.String, at: Schema.Number, open: Schema.Boolean, pinned: Schema.Boolean, size: PanelSize, visual: Visual });
+
+export type Panel = typeof Panel.Type;
+
+export const PANEL_ACTIONS = ['open', 'close', 'delete', 'pin', 'unpin'] as const;
+
+export const PanelAction = Schema.Literals(PANEL_ACTIONS);
+
 export const Latency = Schema.Struct({
   total: Schema.Number,
   model: Schema.Number,
@@ -209,6 +223,7 @@ export const ServerFrame = Schema.Union([
   Schema.TaggedStruct('ServerNote', { note: Schema.String, authUrl: Schema.NullOr(Schema.String) }),
   Schema.TaggedStruct('Idle', { beats: Schema.Array(Beat) }),
   Schema.TaggedStruct('OpenWorkspace', { path: Schema.NullOr(Schema.String) }),
+  Schema.TaggedStruct('Panels', { panels: Schema.Array(Panel), drawer: Schema.optional(Schema.Boolean) }),
 ]);
 
 export type ServerFrame = typeof ServerFrame.Type;
@@ -227,6 +242,7 @@ export const ClientFrame = Schema.Union([
   Schema.TaggedStruct('AddServer', { name: Schema.String, url: Schema.String, token: Schema.String, resource: Schema.optional(Schema.String) }),
   Schema.TaggedStruct('RemoveServer', { id: Schema.String }),
   Schema.TaggedStruct('ListServers', {}),
+  Schema.TaggedStruct('Panel', { id: Schema.String, action: PanelAction }),
 ]);
 
 export type ClientFrame = typeof ClientFrame.Type;

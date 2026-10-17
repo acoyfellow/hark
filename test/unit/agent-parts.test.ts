@@ -145,6 +145,7 @@ describe('hark keeps its word', () => {
   it('spots a spoken promise', () => {
     expect(madeAPromise('Let me draw that for you.')).toBe(true);
     expect(madeAPromise("Sure, I'll make a heart.")).toBe(true);
+    expect(madeAPromise("I've removed the second panel.")).toBe(true);
     expect(madeAPromise('It is twenty degrees in Lisbon.')).toBe(false);
   });
 

@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const LANES = { L1: ['bun', ['scripts/v6/l1-keep-word.ts']], L2: ['bun', ['scripts/v6/l2-steps.ts']], L3: ['bun', ['scripts/v6/l3-still.ts']] };
+const LANES = { L1: ['bun', ['scripts/v6/l1-keep-word.ts']], L2: ['bun', ['scripts/v6/l2-steps.ts']], L3: ['bun', ['scripts/v6/l3-still.ts']], L4: ['bun', ['scripts/v6/l4-panels.ts']] };
 const lane = process.argv[process.argv.indexOf('--lane') + 1] ?? '';
 const entry = LANES[lane];
 if (entry === undefined) {

@@ -14,18 +14,22 @@ import {
   decodeClientFrame,
   encodeServerFrame,
   type McpServer,
+  Panel,
   type ServerFrame,
   type Settings,
   type SpeechEngine,
   SPEECH_SAMPLE_RATE,
   VOICES,
+  type Visual,
   type Voice,
   voicesFor,
 } from '../shared/protocol';
 import { refreshedToken, TOKEN_REFRESH_MARGIN_MS } from './auth/refresh';
 import { DIRECTORY_NAME, type Grant } from './directory';
 import { type Env, LOCAL_HEADER, TRACE_HEADER, LOCAL_OWNER, OWNER_HEADER } from './env';
+import { added as withPanel, changed, keepsAPanel, listed as panelList, type PanelChange } from './panels';
 import { systemPrompt } from './prompt';
+import { Schema } from 'effect';
 import { type ReplyPorts, type ReplyResult, reply } from './reply';
 import { speakable } from './sentences';
 import { UserSpeech } from './speech';
@@ -146,6 +150,30 @@ export class Hark extends VoiceAgent<Env> {
     this.sql`CREATE TABLE IF NOT EXISTS workspace_chunks (part INTEGER PRIMARY KEY, data TEXT NOT NULL)`;
   }
 
+  private panels(): Panel[] {
+    const raw = this.sql<{ value: string }>`SELECT value FROM settings WHERE key = 'panels'`[0]?.value ?? '[]';
+    const decoded = Schema.decodeUnknownOption(Schema.fromJsonString(Schema.Array(Panel)))(raw);
+    return decoded._tag === 'Some' ? [...decoded.value] : [];
+  }
+
+  private savePanels(connection: Connection | null, panels: readonly Panel[], drawer?: boolean) {
+    this.sql`INSERT OR REPLACE INTO settings (key, value) VALUES ('panels', ${JSON.stringify(panels)})`;
+    const frame: ServerFrame = drawer === undefined ? { _tag: 'Panels', panels } : { _tag: 'Panels', panels, drawer };
+    if (connection === null) for (const each of this.getConnections()) this.send(each, frame);
+    else this.send(connection, frame);
+  }
+
+  private show(connection: Connection, visual: Visual) {
+    this.send(connection, { _tag: 'Show', visual });
+    if (keepsAPanel(visual)) this.savePanels(connection, withPanel(this.panels(), visual, Date.now()));
+  }
+
+  private changePanels(connection: Connection, change: PanelChange, drawer?: boolean) {
+    const outcome = changed(this.panels(), change);
+    this.savePanels(connection, outcome.panels, drawer);
+    return outcome.note;
+  }
+
   override onConnect(connection: Connection, context: ConnectionContext) {
     const headers = context.request.headers;
 
@@ -223,6 +251,9 @@ export class Hark extends VoiceAgent<Env> {
         return;
       case 'AddServer':
         void this.addServer(frame.name, frame.url, frame.token, this.origin, frame.resource ?? '').then((outcome) => this.send(connection, { _tag: 'ServerNote', note: outcome.note, authUrl: outcome.authUrl }));
+        return;
+      case 'Panel':
+        this.changePanels(connection, { action: frame.action, which: frame.id });
         return;
       case 'RemoveServer':
         void this.removeServer(frame.id).then((note) => this.send(connection, { _tag: 'ServerNote', note, authUrl: null }));
@@ -313,7 +344,7 @@ export class Hark extends VoiceAgent<Env> {
 
     const result = await tool.run(args, this.toolHost(connection, this.caller(connection)));
 
-    if (result.visual !== undefined) this.send(connection, { _tag: 'Show', visual: result.visual });
+    if (result.visual !== undefined) this.show(connection, result.visual);
 
     return { content: result.content };
   }
@@ -649,6 +680,7 @@ export class Hark extends VoiceAgent<Env> {
         memories: this.memories().length,
       });
       this.send(connection, { _tag: 'Idle', beats: this.idleBeats() });
+      this.send(connection, { _tag: 'Panels', panels: this.panels() });
 
       return true;
     } catch (cause) {
@@ -845,6 +877,13 @@ export class Hark extends VoiceAgent<Env> {
         return { image: '', title: pageTitle(page.stdout, url), text: pageText(page.stdout, 6000) };
       },
       openWorkspace: (path) => this.send(connection, { _tag: 'OpenWorkspace', path }),
+      panels: {
+        list: () => {
+          this.savePanels(connection, this.panels(), true);
+          return panelList(this.panels());
+        },
+        change: (change) => this.changePanels(connection, change),
+      },
       setIdle: (beats) => {
         this.sql`INSERT OR REPLACE INTO settings (key, value) VALUES ('idle', ${JSON.stringify(beats)})`;
         this.send(connection, { _tag: 'Idle', beats: this.idleBeats() });
@@ -935,7 +974,7 @@ export class Hark extends VoiceAgent<Env> {
         return outcome;
       },
       doing: (label) => this.send(connection, { _tag: 'Doing', label }),
-      show: (visual) => this.send(connection, { _tag: 'Show', visual }),
+      show: (visual) => this.show(connection, visual),
       fail: (reason) => {
         trace('fault', { reason });
         if (SIGNED_OUT.test(reason)) {

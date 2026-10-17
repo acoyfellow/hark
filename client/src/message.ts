@@ -1,6 +1,6 @@
 import { Schema } from 'effect';
 import { defineMessageUnion } from 'foldkit/message';
-import { Brain, ServerFrame, SpeechEngine, Voice } from '../../shared/protocol';
+import { Brain, PanelAction, ServerFrame, SpeechEngine, Voice } from '../../shared/protocol';
 import { PushState, SettingsTab, WorkspaceEntry } from './model';
 
 export const Message = defineMessageUnion({
@@ -31,6 +31,8 @@ export const Message = defineMessageUnion({
   PickedEngine: { engine: SpeechEngine },
   ClickedSignOut: {},
   DismissedVisual: { id: Schema.String },
+  ClickedDrawer: {},
+  ClickedPanel: { id: Schema.String, action: PanelAction },
   DismissedFault: {},
   StartedEngine: {},
   FailedEngine: { reason: Schema.String },

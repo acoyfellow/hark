@@ -113,6 +113,7 @@ const onFrame = (model: Model, frame: ServerFrame): Return =>
       }),
       Sleep: ({ reason }): Return => ({ model: sleep(model, Option.some(reason)) }),
       Idle: ({ beats }): Return => ({ model: modifyFields(model, { idle: () => beats }) }),
+      Panels: ({ panels, drawer }): Return => ({ model: modifyFields(model, { panels: () => panels, drawer: (open) => drawer ?? open }) }),
       OpenWorkspace: ({ path }): Return => ({
         model: modifyFields(model, { workspace: (workspace) => ({ ...workspace, open: true, loading: true }), sheet: () => false }),
         commands: [LoadTree(), ...(path === null ? [] : [LoadFile({ path })])],
@@ -179,8 +180,14 @@ export const update = (model: Model, message: Message): Return =>
       return configure(model, { ...current, engine, voice });
     },
     ClickedSignOut: () => ({ model: sleep(model, Option.none()), commands: [SignOut()] }),
+    ClickedDrawer: () => ({ model: modifyFields(model, { drawer: (open) => !open }) }),
+    ClickedPanel: ({ id, action }) => ({
+      model: modifyFields(model, { panels: (panels) => (action === 'delete' ? panels.filter((panel) => panel.id !== id) : panels.map((panel) => (panel.id === id ? { ...panel, open: action === 'open' || action === 'pin' ? true : action === 'close' ? false : panel.open, pinned: action === 'pin' ? true : action === 'unpin' ? false : panel.pinned } : panel))) }),
+      commands: model.connected ? [Send({ frame: { _tag: 'Panel', id, action } })] : [],
+    }),
     DismissedVisual: ({ id }) => ({
-      model: modifyFields(model, { visuals: (visuals) => visuals.filter((visual) => visual.id !== id) }),
+      commands: model.connected && model.panels.some((panel) => panel.id === id) ? [Send({ frame: { _tag: 'Panel', id, action: 'close' } })] : [],
+      model: modifyFields(model, { visuals: (visuals) => visuals.filter((visual) => visual.id !== id), panels: (panels) => panels.map((panel) => (panel.id === id ? { ...panel, open: false } : panel)) }),
     }),
     DismissedFault: () => ({ model: modifyFields(model, { fault: () => Option.none() }) }),
     StartedEngine: () => ({ model: modifyFields(model, { connected: () => true }) }),

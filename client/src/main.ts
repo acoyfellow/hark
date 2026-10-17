@@ -29,6 +29,8 @@ export const initialModel = ({ local, now }: Flags): Model => ({
   settings: Option.none(),
   doing: Option.none(),
   visuals: [],
+  panels: [],
+  drawer: false,
   latency: Option.none(),
   fault: Option.none(),
   note: Option.none(),

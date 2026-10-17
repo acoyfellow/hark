@@ -121,17 +121,70 @@ const card = (h: H, model: Model, visual: Visual): Html => {
   }
 };
 
+const SIZE_WIDTH = { small: 'md:w-[260px]', medium: 'md:w-[340px]', large: 'md:w-[520px]' } as const;
+
+const shown = (model: Model) => {
+  const open = model.panels.filter((panel) => panel.open);
+  const stored = new Set(model.panels.map((panel) => panel.id));
+  const loose = model.visuals.filter((visual) => visual._tag !== 'Form' && !stored.has(visual.id));
+  const live = new Map(model.visuals.map((visual) => [visual.id, visual]));
+  return [
+    ...open.map((panel) => ({ visual: live.get(panel.id) ?? panel.visual, size: panel.size, pinned: panel.pinned })),
+    ...loose.map((visual) => ({ visual, size: 'medium' as const, pinned: false })),
+  ].toSorted((left, right) => Number(right.pinned) - Number(left.pinned));
+};
+
+const drawerRow = (h: H, panel: Model['panels'][number], index: number): Html =>
+  h.li(
+    [h.Class('flex items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.03] px-3 py-2.5'), h.DataAttribute('panel', panel.id), h.DataAttribute('panel-open', panel.open ? '1' : '0')],
+    [
+      h.span([h.Class('w-5 font-mono text-[11px] text-white/35')], [String(index + 1)]),
+      h.button(
+        [h.Type('button'), h.Class('min-w-0 flex-1 truncate text-left text-[13px] text-white/85 hover:text-white'), h.OnClick(Message.ClickedPanel({ id: panel.id, action: panel.open ? 'close' : 'open' }))],
+        [panel.title],
+      ),
+      h.span([h.Class('font-mono text-[10px] tracking-[0.1em] text-white/35 uppercase')], [panel.pinned ? 'pinned' : panel.open ? 'open' : panel.kind]),
+      h.button(
+        [h.Type('button'), h.AriaLabel(`Delete ${panel.title}`), h.Class('grid size-7 place-items-center rounded-full text-white/40 hover:bg-white/[0.06] hover:text-white'), h.OnClick(Message.ClickedPanel({ id: panel.id, action: 'delete' }))],
+        [icon(h, 'trash', 'size-3.5')],
+      ),
+    ],
+  );
+
+export const drawer = (h: H, model: Model): Html =>
+  model.drawer
+    ? h.aside(
+        [
+          h.Id('drawer'),
+          h.AriaLabel('Your panels'),
+          h.Class('glass pointer-events-auto fixed top-20 right-4 bottom-24 z-30 flex w-[min(92vw,340px)] flex-col gap-3 overflow-y-auto rounded-3xl p-4'),
+        ],
+        [
+          h.div(
+            [h.Class('flex items-center justify-between')],
+            [
+              h.p([h.Class('font-mono text-[10.5px] tracking-[0.14em] text-ember uppercase')], [`Panels · ${model.panels.length}`]),
+              h.button([h.Type('button'), h.AriaLabel('Close panels'), h.Class('grid size-7 place-items-center rounded-full text-white/50 hover:text-white'), h.OnClick(Message.ClickedDrawer())], [icon(h, 'close', 'size-3.5')]),
+            ],
+          ),
+          model.panels.length === 0
+            ? h.p([h.Class('text-[13px] text-white/45')], ['Nothing yet. Ask for a forecast, a picture or a report and it lands here.'])
+            : h.ol([h.Class('flex flex-col gap-1.5')], model.panels.toReversed().map((panel) => drawerRow(h, panel, model.panels.indexOf(panel)))),
+          h.p([h.Class('mt-auto text-[11.5px] leading-snug text-white/35')], ['Say "open the forecast again", "delete number two", "make it bigger" or "close all".']),
+        ],
+      )
+    : h.empty;
+
 export const visuals = (h: H, model: Model): Html =>
   h.section(
     [
       h.AriaLabel('What hark showed you'),
       h.AriaLive('polite'),
       h.Class(
-        'pointer-events-none flex w-full flex-col gap-3 md:absolute md:top-20 md:right-6 md:bottom-28 md:w-[340px] md:justify-start md:overflow-visible',
+        'pointer-events-none flex w-full flex-col gap-3 md:absolute md:top-20 md:right-6 md:bottom-28 md:w-auto md:items-end md:justify-start md:overflow-y-auto',
       ),
     ],
-    model.visuals
-      .filter((visual) => visual._tag !== 'Form')
+    shown(model)
       .toReversed()
-      .map((visual) => h.keyed('div')(visual.id, [h.Class(visual._tag === 'Image' ? 'visual-in painted-in' : 'visual-in')], [card(h, model, visual)])),
+      .map(({ visual, size }) => h.keyed('div')(visual.id, [h.Class(`${visual._tag === 'Image' ? 'visual-in painted-in' : 'visual-in'} ${SIZE_WIDTH[size]} md:self-end`), h.DataAttribute('size', size)], [card(h, model, visual)])),
   );
