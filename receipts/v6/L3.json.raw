@@ -1,0 +1,55 @@
+{
+  "lane": "L3",
+  "brain": "@cf/daily-co/phonellm-mini-alpha-2",
+  "passed": 6,
+  "total": 6,
+  "pass": true,
+  "outcomes": [
+    {
+      "prompt": "make a heart and stay perfectly still",
+      "ok": true,
+      "calls": [
+        "{\"beats\":[{\"kind\":\"solid\",\"value\":\"heart\",\"seconds\":1,\"motion\":\"still\",\"tint\":\"red\"}],\"hold\":true}",
+        "{\"beats\":[{\"kind\":\"solid\",\"value\":\"heart\",\"seconds\":12,\"motion\":\"still\",\"tint\":\"red\"}],\"hold\":true}"
+      ]
+    },
+    {
+      "prompt": "go solid, hold that shape",
+      "ok": true,
+      "calls": [
+        "{\"beats\":[{\"kind\":\"solid\",\"value\":\"sphere\",\"seconds\":1,\"motion\":\"still\",\"tint\":\"gold\"}],\"hold\":true}",
+        "{\"beats\":[{\"kind\":\"solid\",\"value\":\"sphere\",\"seconds\":1,\"motion\":\"still\",\"tint\":\"white\"}],\"hold\":true}"
+      ]
+    },
+    {
+      "prompt": "show a star and keep it there, do not move",
+      "ok": true,
+      "calls": [
+        "{\"beats\":[{\"kind\":\"solid\",\"value\":\"star\",\"seconds\":12,\"motion\":\"still\",\"tint\":\"gold\",\"hold\":true}]}",
+        "{\"beats\":[{\"kind\":\"solid\",\"value\":\"star\",\"seconds\":1,\"motion\":\"still\",\"tint\":\"yellow\",\"hold\":true}]}",
+        "{\"beats\":[{\"kind\":\"solid\",\"value\":\"star\",\"seconds\":1,\"motion\":\"still\"}],\"hold\":true}"
+      ]
+    },
+    {
+      "prompt": "make a perfectly still pink heart your default state",
+      "ok": true,
+      "calls": [
+        "{\"beats\":[{\"kind\":\"solid\",\"value\":\"heart\",\"seconds\":1,\"motion\":\"still\",\"tint\":\"pink\"}],\"idle\":true,\"hold\":true}"
+      ]
+    },
+    {
+      "prompt": "show me a blue circle",
+      "ok": true,
+      "calls": [
+        "{\"beats\":[{\"kind\":\"solid\",\"value\":\"circle\",\"seconds\":3,\"motion\":\"still\",\"tint\":\"blue\"}]}"
+      ]
+    },
+    {
+      "prompt": "ok you can move again",
+      "ok": true,
+      "calls": [
+        "{\"beats\":[{\"kind\":\"emoji\",\"value\":\"😊\",\"seconds\":1,\"motion\":\"spin\",\"tint\":\"gold\"}],\"hold\":false}"
+      ]
+    }
+  ]
+}
