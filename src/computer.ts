@@ -85,7 +85,10 @@ export const sandboxComputer = (container: Container, image: string): Computer =
     boot: async (secrets, fresh = false, egress) => {
       env = { ...SHELL_ENV, ...secrets };
 
-      if (container.running && !fresh) return;
+      if (container.running && !fresh) {
+        if (egress !== undefined) await container.interceptOutboundHttp(egress.host, egress.binding).catch(() => undefined);
+        return;
+      }
 
       if (container.running) await container.destroy().catch(() => undefined);
 

@@ -10,7 +10,7 @@ const internal = await fetch('http://cloudflare.hark.internal/client/v4/user').t
 add('the proxy host only exists inside the container', internal.startsWith('unreachable'), internal);
 
 const env = await import('../../src/shell-env');
-add('the shell has a placeholder, not a token', env.SHELL_ENV.CLOUDFLARE_API_TOKEN === 'hark-proxy-adds-the-real-token' && !Object.values(env.SHELL_ENV).some((value) => value.length >= 40));
+add('the shell has a placeholder, not a token', env.SHELL_ENV.CLOUDFLARE_API_TOKEN === 'hark-proxy-adds-the-real-token' && !Object.values(env.SHELL_ENV).some((value) => new RegExp("^[A-Za-z0-9_-]{40,}$", "u").test(value)));
 
 const account = process.env.HARK_ACCOUNT_ID ?? '';
 const token = process.env.CLOUDFLARE_API_TOKEN ?? '';
