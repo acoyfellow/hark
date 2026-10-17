@@ -1,0 +1,319 @@
+{
+  "lane": "L1",
+  "brain": "@cf/daily-co/phonellm-mini-alpha-2",
+  "kept": 30,
+  "acted": 30,
+  "rescued": 1,
+  "total": 30,
+  "before": 0.9666666666666667,
+  "rate": 1,
+  "pass": true,
+  "outcomes": [
+    {
+      "prompt": "draw me a heart",
+      "said": "Let me draw that for you now.\n\nThere it is — a glowing heart, beating right on your screen.",
+      "tools": [
+        "draw"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "show me a cat",
+      "said": "Let me paint you a cat, right now.\n\nThere she is — a sleek tabby curled up on a sunlit windowsill, tail flicking, eyes half-lidded with contentment.",
+      "tools": [
+        "imagine"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "make a spinning cube",
+      "said": "Let me spin one up for you.\n\nThere it is — a glowing cube, turning slow and steady, like a planet in a quiet sky. Want me to make it your default, so it's alway",
+      "tools": [
+        "show_form"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "count down from five",
+      "said": "Let me count that down for you.\n\nFive, four, three, two, one — and here comes the fireworks!\n\n(Exploding embers fill the screen, then fade into a warm glow.)",
+      "tools": [
+        "show_form",
+        "show_form"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "paint a sunset",
+      "said": "Let me paint that for you.\nLet me paint that for you.\n\nThere — a slow-burning sunset, orange bleeding into violet, the embers painting the sky.",
+      "tools": [
+        "paintingpainting"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "show me a rocket",
+      "said": "Let me build you a little rocket, ready to launch.\n\nHere it comes — a sleek silver rocket with a fiery orange cone, ready to soar. (I used model, and it's now s",
+      "tools": [
+        "model"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "can you make a star",
+      "said": "Let me make you a star, right now.\n\nThere it is — a bright, spinning star, made of embers. Want it to stay as your default, or shall we do something else?",
+      "tools": [
+        "show_form"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "do a little dance",
+      "said": "Let me spin up a quick jig for you.\n\nHere we go — three, two, one, and a little ember shimmy!\n\nOkay, that's enough twirling for one morning — I'll settle back i",
+      "tools": [
+        "show_form",
+        "show_form"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "show me the word hello",
+      "said": "Let me paint that for you.\n\nHere it is — a warm, glowing hello, traced in embers.\n\nIt's just a word, but it's yours now — a little ember-light greeting, right t",
+      "tools": [
+        "show_form",
+        "show_form"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "make it rain",
+      "said": "Let me make it rain for you.\n\nHere comes the rain — a soft, silver shower of embers, each drop a tiny sparkle falling from a cloud I'm painting above you. (I us",
+      "tools": [
+        "show_form"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "build me a 3d house",
+      "said": "Let me build you a cozy little house, one ember at a time.\n\nThere it is — a warm, little cottage with a slanted roof and a front door, all glowing in embers. Wa",
+      "tools": [
+        "model"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "show a smiley face",
+      "said": "Let me paint that for you.\n\nThere we go — a warm, glowing smiley, right here on your screen.",
+      "tools": [
+        "imagine"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "set a timer for two minutes",
+      "said": "Let me set that for you.\n\nYour two-minute timer is running now.",
+      "tools": [
+        "set_timer"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "remember that I like tea",
+      "said": "Got it, I'll keep that in mind. What would you like to do next?Right, Let me remember that for you.\n\nDone. I've got that noted. What would you like to do next?",
+      "tools": [
+        "remember"
+      ],
+      "nudged": true,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "show me a fish swimming",
+      "said": "Let me paint that for you.\n\nThere — a silver fish with a tail that flicks like a brushstroke, swimming through water that glows like liquid glass.",
+      "tools": [
+        "imagine"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "draw a lighthouse",
+      "said": "Let me paint that for you.\n\nThere it is — a lighthouse standing tall against the sea, its light cutting through the mist.",
+      "tools": [
+        "imagine"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "make a pink heart and keep it still",
+      "said": "Let me make that for you now.\n\nThere it is — a soft pink heart, glowing gently and still. It's yours.",
+      "tools": [
+        "show_form"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "show me a tree",
+      "said": "Let me grow one for you.\n\nHere's a little tree, growing right before your eyes. (I used show_form with a growing tree animation.)",
+      "tools": [
+        "show_form"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "turn into a circle",
+      "said": "Let me make you a circle, one smooth loop of embers.\n\nThere — a perfect circle, glowing steady. Want me to keep it as your default, or shall we do something els",
+      "tools": [
+        "show_form"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "go square",
+      "said": "Let me make that for you.\n\nThere it is — a square, glowing in embers. Want me to make it your default, or add a little motion to it?",
+      "tools": [
+        "show_form"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "make fireworks",
+      "said": "Let me make you a firework show.\n\nHere it comes — three, two, one, fireworks!\n\nBoom! (I used show_form.)",
+      "tools": [
+        "show_form",
+        "show_form"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "show me the number seven",
+      "said": "Let me make that for you.\n\nHere's the number seven, glowing in the swarm.\n\nSeven, made of embers, right there.",
+      "tools": [
+        "show_form",
+        "show_form"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "draw a mountain",
+      "said": "Let me draw that for you.\n\nThere it is — a jagged mountain rising from the embers, its peak dusted with snow.",
+      "tools": [
+        "draw"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "show me a moon",
+      "said": "Let me paint you a moon.\n\nThere it is — a soft, glowing moon, hanging in the dark. (I used painting.)",
+      "tools": [
+        "imagine"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "make a snowflake",
+      "said": "Let me make you a snowflake.\n\nHere's your snowflake, made of glowing embers. (I used show_form with a snowflake solid, 3 seconds, spin.)",
+      "tools": [
+        "show_form"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "show me a spiral",
+      "said": "Let me spin one up for you.\n\nHere's a glowing spiral, swirling slow and steady.\n\nIt's a golden helix of embers, turning like a galaxy in your palm.",
+      "tools": [
+        "show_form",
+        "show_form"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "show me an arrow pointing up",
+      "said": "Let me draw that for you.\n\nThere it is — a clean arrow pointing up, drawn in glowing embers.",
+      "tools": [
+        "show_form"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "make a flower",
+      "said": "Let me paint one for you.\n\nThere — a glowing flower, petals unfurling in ember light. It's yours now.",
+      "tools": [
+        "painting"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "show a thumbs up",
+      "said": "Let me show you a thumbs up.\n\nThere it is — a glowing thumbs up, right here in the embers.",
+      "tools": [
+        "show_form"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    },
+    {
+      "prompt": "spell cat",
+      "said": "C-A-T. Here's a little cat for you.\n\n(Showing a small, sleepy cat curled up, drawn in glowing embers, its tail flicking once.)",
+      "tools": [
+        "imagine"
+      ],
+      "nudged": false,
+      "promised": true,
+      "kept": true
+    }
+  ]
+}
