@@ -1,0 +1,25 @@
+scripts/v6-gate.mjs
+  s_ea178a5ab7ff56::t_f441c85a5613ec 1-28
+scripts/v6-live.mjs
+  s_ea178a5ab7ff56::t_271db09c12e941 1-20
+scripts/v6/l1-keep-word.ts
+  s_ea178a5ab7ff56::t_9ddf5fb2f0cba7 1-70
+test/unit/agent-parts.test.ts
+  s_ea178a5ab7ff56::t_44810d4e33c4ba 2,143-171
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "5aa73da5299418237e2d9c473b103aec10d35d45",
+  "prompts": {},
+  "sessions": {
+    "s_ea178a5ab7ff56": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a14446-f4ef-749e-8408-b0c86e1608dd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
