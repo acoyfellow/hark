@@ -277,6 +277,65 @@ await scenario('a 3D model beat sculpts an object in the swarm', async () => {
   await page.screenshot({ path: `${SHOTS}/model-rocket-desktop.png` });
 });
 
+await scenario('stay still holds a pink heart perfectly still, and a pink heart default survives a reload', async () => {
+  const look = await page.locator('#swarm').getAttribute('data-look');
+  if (look === 'asleep') await awake();
+  const holdHeart = async () => {
+    const held = await runTool('show_form', { hold: true, beats: [{ kind: 'solid', value: 'heart', seconds: 2, motion: 'still', tint: 'pink' }] });
+    if (held.error !== undefined) throw new Error(held.error);
+    await page.waitForFunction(() => document.querySelector('#swarm')?.dataset.held === '1', null, { timeout: 10000 });
+    await page.waitForTimeout(4000);
+  };
+  const frame = async () => {
+    const shot = (await page.screenshot({ type: 'png', clip: { x: 520, y: 160, width: 320, height: 300 } })).toString('base64');
+    return page.evaluate(async (data) => {
+      const image = new Image();
+      image.src = `data:image/png;base64,${data}`;
+      await image.decode();
+      const probe = document.createElement('canvas');
+      probe.width = 96;
+      probe.height = 60;
+      const g = probe.getContext('2d');
+      g.drawImage(image, 0, 0, 96, 60);
+      return Array.from(g.getImageData(0, 0, 96, 60).data);
+    }, shot);
+  };
+  const formId = () => page.evaluate(() => { const swarm = document.querySelector('#swarm'); return `${swarm?.dataset.formId}|${swarm?.dataset.paintId}|${swarm?.dataset.held}`; });
+  let drift = Number.POSITIVE_INFINITY;
+  let second = [];
+  let tries = 0;
+  for (; tries < 5 && drift === Number.POSITIVE_INFINITY; tries += 1) {
+    await holdHeart();
+    const before = await formId();
+    const first = await frame();
+    await page.waitForTimeout(5000);
+    const after = await frame();
+    if ((await formId()) !== before || !before.endsWith('|1')) continue;
+    second = after;
+    drift = first.reduce((total, value, index) => total + Math.abs(value - after[index]), 0) / first.length;
+  }
+  if (drift === Number.POSITIVE_INFINITY) throw new Error('never got a clean 5 s window: a scripted turn replaced the shape every try');
+  await page.screenshot({ path: `${SHOTS}/held-pink-heart-desktop.png` });
+  const state = await page.evaluate(() => { const swarm = document.querySelector('#swarm'); return `${swarm?.dataset.look} held=${swarm?.dataset.held} shaped=${swarm?.dataset.shaped}`; });
+  if (drift > 6) throw new Error(`the held shape moved: mean pixel drift ${drift.toFixed(2)} (${state}, tries ${tries})`);
+  const pinkish = Array.from({ length: second.length / 4 }, (_, at) => [second[at * 4], second[at * 4 + 1], second[at * 4 + 2]]).filter(([red, green, blue]) => red > 140 && blue > green + 20 && red > green + 40).length;
+  if (pinkish < 20) throw new Error(`the heart is not pink (${pinkish} pink pixels)`);
+  await page.screenshot({ path: `${SHOTS}/held-pink-heart-desktop.png` });
+  if (!(await page.evaluate(() => document.querySelector('#swarm')?.dataset.held === '1'))) throw new Error('hold let go by itself');
+  await runTool('show_form', { hold: false, beats: [] });
+  await page.waitForFunction(() => document.querySelector('#swarm')?.dataset.held === '', null, { timeout: 10000 });
+  await runTool('show_form', { idle: true, beats: [{ kind: 'solid', value: 'heart', seconds: 6, motion: 'still', tint: 'pink' }] });
+  await page.waitForFunction(() => (document.querySelector('#swarm')?.dataset.idleBeats ?? '').includes('#ff5fa2'), null, { timeout: 10000 });
+  await page.reload();
+  await page.waitForTimeout(1500);
+  await awake();
+  await page.waitForFunction(() => (document.querySelector('#swarm')?.dataset.idleBeats ?? '') !== '[]', null, { timeout: 10000 }).catch(() => undefined);
+  const idle = await page.evaluate(() => document.querySelector('#swarm')?.dataset.idleBeats ?? '');
+  await runTool('show_form', { idle: true, beats: [] });
+  if (!idle.includes('pink') && !idle.includes('#ff5fa2')) throw new Error(`the default did not survive a reload: ${idle.slice(0, 120)}`);
+  return { drift: Number(drift.toFixed(2)), pinkish, tries };
+});
+
 await scenario('the durable computer runs a command and shows a terminal card', async () => {
   const result = await runTool('terminal', { command: 'cd /workspace && ls -la && node -v' });
 

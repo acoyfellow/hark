@@ -262,6 +262,12 @@ const changeVoice: Definition = {
 
 const isFormKind = (value: string): value is FormKind => FORM_KINDS.some((kind) => kind === value);
 
+const HEX = /^#[0-9a-f]{6}$/iu;
+
+const NAMED_TINTS: Readonly<Record<string, string>> = { pink: '#ff5fa2', red: '#ff2a2a', blue: '#3d8bff', green: '#2fd27a', purple: '#a35cff', white: '#f4f4f4', gold: '#ffc24a', orange: '#ff7a1a', teal: '#21d4c4', yellow: '#ffe14a' };
+
+const tintOf = (raw: string): string | undefined => (HEX.test(raw) ? raw.toLowerCase() : NAMED_TINTS[raw.toLowerCase()]);
+
 const isMotion = (value: string): value is FormMotion => FORM_MOTIONS.some((motion) => motion === value);
 
 const SHORT_WORD = 16;
@@ -284,6 +290,7 @@ const beatOf = (raw: unknown): Beat | BeatProblem => {
   const seconds = Math.min(12, Math.max(1, Number.isFinite(num(item.seconds)) ? num(item.seconds) : 4));
 
   const still = isMotion(motion) ? motion : 'still';
+  const tint = tintOf(str(item.tint));
   const asWord = (text: string): Beat => ({ kind: 'word', value: text.slice(0, SHORT_WORD), seconds, motion: still });
   const asPainting = (prompt: string): Beat => ({ kind: 'painting', value: prompt, seconds, motion: still });
 
@@ -307,7 +314,7 @@ const beatOf = (raw: unknown): Beat | BeatProblem => {
 
   if (broken !== null) return { problem: `the ${kind} beat ${broken}. Fix it and call show_form again` };
 
-  return { kind, value, seconds, motion: still };
+  return tint === undefined ? { kind, value, seconds, motion: still } : { kind, value, seconds, motion: still, tint };
 };
 
 const isProblem = (beat: Beat | BeatProblem): beat is BeatProblem => 'problem' in beat;
@@ -330,7 +337,7 @@ const staticProgramProblem = (body: string): string | null => {
 
 const showForm: Definition = {
   name: 'show_form',
-  label: (args) => (list(args.beats).length > 1 ? 'Putting on a show' : 'Shaping it'),
+  label: (args) => (list(args.beats).length > 1 ? 'Putting on a show' : args.hold === true ? 'Holding it' : 'Shaping it'),
   description: [
     'The glowing ember swarm on their screen is your body and your face. This is how you show things, joke, and feel. Use it often and boldly, in nearly every answer, while you talk.',
     'Send one beat for a single shape, or up to twelve beats to play a movie: a seed that sprouts into a flower, a rocket that becomes a star, a countdown 3 2 1 then fireworks.',
@@ -347,6 +354,8 @@ const showForm: Definition = {
     '- "painting": a short image prompt; a real picture is painted and the swarm becomes it. Slow (a few seconds), so use it for the big moments.',
     `Each beat has seconds (1 to 12) and motion: ${FORM_MOTIONS.join(', ')}.`,
     'If someone asks you to make, show, draw or animate anything, always try. Prefer model for objects and 3D, code for motion, svg for scenes. Never refuse.',
+    `Each beat may have tint: a color for the embers, a #rrggbb hex or one of ${Object.keys(NAMED_TINTS).join(', ')}. Use it whenever they name a color ("a pink heart").`,
+    'Set hold to true to keep the last beat on screen until something else replaces it, even while you talk. Use it for "stay still", "go solid", "hold that", "keep it", long stories, and any time they want it to stay. Combine with motion "still" for a perfectly still shape. Call with hold false and no beats when they say "move again" or "let go".',
     'Set idle to true to make these beats your new resting shape: what the swarm loops whenever nothing else is showing, until changed again. Use it when they say "make that your default", "stay as X", "idle as X". Set idle true with no beats to go back to the plain ring.',
     'Then keep talking. Never describe the shape, never read out the path or the code.',
   ].join('\n'),
@@ -361,25 +370,32 @@ const showForm: Definition = {
             value: { type: 'string', description: 'The emoji, word, icon name, solid name, SVG path data, SVG markup, JavaScript body, or painting prompt.' },
             seconds: { type: 'number', description: 'How long this beat holds, 1 to 12.' },
             motion: { type: 'string', enum: [...FORM_MOTIONS] },
+            tint: { type: 'string', description: 'Optional ember color: #rrggbb or a color name.' },
           },
           ['kind', 'value'],
         ),
       },
       idle: { type: 'boolean', description: 'Make these beats the resting shape that loops when nothing else is showing.' },
+      hold: { type: 'boolean', description: 'Keep the last beat on screen until replaced. False with no beats lets go.' },
     },
     ['beats'],
   ),
   run: async (args, host) => {
     const raw = list(args.beats).length > 0 ? list(args.beats) : args.kind === undefined ? [] : [args];
+    const holding = args.hold === true || raw.some((beat) => rec(beat).hold === true);
     const checked = raw.slice(0, MAX_BEATS).map(beatOf);
     const problems = checked.filter(isProblem).map((beat) => beat.problem);
     const good = checked.filter((beat): beat is Beat => !isProblem(beat));
 
-    if (args.idle === true && raw.length === 0) {
+    if (args.hold === false && raw.length === 0) return { content: 'Let go. The swarm moves freely again.', visual: { _tag: 'Form', id: host.id(), beats: [], hold: false } };
+
+    if (args.idle === true && raw.length === 0 && !holding) {
       host.setIdle([]);
 
       return { content: 'Back to the plain resting ring.' };
     }
+
+    if (holding && raw.length === 0) return { content: 'Holding what is on screen.', visual: { _tag: 'Form', id: host.id(), beats: [], hold: true } };
 
     if (good.length === 0) return { content: `Nothing was shown: ${problems.join('; ') || 'the beats were empty, probably cut off; send a shorter one'}. Call show_form again now with the fix.` };
 
@@ -391,7 +407,7 @@ const showForm: Definition = {
 
     return {
       content: `${problems.length === 0 ? 'It is playing on their screen.' : `It is playing, but some beats were skipped: ${problems.join('; ')}.`}${args.idle === true ? ' It is now your resting shape, saved for next time.' : ''} Do not describe it.`,
-      visual: { _tag: 'Form', id: host.id(), beats },
+      visual: holding ? { _tag: 'Form', id: host.id(), beats, hold: true } : { _tag: 'Form', id: host.id(), beats },
     };
   },
 };

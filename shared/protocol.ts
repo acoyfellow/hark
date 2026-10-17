@@ -109,7 +109,7 @@ export const FormMotion = Schema.Literals(FORM_MOTIONS);
 
 export type FormMotion = typeof FormMotion.Type;
 
-export const Beat = Schema.Struct({ kind: FormKind, value: Schema.String, seconds: Schema.Number, motion: FormMotion });
+export const Beat = Schema.Struct({ kind: FormKind, value: Schema.String, seconds: Schema.Number, motion: FormMotion, tint: Schema.optional(Schema.String) });
 
 export type Beat = typeof Beat.Type;
 
@@ -158,7 +158,7 @@ export const Visual = Schema.Union([
   }),
   Schema.TaggedStruct('Memory', { id: Schema.String, text: Schema.String, forgotten: Schema.Boolean }),
   Schema.TaggedStruct('Glimpse', { id: Schema.String, src: Schema.String }),
-  Schema.TaggedStruct('Form', { id: Schema.String, beats: Schema.Array(Beat) }),
+  Schema.TaggedStruct('Form', { id: Schema.String, beats: Schema.Array(Beat), hold: Schema.optional(Schema.Boolean) }),
   Schema.TaggedStruct('Widget', { id: Schema.String, widget: Widget }),
 ]);
 

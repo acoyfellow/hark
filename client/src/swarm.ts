@@ -38,9 +38,14 @@ type Shape = {
   readonly motion: Motion;
   readonly bornAt: number;
   readonly program: Program | null;
+  readonly tint: Color | null;
 };
 
-type BeatData = { readonly kind: string; readonly value: string; readonly seconds: number; readonly motion: string };
+type BeatData = { readonly kind: string; readonly value: string; readonly seconds: number; readonly motion: string; readonly tint?: string };
+
+const HELD_MS = 1e9;
+
+const tintColor = (hex: string | undefined) => (hex !== undefined && /^#[0-9a-f]{6}$/iu.test(hex) ? new Color(hex) : null);
 
 type Look = 'asleep' | 'waking' | 'listening' | 'hearing' | 'thinking' | 'speaking';
 
@@ -93,19 +98,19 @@ const PICTURE_HOLD_MS = 2600;
 
 const VERTEX = `
 attribute float tone; attribute float seed; attribute float heat; attribute float formed;
-uniform float uTime; uniform float uLevel; uniform float uDpr; uniform float uBoost;
+uniform float uTime; uniform float uLevel; uniform float uDpr; uniform float uBoost; uniform float uStill;
 varying float vTone; varying float vAlpha;
 void main() {
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * mv;
-  float twinkle = 0.75 + 0.25 * sin(uTime * 2.0 + seed * 40.0);
-  gl_PointSize = (1.3 + seed * 1.8 + formed * (0.8 + uBoost) + heat * 2.8 + uLevel * 1.2) * uDpr * (14.0 / -mv.z);
+  float twinkle = mix(0.75 + 0.25 * sin(uTime * 2.0 + seed * 40.0), 0.9, uStill);
+  gl_PointSize = (1.3 + seed * 1.8 + formed * (0.8 + uBoost) + heat * 2.8 + uLevel * 1.2 * (1.0 - uStill)) * uDpr * (14.0 / -mv.z);
   vTone = clamp(tone + heat * 0.35, 0.0, 1.0);
   vAlpha = twinkle * mix(0.32 + 0.6 * tone, 0.85 + 0.7 * tone, formed);
 }`;
 
 const FRAGMENT = `
-uniform vec3 uRamp[6];
+uniform vec3 uRamp[6]; uniform vec3 uTint; uniform float uTintMix;
 varying float vTone; varying float vAlpha;
 vec3 ramp(float t) {
   float x = t * 5.0; int i = int(floor(x)); float f = fract(x);
@@ -118,7 +123,8 @@ void main() {
   float d = length(gl_PointCoord - 0.5);
   if (d > 0.5) discard;
   float a = smoothstep(0.5, 0.0, d) * vAlpha;
-  gl_FragColor = vec4(ramp(vTone) * a, a);
+  vec3 tinted = mix(uTint * 0.25, mix(uTint, vec3(1.0), 0.35), vTone);
+  gl_FragColor = vec4(mix(ramp(vTone), tinted, uTintMix) * a, a);
 }`;
 
 const dynamic = (array: Float32Array, size: number) => new BufferAttribute(array, size).setUsage(DynamicDrawUsage);
@@ -177,6 +183,9 @@ export const startSwarm = (host: HTMLElement) => {
     blending: AdditiveBlending,
     uniforms: {
       uBoost: { value: 0 },
+      uStill: { value: 0 },
+      uTint: { value: new Color('#ffffff') },
+      uTintMix: { value: 0 },
       uTime: { value: 0 },
       uLevel: { value: 0 },
       uDpr: { value: renderer.getPixelRatio() },
@@ -198,6 +207,7 @@ export const startSwarm = (host: HTMLElement) => {
     formKey: '',
     playing: false,
     idling: false,
+    held: false,
     paintKey: '',
     show: 0,
     shocks: [] as number[],
@@ -238,6 +248,9 @@ export const startSwarm = (host: HTMLElement) => {
     state.shapeUntil = performance.now() + millis;
     state.used = shape.program !== null ? PROGRAM_PARTICLES : Math.min(count, Math.round(shape.dots.length * (shape.picture ? 1 : shape.solid ? 1.4 : 0.9)));
     material.uniforms.uBoost!.value = shape.picture ? 0.7 : 0.35;
+    material.uniforms.uStill!.value = shape.motion === 'still' ? 1 : 0;
+    material.uniforms.uTintMix!.value = shape.tint === null ? 0 : 1;
+    if (shape.tint !== null) (material.uniforms.uTint!.value as Color).copy(shape.tint);
 
     for (let index = 0; index < count; index += 1)
       toneGoal[index] = index < state.used ? shape.dots[index % shape.dots.length]![3] : shape.picture ? 0.02 : 0.12 + seed[index]! * 0.15;
@@ -249,13 +262,15 @@ export const startSwarm = (host: HTMLElement) => {
     state.shape?.program?.stop();
     state.shape = null;
     material.uniforms.uBoost!.value = 0;
+    material.uniforms.uStill!.value = 0;
+    material.uniforms.uTintMix!.value = 0;
   };
 
   const SCALES = { flat: 4.6, solid: 7.5, picture: 6.4, program: 3.4 };
 
   const PROGRAM_PARTICLES = Math.min(count, 6000);
 
-  const play = async (beats: readonly BeatData[], idling = false) => {
+  const play = async (beats: readonly BeatData[], idling = false, held = false) => {
     state.show += 1;
 
     const show = state.show;
@@ -264,16 +279,22 @@ export const startSwarm = (host: HTMLElement) => {
     state.idling = idling;
     const prepared = await Promise.all(beats.map(async (beat) => ({ beat, ...(await dotsFor(beat)) })));
 
-    for (const { beat, dots, picture, solid, code } of prepared) {
+    for (const [index, { beat, dots, picture, solid, code }] of prepared.entries()) {
       if (show !== state.show) return;
 
       if (dots.length === 0) continue;
 
-      const millis = Math.min(12, Math.max(1, Number(beat.seconds) || 4)) * 1000;
+      const last = index === prepared.length - 1;
+      const millis = held && last ? HELD_MS : Math.min(12, Math.max(1, Number(beat.seconds) || 4)) * 1000;
 
       const program = code ? startProgram(beat.value, PROGRAM_PARTICLES) : null;
 
-      hold({ dots, picture, solid, program, motion: code ? 'still' : motionOf(beat.motion), bornAt: performance.now(), scale: code ? SCALES.program : picture ? SCALES.picture : solid ? SCALES.solid : SCALES.flat }, millis);
+      hold({ dots, picture, solid, program, tint: tintColor(beat.tint), motion: code ? 'still' : motionOf(beat.motion), bornAt: performance.now(), scale: code ? SCALES.program : picture ? SCALES.picture : solid ? SCALES.solid : SCALES.flat }, millis);
+      if (held && last) {
+        state.held = true;
+        return;
+      }
+
       await new Promise((resolve) => setTimeout(resolve, millis));
     }
 
@@ -294,7 +315,25 @@ export const startSwarm = (host: HTMLElement) => {
     if (key === '' || key === state.formKey) return;
 
     state.formKey = key;
-    void play(beatsOf(host.dataset.formBeats ?? '[]'));
+    const beats = beatsOf(host.dataset.formBeats ?? '[]');
+
+    if (beats.length === 0 && host.dataset.formHold === '1') {
+      state.held = state.shape !== null;
+      if (state.held) state.show += 1;
+      state.playing = state.held;
+      return;
+    }
+
+    state.held = false;
+
+    if (beats.length === 0 && host.dataset.formHold === '0') {
+      state.show += 1;
+      state.playing = false;
+      release();
+      return;
+    }
+
+    void play(beats, false, host.dataset.formHold === '1');
   };
 
   const readPaint = () => {
@@ -304,6 +343,7 @@ export const startSwarm = (host: HTMLElement) => {
     if (key === '' || key === state.paintKey || src === '') return;
 
     state.paintKey = key;
+    state.held = false;
     void play([{ kind: 'painting', value: src, seconds: PICTURE_HOLD_MS / 1000, motion: 'still' }]);
   };
 
@@ -315,10 +355,11 @@ export const startSwarm = (host: HTMLElement) => {
     const k = index / count;
     const { x: cx, y: cy } = state.center;
     const shape = state.shape;
-    const shaping = shape !== null && state.look !== 'thinking';
+    const shaping = shape !== null && (state.look !== 'thinking' || state.held);
 
     if (shaping && index >= state.used) {
-      const angle = s * Math.PI * 2 + time * 0.08 * (s - 0.5);
+      const drift = shape.motion === 'still' ? 0 : time;
+      const angle = s * Math.PI * 2 + drift * 0.08 * (s - 0.5);
       const radius = (shape.picture ? 6 : 2.6) + s * 3.2;
 
       out[0] = cx + Math.cos(angle) * radius;
@@ -342,12 +383,12 @@ export const startSwarm = (host: HTMLElement) => {
       const dot = shape.dots[index % shape.dots.length]!;
       const age = (performance.now() - shape.bornAt) / 1000;
       const motion = shape.motion;
-      const voice = state.look === 'speaking' ? 1 + state.level * 0.06 : 1;
+      const voice = state.look === 'speaking' && motion !== 'still' ? 1 + state.level * 0.06 : 1;
       const pulse = motion === 'pulse' ? 1 + Math.sin(age * 6) * 0.08 : 1;
       const burst = motion === 'explode' ? 1 + Math.max(0, age - 1.2) * 2.2 : 1;
       const scale = shape.scale * voice * pulse * burst;
-      const yaw = shape.solid ? age * (motion === 'spin' || motion === 'tumble' ? 1.4 : 0.35) : motion === 'spin' ? Math.sin(age * 1.6) * 0.9 : motion === 'sway' ? Math.sin(age * 2) * 0.35 : 0;
-      const pitch = shape.solid ? 0.35 + (motion === 'tumble' ? age * 0.9 : Math.sin(age * 0.5) * 0.25) : 0;
+      const yaw = shape.solid && motion === 'still' ? 0.5 : shape.solid ? age * (motion === 'spin' || motion === 'tumble' ? 1.4 : 0.35) : motion === 'spin' ? Math.sin(age * 1.6) * 0.9 : motion === 'sway' ? Math.sin(age * 2) * 0.35 : 0;
+      const pitch = shape.solid && motion === 'still' ? 0.35 : shape.solid ? 0.35 + (motion === 'tumble' ? age * 0.9 : Math.sin(age * 0.5) * 0.25) : 0;
       const lift = motion === 'bounce' ? Math.abs(Math.sin(age * 4)) * 0.7 : 0;
       const depth = shape.solid ? 1 : 0.25;
       const x0 = dot[0] * scale;
@@ -357,11 +398,12 @@ export const startSwarm = (host: HTMLElement) => {
       const z1 = -x0 * Math.sin(yaw) + z0 * Math.cos(yaw);
       const y1 = y0 * Math.cos(pitch) - z1 * Math.sin(pitch);
       const z2 = y0 * Math.sin(pitch) + z1 * Math.cos(pitch);
-      const wobble = state.look === 'speaking' ? Math.sin(time * 13 + s * 6) * state.level * 0.03 : Math.sin(time * 1.3 + s * 9) * 0.012;
+      const calm = motion === 'still' ? 0 : 1;
+      const wobble = calm * (state.look === 'speaking' ? Math.sin(time * 13 + s * 6) * state.level * 0.03 : Math.sin(time * 1.3 + s * 9) * 0.012);
 
       out[0] = cx + x1 + wobble;
       out[1] = cy + y1 + lift + wobble;
-      out[2] = z2 + (s - 0.5) * 0.03;
+      out[2] = z2 + (s - 0.5) * 0.03 * calm;
       return;
     }
 
@@ -426,14 +468,14 @@ export const startSwarm = (host: HTMLElement) => {
     readForm();
     readPaint();
 
-    if (state.shape !== null && (now > state.shapeUntil || (state.look === 'asleep' && !state.idling))) release();
+    if (state.shape !== null && !state.held && (now > state.shapeUntil || (state.look === 'asleep' && !state.idling))) release();
 
     readIdle();
 
-    anchor();
+    if (!state.held) anchor();
 
     const stiffness = state.look === 'asleep' ? 2.2 : state.look === 'thinking' ? 13 : 7.5;
-    const shaping = state.shape !== null && state.look !== 'thinking';
+    const shaping = state.shape !== null && (state.look !== 'thinking' || state.held);
     const baseTone = LOOK_TONE[state.look];
     const { x: cx, y: cy } = state.center;
 
@@ -487,6 +529,7 @@ export const startSwarm = (host: HTMLElement) => {
     material.uniforms.uTime!.value = time;
     material.uniforms.uLevel!.value = state.level;
     host.dataset.shaped = shaping ? (state.shape?.picture ? 'picture' : 'form') : '';
+    host.dataset.held = state.held ? '1' : '';
     composer.render();
     handle = requestAnimationFrame(step);
   };

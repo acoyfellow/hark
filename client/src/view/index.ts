@@ -167,6 +167,7 @@ const swarm = (h: H, model: Model): Html => {
       h.DataAttribute('look', model.look),
       h.DataAttribute('form-id', form?.id ?? ''),
       h.DataAttribute('form-beats', JSON.stringify(form?.beats ?? [])),
+      h.DataAttribute('form-hold', form?.hold === true ? '1' : form?.hold === false ? '0' : ''),
       h.DataAttribute('idle-beats', JSON.stringify(model.idle)),
       h.DataAttribute('paint-id', painting?.id ?? ''),
       h.DataAttribute('paint-src', painting?.src ?? ''),
