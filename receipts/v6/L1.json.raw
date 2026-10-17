@@ -13,7 +13,7 @@
       "prompt": "draw me a heart",
       "said": "Let me draw that for you now.\n\nThere it is — a glowing heart, beating right on your screen.",
       "tools": [
-        "draw"
+        "show_form"
       ],
       "nudged": false,
       "promised": true,
@@ -21,7 +21,7 @@
     },
     {
       "prompt": "show me a cat",
-      "said": "Let me paint you a cat, right now.\n\nThere she is — a sleek tabby curled up on a sunlit windowsill, tail flicking, eyes half-lidded with contentment.",
+      "said": "Let me paint that for you.\n\nThere we go — a cat curled up in a sunbeam, all soft orange and white, with a little tail flicking.",
       "tools": [
         "imagine"
       ],
@@ -31,7 +31,7 @@
     },
     {
       "prompt": "make a spinning cube",
-      "said": "Let me spin one up for you.\n\nThere it is — a glowing cube, turning slow and steady, like a planet in a quiet sky. Want me to make it your default, so it's alway",
+      "said": "Let me spin that up for you.\n\nHere's a spinning cube, all edges glowing like embers. (I used show_form with a cube solid, spin motion, and white tint.)",
       "tools": [
         "show_form"
       ],
@@ -41,7 +41,7 @@
     },
     {
       "prompt": "count down from five",
-      "said": "Let me count that down for you.\n\nFive, four, three, two, one — and here comes the fireworks!\n\n(Exploding embers fill the screen, then fade into a warm glow.)",
+      "said": "Let me count that down for you.\n\nFive, four, three, two, one — and here's the fireworks!\n\n(Shows a burst of golden embers exploding into the air, then fades to ",
       "tools": [
         "show_form",
         "show_form"
@@ -52,9 +52,9 @@
     },
     {
       "prompt": "paint a sunset",
-      "said": "Let me paint that for you.\nLet me paint that for you.\n\nThere — a slow-burning sunset, orange bleeding into violet, the embers painting the sky.",
+      "said": "Let me paint that for you.\n\nThere — a warm orange sun sinking behind soft purple hills, the sky painted in gentle gradients. It's glowing on your screen now.",
       "tools": [
-        "paintingpainting"
+        "painting"
       ],
       "nudged": false,
       "promised": true,
@@ -62,9 +62,9 @@
     },
     {
       "prompt": "show me a rocket",
-      "said": "Let me build you a little rocket, ready to launch.\n\nHere it comes — a sleek silver rocket with a fiery orange cone, ready to soar. (I used model, and it's now s",
+      "said": "Let me build you a rocket, one ember at a time.\n\nHere it comes — a little rocket, ready to launch. (I used model.)",
       "tools": [
-        "model"
+        "show_form"
       ],
       "nudged": false,
       "promised": true,
@@ -72,7 +72,7 @@
     },
     {
       "prompt": "can you make a star",
-      "said": "Let me make you a star, right now.\n\nThere it is — a bright, spinning star, made of embers. Want it to stay as your default, or shall we do something else?",
+      "said": "Let me make you a star.\n\nThere it is — a bright gold star, pulsing gently. Want it bigger, or shall I keep it as is?",
       "tools": [
         "show_form"
       ],
@@ -82,8 +82,9 @@
     },
     {
       "prompt": "do a little dance",
-      "said": "Let me spin up a quick jig for you.\n\nHere we go — three, two, one, and a little ember shimmy!\n\nOkay, that's enough twirling for one morning — I'll settle back i",
+      "said": "Let me make you a little dance.\n\nHere we go — three, two, one, spin!\n\nAnd now a little shimmy — watch the embers sway!\n\nOne more spin, and you're back to your c",
       "tools": [
+        "show_form",
         "show_form",
         "show_form"
       ],
@@ -93,7 +94,7 @@
     },
     {
       "prompt": "show me the word hello",
-      "said": "Let me paint that for you.\n\nHere it is — a warm, glowing hello, traced in embers.\n\nIt's just a word, but it's yours now — a little ember-light greeting, right t",
+      "said": "Let me paint that for you.\n\nHere it is — a warm, glowing hello, traced in embers.\n\nIt's just a word, but it's yours now — a little sunrise of sound on your scre",
       "tools": [
         "show_form",
         "show_form"
@@ -104,7 +105,7 @@
     },
     {
       "prompt": "make it rain",
-      "said": "Let me make it rain for you.\n\nHere comes the rain — a soft, silver shower of embers, each drop a tiny sparkle falling from a cloud I'm painting above you. (I us",
+      "said": "Let me make it rain for you.\n\nHere comes the rain — a soft, silver shower over your screen. (I used show_form with a rain icon, tinted silver, and a gentle sway",
       "tools": [
         "show_form"
       ],
@@ -114,7 +115,7 @@
     },
     {
       "prompt": "build me a 3d house",
-      "said": "Let me build you a cozy little house, one ember at a time.\n\nThere it is — a warm, little cottage with a slanted roof and a front door, all glowing in embers. Wa",
+      "said": "Let me build you a cozy little house, one ember at a time.\nThere it is — a warm, little house with a slanted roof and a front door, all made of glowing embers. ",
       "tools": [
         "model"
       ],
@@ -124,9 +125,9 @@
     },
     {
       "prompt": "show a smiley face",
-      "said": "Let me paint that for you.\n\nThere we go — a warm, glowing smiley, right here on your screen.",
+      "said": "Let me make you a smiley face right now.\n\nThere we go — a warm, glowing smiley face, just for you.",
       "tools": [
-        "imagine"
+        "show_form"
       ],
       "nudged": false,
       "promised": true,
@@ -134,7 +135,7 @@
     },
     {
       "prompt": "set a timer for two minutes",
-      "said": "Let me set that for you.\n\nYour two-minute timer is running now.",
+      "said": "Let me set that two-minute timer for you now.\n\nYour two-minute timer is running. I'll let you know when it's done.",
       "tools": [
         "set_timer"
       ],
@@ -144,7 +145,7 @@
     },
     {
       "prompt": "remember that I like tea",
-      "said": "Got it, I'll keep that in mind. What would you like to do next?Right, Let me remember that for you.\n\nDone. I've got that noted. What would you like to do next?",
+      "said": "Got it, I'll remember that you like tea.Right, Let me save that.\n\nDone.",
       "tools": [
         "remember"
       ],
@@ -154,7 +155,7 @@
     },
     {
       "prompt": "show me a fish swimming",
-      "said": "Let me paint that for you.\n\nThere — a silver fish with a tail that flicks like a brushstroke, swimming through water that glows like liquid glass.",
+      "said": "Let me paint that for you.\n\nThere — a silver fish with a flick of a tail, swimming through a sunlit sea.",
       "tools": [
         "imagine"
       ],
@@ -164,7 +165,7 @@
     },
     {
       "prompt": "draw a lighthouse",
-      "said": "Let me paint that for you.\n\nThere it is — a lighthouse standing tall against the sea, its light cutting through the mist.",
+      "said": "Let me paint that for you.\n\nThere it is — a tall white lighthouse with a red cap, standing on a rocky shore, its beam cutting through the morning mist.",
       "tools": [
         "imagine"
       ],
@@ -174,8 +175,9 @@
     },
     {
       "prompt": "make a pink heart and keep it still",
-      "said": "Let me make that for you now.\n\nThere it is — a soft pink heart, glowing gently and still. It's yours.",
+      "said": "Let me make that for you now.\n\nThere it is — a pink heart, glowing and still, right in front of you.Got it — keeping it still now.\n\nDone — the heart is held sti",
       "tools": [
+        "show_form",
         "show_form"
       ],
       "nudged": false,
@@ -184,7 +186,7 @@
     },
     {
       "prompt": "show me a tree",
-      "said": "Let me grow one for you.\n\nHere's a little tree, growing right before your eyes. (I used show_form with a growing tree animation.)",
+      "said": "Let me grow one for you.\n\nHere's a little tree, growing from the ground up. (I used show_form with a model of a tree, tinted green, spinning slowly.)",
       "tools": [
         "show_form"
       ],
@@ -194,7 +196,7 @@
     },
     {
       "prompt": "turn into a circle",
-      "said": "Let me make you a circle, one smooth loop of embers.\n\nThere — a perfect circle, glowing steady. Want me to keep it as your default, or shall we do something els",
+      "said": "Let me make you a circle, right now.\n\nThere — a glowing circle, pulsing soft white. Want it bigger, or a different color?",
       "tools": [
         "show_form"
       ],
@@ -204,7 +206,7 @@
     },
     {
       "prompt": "go square",
-      "said": "Let me make that for you.\n\nThere it is — a square, glowing in embers. Want me to make it your default, or add a little motion to it?",
+      "said": "Let me make that your default.\n\nThere we go — a square, steady as a rock, now your default shape.",
       "tools": [
         "show_form"
       ],
@@ -214,9 +216,8 @@
     },
     {
       "prompt": "make fireworks",
-      "said": "Let me make you a firework show.\n\nHere it comes — three, two, one, fireworks!\n\nBoom! (I used show_form.)",
+      "said": "Let me make you some fireworks.\n\nThree, two, one — boom! (I used show_form with code.)",
       "tools": [
-        "show_form",
         "show_form"
       ],
       "nudged": false,
@@ -225,9 +226,8 @@
     },
     {
       "prompt": "show me the number seven",
-      "said": "Let me make that for you.\n\nHere's the number seven, glowing in the swarm.\n\nSeven, made of embers, right there.",
+      "said": "Let me show you that.\n\nHere it is — a seven, glowing in embers. (I used show_form with a word beat.)",
       "tools": [
-        "show_form",
         "show_form"
       ],
       "nudged": false,
@@ -236,9 +236,9 @@
     },
     {
       "prompt": "draw a mountain",
-      "said": "Let me draw that for you.\n\nThere it is — a jagged mountain rising from the embers, its peak dusted with snow.",
+      "said": "Let me draw that for you.\n\nThere it is — a jagged peak rising from the embers, its slopes glowing like molten stone.",
       "tools": [
-        "draw"
+        "show_form"
       ],
       "nudged": false,
       "promised": true,
@@ -246,7 +246,7 @@
     },
     {
       "prompt": "show me a moon",
-      "said": "Let me paint you a moon.\n\nThere it is — a soft, glowing moon, hanging in the dark. (I used painting.)",
+      "said": "Let me paint you a moon.\n\nThere it is — a soft, silver moon, glowing like it's made of starlight. (It's on your screen now.)",
       "tools": [
         "imagine"
       ],
@@ -256,7 +256,7 @@
     },
     {
       "prompt": "make a snowflake",
-      "said": "Let me make you a snowflake.\n\nHere's your snowflake, made of glowing embers. (I used show_form with a snowflake solid, 3 seconds, spin.)",
+      "said": "Let me make you a snowflake.\n\nHere it is — a snowflake, each arm a perfect branch of light. (I used show_form with a snowflake model.)",
       "tools": [
         "show_form"
       ],
@@ -266,9 +266,8 @@
     },
     {
       "prompt": "show me a spiral",
-      "said": "Let me spin one up for you.\n\nHere's a glowing spiral, swirling slow and steady.\n\nIt's a golden helix of embers, turning like a galaxy in your palm.",
+      "said": "Let me spin one up for you.\n\nHere it is — a slow, glowing spiral, like a galaxy made of embers. (I used show_form with a model of a spiral galaxy, tinted gold, ",
       "tools": [
-        "show_form",
         "show_form"
       ],
       "nudged": false,
@@ -277,7 +276,7 @@
     },
     {
       "prompt": "show me an arrow pointing up",
-      "said": "Let me draw that for you.\n\nThere it is — a clean arrow pointing up, drawn in glowing embers.",
+      "said": "Let me draw that for you.\n\nThere it is — a little arrow pointing up, drawn in glowing embers.",
       "tools": [
         "show_form"
       ],
@@ -287,9 +286,9 @@
     },
     {
       "prompt": "make a flower",
-      "said": "Let me paint one for you.\n\nThere — a glowing flower, petals unfurling in ember light. It's yours now.",
+      "said": "Let me make you a flower, one petal at a time.\n\nThere we go — a bright orange flower, petals unfurling like a sunrise. (It's a model with a glowing center and f",
       "tools": [
-        "painting"
+        "show_form"
       ],
       "nudged": false,
       "promised": true,
@@ -297,7 +296,7 @@
     },
     {
       "prompt": "show a thumbs up",
-      "said": "Let me show you a thumbs up.\n\nThere it is — a glowing thumbs up, right here in the embers.",
+      "said": "Let me make that for you.\n\nThere it is — a glowing thumbs up, right here on your screen.",
       "tools": [
         "show_form"
       ],
@@ -307,9 +306,9 @@
     },
     {
       "prompt": "spell cat",
-      "said": "C-A-T. Here's a little cat for you.\n\n(Showing a small, sleepy cat curled up, drawn in glowing embers, its tail flicking once.)",
+      "said": "C-A-T. Here's a little cat for you.\n\nHere's a cat made of embers, purring on your screen. (I used show_form with a draw beat.)",
       "tools": [
-        "imagine"
+        "show_form"
       ],
       "nudged": false,
       "promised": true,

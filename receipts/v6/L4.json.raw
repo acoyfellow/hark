@@ -1,0 +1,89 @@
+{
+  "lane": "L4",
+  "brain": "@cf/daily-co/phonellm-mini-alpha-2",
+  "passed": 8,
+  "total": 8,
+  "pass": true,
+  "outcomes": [
+    {
+      "prompt": "show me my panels",
+      "ok": true,
+      "calls": [
+        "{\"action\":\"list\"}"
+      ],
+      "tools": [
+        "panels"
+      ]
+    },
+    {
+      "prompt": "open the forecast again",
+      "ok": true,
+      "calls": [
+        "{\"action\":\"open\",\"which\":\"forecast\"}"
+      ],
+      "tools": [
+        "panels"
+      ]
+    },
+    {
+      "prompt": "delete number two",
+      "ok": true,
+      "calls": [
+        "{\"action\":\"delete\",\"which\":\"2\"}"
+      ],
+      "tools": [
+        "panels"
+      ]
+    },
+    {
+      "prompt": "make the lighthouse bigger",
+      "ok": true,
+      "calls": [
+        "{\"action\":\"resize\",\"which\":\"lighthouse\",\"size\":\"large\"}"
+      ],
+      "tools": [
+        "panels"
+      ]
+    },
+    {
+      "prompt": "make that one smaller",
+      "ok": true,
+      "calls": [
+        "{\"action\":\"resize\",\"which\":\"lighthouse\",\"size\":\"small\"}"
+      ],
+      "tools": [
+        "panels"
+      ]
+    },
+    {
+      "prompt": "close all the panels",
+      "ok": true,
+      "calls": [
+        "{\"action\":\"close_all\"}"
+      ],
+      "tools": [
+        "close_all"
+      ]
+    },
+    {
+      "prompt": "pin the deploy report",
+      "ok": true,
+      "calls": [
+        "{\"action\":\"pin\",\"which\":\"deploy report\"}"
+      ],
+      "tools": [
+        "panels"
+      ]
+    },
+    {
+      "prompt": "get rid of every panel",
+      "ok": true,
+      "calls": [
+        "{\"action\":\"close_all\"}"
+      ],
+      "tools": [
+        "close_all"
+      ]
+    }
+  ]
+}
