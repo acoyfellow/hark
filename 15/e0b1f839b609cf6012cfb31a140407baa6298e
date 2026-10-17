@@ -1,0 +1,21 @@
+receipts/v6/L3.json
+  s_2065c5125668b9::t_52572c9f8515d3 1-7
+receipts/v6/L3.json.raw
+  s_2065c5125668b9::t_13b7ae2ec231fa 1-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "15e0b1f839b609cf6012cfb31a140407baa6298e",
+  "prompts": {},
+  "sessions": {
+    "s_2065c5125668b9": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a11c9e-fbb7-7768-b17a-0b53daf78bb6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jordan Coeyman <jcoeyman@cloudflare.com>"
+    }
+  }
+}
