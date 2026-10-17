@@ -7,6 +7,7 @@ import { Swarm } from '../swarm';
 import { commandSheet } from './command';
 import { workspacePanel } from './workspace';
 import { icon } from './icons';
+import { transcriptHandle, transcriptOverlay } from './transcript';
 import { drawer, visuals } from './visuals';
 
 type H = HtmlBuilder<Message>;
@@ -115,6 +116,8 @@ const stage = (h: H, model: Model): Html =>
       ),
       visuals(h, model),
       drawer(h, model),
+      transcriptHandle(h, model),
+      transcriptOverlay(h, model),
       ...Option.match(model.approving, {
         onNone: () => [],
         onSome: (ask) => [

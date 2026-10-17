@@ -11,7 +11,7 @@ Read the README and SPEC first.
 
 ## Rules
 
-- There is no chat. Do not add a transcript, captions, or a text box. Visual cards are allowed only for what words cannot carry well (a forecast, a picture, a countdown).
+- Voice comes first. A swipe-up overlay may show the live transcript: what was heard, what hark said, each tool call and each error. It is hidden by default. A text input may come later. There are never saved conversations: no conversation list, no threads, no history browser, no resuming an old chat. Visual cards are allowed only for what words cannot carry well (a forecast, a picture, a countdown).
 - Effect stays at exactly `4.0.0` and Foldkit at `0.168.0`.
 - Every frame that crosses the socket is a Schema in `shared/protocol.ts`.
 - The token never leaves the Durable Object. Do not add a route that returns it or forwards it to the browser.

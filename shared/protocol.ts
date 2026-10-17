@@ -166,6 +166,12 @@ export type Visual = typeof Visual.Type;
 
 export const MAX_INSTRUCTIONS = 2000;
 
+export const LINE_KINDS = ['heard', 'said', 'tool', 'result', 'error'] as const;
+
+export const TranscriptLine = Schema.Struct({ at: Schema.Number, kind: Schema.Literals(LINE_KINDS), text: Schema.String });
+
+export type TranscriptLine = typeof TranscriptLine.Type;
+
 export const PANEL_SIZES = ['small', 'medium', 'large'] as const;
 
 export const PanelSize = Schema.Literals(PANEL_SIZES);
@@ -226,6 +232,8 @@ export const ServerFrame = Schema.Union([
   Schema.TaggedStruct('Idle', { beats: Schema.Array(Beat) }),
   Schema.TaggedStruct('OpenWorkspace', { path: Schema.NullOr(Schema.String) }),
   Schema.TaggedStruct('ShowTools', {}),
+  Schema.TaggedStruct('Line', { line: TranscriptLine }),
+  Schema.TaggedStruct('Lines', { lines: Schema.Array(TranscriptLine) }),
   Schema.TaggedStruct('Instructions', { text: Schema.String }),
   Schema.TaggedStruct('Guard', { on: Schema.Boolean }),
   Schema.TaggedStruct('PasskeyCreate', { id: Schema.String, challenge: Schema.String, rpId: Schema.String, user: Schema.String }),

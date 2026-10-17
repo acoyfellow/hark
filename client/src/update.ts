@@ -125,6 +125,8 @@ const onFrame = (model: Model, frame: ServerFrame): Return =>
       PasskeyAsk: ({ id, challenge, rpId, credential, summary }): Return => ({ model: modifyFields(model, { approving: () => Option.some({ id, challenge, rpId, credential, summary }), passkeyNote: () => '' }), commands: [SignPasskey({ id, challenge, rpId, credential })] }),
       PasskeyDone: ({ ok, reason }): Return => (trace('passkey-done', { ok, reason }), { model: modifyFields(model, { approving: () => Option.none(), passkeyNote: () => (ok ? '' : reason) }) }),
       Instructions: ({ text }): Return => ({ model: modifyFields(model, { instructions: () => text, instructionsDraft: () => Option.none() }) }),
+      Line: ({ line }): Return => ({ model: modifyFields(model, { lines: (lines) => [...lines, line].slice(-120) }) }),
+      Lines: ({ lines }): Return => ({ model: modifyFields(model, { lines: () => [...lines] }) }),
       ShowTools: (): Return => openSheet(modifyFields(model, { tab: () => 'tools', drawer: () => false })),
       Panels: ({ panels, drawer }): Return => ({ model: modifyFields(model, { panels: () => panels, drawer: (open) => drawer ?? open }) }),
       OpenWorkspace: ({ path }): Return => ({
@@ -148,6 +150,7 @@ export const update = (model: Model, message: Message): Return =>
     ClickedOrb: () => toggle(model),
     PressedSpace: () => toggle(model),
     PressedEscape: () =>
+      model.overlay ? { model: modifyFields(model, { overlay: () => false }) } :
       model.workspace.open ? { model: modifyFields(model, { workspace: (workspace) => ({ ...workspace, open: false }) }) } : model.sheet ? { model: modifyFields(model, { sheet: () => false }) } : model.awake ? { model: sleep(model, Option.none()) } : { model },
     ClickedCamera: () => ({
       model: modifyFields(model, { camera: (on) => !on }),
@@ -203,6 +206,7 @@ export const update = (model: Model, message: Message): Return =>
     ClickedApprove: () => Option.match(model.approving, { onNone: () => ({ model }), onSome: (ask) => ({ model, commands: [SignPasskey({ id: ask.id, challenge: ask.challenge, rpId: ask.rpId, credential: ask.credential })] }) }),
     ClickedDecline: () => Option.match(model.approving, { onNone: () => ({ model }), onSome: (ask) => ({ model: modifyFields(model, { approving: () => Option.none() }), commands: [StopPasskey(), Send({ frame: { _tag: 'PasskeyDeclined', id: ask.id, reason: 'NotAllowedError: they tapped No' } })] }) }),
     ClickedTools: () => (model.sheet && model.tab === 'tools' ? { model: modifyFields(model, { sheet: () => false }) } : openSheet(modifyFields(model, { tab: () => 'tools', drawer: () => false }))),
+    ToggledOverlay: ({ open }) => ({ model: modifyFields(model, { overlay: () => open }) }),
     ClickedDrawer: () => ({ model: modifyFields(model, { drawer: (open) => !open }) }),
     ClickedPanel: ({ id, action }) => ({
       model: modifyFields(model, { panels: (panels) => (action === 'delete' ? panels.filter((panel) => panel.id !== id) : panels.map((panel) => (panel.id === id ? { ...panel, open: action === 'open' || action === 'pin' ? true : action === 'close' ? false : panel.open, pinned: action === 'pin' ? true : action === 'unpin' ? false : panel.pinned } : panel))) }),

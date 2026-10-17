@@ -262,6 +262,31 @@ const awake = async () => {
   await waitFrame((frame) => frame._tag === 'Presence' && frame.presence === 'listening', 15000, tapped);
 };
 
+await scenario('swiping up shows what was heard, said and done, with tool calls; swiping down hides it; there is no text box', async () => {
+  if ((await page.locator('#swarm').getAttribute('data-look')) === 'asleep') await awake();
+  await page.waitForFunction(() => document.querySelectorAll('#transcript-lines li').length >= 2, null, { timeout: 20000 });
+  const handle = await page.locator('#transcript-handle').boundingBox();
+  const x = handle.x + handle.width / 2;
+  const y = handle.y + handle.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y - 160, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForFunction(() => document.querySelector('#transcript')?.dataset.open === 'true', null, { timeout: 3000 });
+  const kinds = await page.locator('#transcript-lines li').evaluateAll((items) => [...new Set(items.map((item) => item.dataset.kind))]);
+  if (!kinds.includes('heard') || !kinds.includes('said')) throw new Error(`overlay is missing lines: ${kinds.join(',')}`);
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: `${SHOTS}/transcript-desktop.png` });
+  if ((await page.locator('#transcript textarea, #transcript input').count()) !== 0) throw new Error('the overlay has a text box');
+  const top = await page.locator('#transcript').boundingBox();
+  await page.mouse.move(x, top.y + 20);
+  await page.mouse.down();
+  await page.mouse.move(x, top.y + 220, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForFunction(() => document.querySelector('#transcript')?.dataset.open === 'false', null, { timeout: 3000 });
+  return { kinds };
+});
+
 await scenario('report and alert widgets appear beside the swarm', async () => {
   await awake();
   await runTool('show_widget', { kind: 'alert', tone: 'bad', title: '5xx spike on api.example.com', body: 'Error rate jumped from 0.2% to 7.9%.', stats: [{ label: '5xx rate', value: '7.9%', tone: 'bad' }, { label: 'p95', value: '2.4s', tone: 'warn' }] });
@@ -397,8 +422,9 @@ await scenario('panels: six cards stack, the drawer lists them, and voice reopen
   return { listed: before.length, open: before.filter((row) => row.open).length, after: afterClick.length };
 });
 
-await scenario('one tap on the tools button lists every tool, and asking what it can do opens the same list', async () => {
-  await page.locator('#tools').click();
+await scenario('the Tools tab lists every tool, and asking what it can do opens the same list', async () => {
+  await page.keyboard.press('Meta+k');
+  await page.locator('[role=tab]', { hasText: 'Tools' }).click();
   await page.locator('#tool-count').waitFor({ timeout: 5000 });
   const count = await page.locator('#tool-count').textContent();
   const titles = await page.locator('[role=dialog], body').first().evaluate(() => document.body.innerText);

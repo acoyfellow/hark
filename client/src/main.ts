@@ -31,6 +31,8 @@ export const initialModel = ({ local, now }: Flags): Model => ({
   visuals: [],
   panels: [],
   drawer: false,
+  lines: [],
+  overlay: false,
   instructions: '',
   guard: false,
   approving: Option.none(),

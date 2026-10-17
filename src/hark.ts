@@ -15,6 +15,7 @@ import {
   encodeServerFrame,
   type McpServer,
   MAX_INSTRUCTIONS,
+  type TranscriptLine,
   Panel,
   type ServerFrame,
   type Settings,
@@ -33,6 +34,8 @@ import { instructionsReminder, systemPrompt } from './prompt';
 import { dailyCron, describeRoutine, MAX_ROUTINES, MAX_RUNS, MIN_EVERY_SECONDS, type Routine, ROUTINE_PROMPT, ROUTINE_SAFE_TOOLS, zoneOffsetMinutes } from './routines';
 import { makeVapidKeys, type PushNote, type PushSubscriptionKeys, sendPush, type VapidKeys } from './web-push';
 import { Approvals, APPROVAL_SECONDS, callChallenge, randomChallenge, type StoredPasskey, verifyAssertion, verifyRegistration } from './passkey';
+
+const MAX_LINES = 120;
 
 const refuse = (message: string, status = 403) => ({ status, body: JSON.stringify({ success: false, errors: [{ code: status, message }] }) });
 
@@ -161,6 +164,7 @@ export class Hark extends VoiceAgent<Env> {
     this.sql`CREATE TABLE IF NOT EXISTS memories (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT NOT NULL, at INTEGER NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS missed (label TEXT NOT NULL, at INTEGER NOT NULL)`;
+    this.sql`CREATE TABLE IF NOT EXISTS lines (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, kind TEXT NOT NULL, text TEXT NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS push_subs (endpoint TEXT PRIMARY KEY, p256dh TEXT NOT NULL, auth TEXT NOT NULL, at INTEGER NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS push_log (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER NOT NULL, title TEXT NOT NULL, status INTEGER NOT NULL, sent INTEGER NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS files (path TEXT PRIMARY KEY, content TEXT NOT NULL, at INTEGER NOT NULL)`;
@@ -203,6 +207,21 @@ export class Hark extends VoiceAgent<Env> {
       if (routine !== undefined) await this.routineRun({ id: routine.id });
     }
     return { added, routines: this.routines(), schedules: this.getSchedules().filter((each) => each.callback === 'routineRun').map((each) => ({ id: each.id, type: each.type, time: each.time })) };
+  }
+
+  private line(kind: TranscriptLine['kind'], text: string) {
+    const trimmed = text.trim().slice(0, 1200);
+    if (trimmed === '') return;
+    const last = this.sql<{ kind: string; text: string }>`SELECT kind, text FROM lines ORDER BY id DESC LIMIT 1`[0];
+    if (last?.kind === kind && last.text === trimmed) return;
+    const at = Date.now();
+    this.sql`INSERT INTO lines (at, kind, text) VALUES (${at}, ${kind}, ${trimmed})`;
+    this.sql`DELETE FROM lines WHERE id NOT IN (SELECT id FROM lines ORDER BY id DESC LIMIT ${MAX_LINES})`;
+    for (const each of this.getConnections()) this.send(each, { _tag: 'Line', line: { at, kind, text: trimmed } });
+  }
+
+  private recentLines(): TranscriptLine[] {
+    return this.sql<TranscriptLine>`SELECT at, kind, text FROM lines ORDER BY id DESC LIMIT ${MAX_LINES}`.toReversed();
   }
 
   transcript(limit = 200) {
@@ -952,6 +971,7 @@ export class Hark extends VoiceAgent<Env> {
       this.send(connection, { _tag: 'Panels', panels: this.panels() });
       this.send(connection, { _tag: 'Instructions', text: this.instructions() });
       this.send(connection, { _tag: 'Guard', on: this.guardOn() });
+      this.send(connection, { _tag: 'Lines', lines: this.recentLines() });
 
       return true;
     } catch (cause) {
@@ -976,6 +996,7 @@ export class Hark extends VoiceAgent<Env> {
   override saveMessage(role: 'user' | 'assistant', text: string) {
     this.ensureVoiceHistory();
     super.saveMessage(role, text);
+    if (role === 'assistant') this.line('said', text);
   }
 
   override getConversationHistory(limit?: number) {
@@ -1214,6 +1235,7 @@ export class Hark extends VoiceAgent<Env> {
     };
 
     trace('heard', { transcript, speculative: context.speculative, brain: this.brainInUse() });
+    this.line('heard', transcript);
 
     const ports: ReplyPorts = {
       chat: async (messages, signal) => {
@@ -1243,10 +1265,12 @@ export class Hark extends VoiceAgent<Env> {
       label: (call) => toolLabel(call.name, parseArguments(call.arguments)),
       tool: async (call) => {
         trace('tool', { name: call.name, arguments: call.arguments.slice(0, 600) });
+        this.line('tool', `${call.name} ${call.arguments.slice(0, 300)}`);
 
         const outcome = (await context.confirmed) ? await runTool(call.name, parseArguments(call.arguments), host) : { content: 'The person kept talking, so this was not done.' };
 
         trace('tool-result', { name: call.name, content: outcome.content.slice(0, 300), visual: outcome.visual?._tag ?? null });
+        this.line(outcome.content.startsWith('Not done') || outcome.content.startsWith('That did not work') ? 'error' : 'result', `${call.name}: ${outcome.content.slice(0, 300)}`);
 
         return outcome;
       },
@@ -1254,6 +1278,7 @@ export class Hark extends VoiceAgent<Env> {
       show: (visual) => this.show(connection, visual),
       fail: (reason) => {
         trace('fault', { reason });
+        this.line('error', reason);
         if (SIGNED_OUT.test(reason)) {
           this.signOutEveryone();
           return;

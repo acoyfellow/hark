@@ -32,6 +32,7 @@ export const Message = defineMessageUnion({
   ClickedSignOut: {},
   DismissedVisual: { id: Schema.String },
   ClickedDrawer: {},
+  ToggledOverlay: { open: Schema.Boolean },
   ClickedTools: {},
   ToggledGuard: {},
   ClickedApprove: {},

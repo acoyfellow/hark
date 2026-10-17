@@ -106,6 +106,20 @@ const plainKeys: Stream.Stream<Message> = Stream.fromEventListener<KeyboardEvent
   }),
 );
 
+const SWIPE_PX = 60;
+
+const swipes: Stream.Stream<Message> = Stream.fromEventListener<PointerEvent>(document, 'pointerdown').pipe(
+  Stream.filter((event) => event.target instanceof Element && event.target.closest('#transcript-handle, #transcript') !== null),
+  Stream.flatMap((down) =>
+    Stream.fromEventListener<PointerEvent>(document, 'pointerup').pipe(
+      Stream.take(1),
+      Stream.map((up) => up.clientY - down.clientY),
+      Stream.filter((moved) => Math.abs(moved) >= SWIPE_PX),
+      Stream.map((moved): Message => Message.ToggledOverlay({ open: moved < 0 })),
+    ),
+  ),
+);
+
 export const subscriptions = Subscription.make<Model, Message, Resources>()((entry) => ({
   line: entry(
     { connected: Schema.Boolean, epoch: Schema.Number },
@@ -137,5 +151,5 @@ export const subscriptions = Subscription.make<Model, Message, Resources>()((ent
           : Stream.empty,
     },
   ),
-  keys: entry({ on: Schema.Boolean }, { modelToDependencies: () => ({ on: true }), dependenciesToStream: () => Stream.merge(plainKeys, commandKeys) }),
+  keys: entry({ on: Schema.Boolean }, { modelToDependencies: () => ({ on: true }), dependenciesToStream: () => Stream.mergeAll([plainKeys, commandKeys, swipes], { concurrency: 'unbounded' }) }),
 }));
