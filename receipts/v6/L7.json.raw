@@ -1,0 +1,45 @@
+{
+  "lane": "L7",
+  "passed": 7,
+  "total": 7,
+  "writes": 1,
+  "realDevice": "asked of the owner, not faked",
+  "pass": true,
+  "outcomes": [
+    {
+      "name": "read runs without a passkey",
+      "ok": true,
+      "detail": "200\n{\"success\":true}"
+    },
+    {
+      "name": "signed write runs once",
+      "ok": true,
+      "detail": "200\n{\"success\":true}"
+    },
+    {
+      "name": "replayed signature is refused",
+      "ok": true,
+      "detail": "Not done: signature is for a different call. Tell them in a few words; do not retry unless they ask."
+    },
+    {
+      "name": "late signature is refused",
+      "ok": true,
+      "detail": "Not done: expired. Tell them in a few words; do not retry unless they ask."
+    },
+    {
+      "name": "signature for another call is refused",
+      "ok": true,
+      "detail": "Not done: signature is for a different call. Tell them in a few words; do not retry unless they ask."
+    },
+    {
+      "name": "sign-in page says the passkey is shipped",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "docs describe Biometrics for changes",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}
