@@ -32,6 +32,29 @@ export class HarkBridge extends WorkerEntrypoint<Env, BridgeProps> {
   }
 }
 
+export const CLOUDFLARE_PROXY_HOST = 'cloudflare.hark.internal';
+
+const PROXY_LIMIT = 256 * 1024;
+
+export class HarkEgress extends WorkerEntrypoint<Env, BridgeProps> {
+  override async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    const path = `${url.pathname.replace(/^\/client\/v4/u, '')}${url.search}`;
+    const text = request.method === 'GET' || request.method === 'HEAD' ? '' : (await request.text()).slice(0, PROXY_LIMIT);
+    let body: unknown = null;
+    try {
+      body = text === '' ? null : JSON.parse(text);
+    } catch {
+      return Response.json({ success: false, errors: [{ message: 'hark proxy takes JSON bodies only' }] }, { status: 400 });
+    }
+    const hark = await this.env.HARK.getByName(this.ctx.props.owner);
+    const result = await hark.computerCloudflare(request.method, path, body);
+    return new Response(result.body, { status: result.status, headers: { 'content-type': 'application/json' } });
+  }
+}
+
+export const egressFor = (owner: string): Fetcher => (exports as unknown as { HarkEgress: (options: { props: BridgeProps }) => Fetcher }).HarkEgress({ props: { owner } });
+
 const benchModule = (code: string): string => `export default {
   async fetch(request, env) {
     const calls = [];

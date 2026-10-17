@@ -402,6 +402,22 @@ await scenario('the durable computer runs a command and shows a terminal card', 
   return { output: result.content.slice(0, 200) };
 });
 
+await scenario('the computer lists workers through hark and writes a summary; it holds no token, and a write is refused without biometrics', async () => {
+  const before = await fetch(`${FAKE}/__log`).then((response) => response.json());
+  const summary = await runTool('terminal', { command: 'cd /workspace && curl -s "$CF_API/accounts/$CF_ACCOUNT/workers/scripts" | jq -r ".result[].id" > workers.txt && wc -l < workers.txt && cat workers.txt' });
+  if (!/pasta-timer/u.test(summary.content) || !/hark/u.test(summary.content)) throw new Error(`no workers listed: ${summary.content.slice(0, 300)}`);
+  const after = await fetch(`${FAKE}/__log`).then((response) => response.json());
+  const proxied = after.slice(before.length).filter((entry) => entry.path.endsWith('/workers/scripts'));
+  if (proxied.length !== 1 || !proxied[0].authorized || proxied[0].path.includes('ACCOUNT_ID')) throw new Error(`the read did not go through hark with the real token: ${JSON.stringify(proxied)}`);
+  const leak = await runTool('terminal', { command: 'env | grep -iE "token|secret|key|auth" ; true' });
+  if (!/hark-proxy-adds-the-real-token/u.test(leak.content) || /local[^-]|Bearer/u.test(leak.content.replace('hark-proxy-adds-the-real-token', ''))) throw new Error(`the container env shows something: ${leak.content.slice(0, 300)}`);
+  const write = await runTool('terminal', { command: 'curl -s -X DELETE "$CF_API/accounts/$CF_ACCOUNT/workers/scripts/pasta-timer"' });
+  if (!/may only read/u.test(write.content)) throw new Error(`a write went through without biometrics: ${write.content.slice(0, 300)}`);
+  const last = await fetch(`${FAKE}/__log`).then((response) => response.json());
+  if (last.slice(after.length).some((entry) => entry.method === 'DELETE')) throw new Error('the DELETE reached Cloudflare');
+  return { listed: summary.content.slice(0, 120) };
+});
+
 await scenario('their instructions: typed in the brain tab, kept across a reload, changed by voice, reset', async () => {
   if ((await page.locator('#swarm').getAttribute('data-look')) === 'asleep') await awake();
   await runTool('instructions', { action: 'reset' });
@@ -469,6 +485,10 @@ await scenario('biometrics for changes: turn on with a passkey, a write waits fo
     if (asks !== 1 || done !== 1) throw new Error(`expected one ask and one approval, saw ${asks} and ${done}`);
     const read = await runTool('instructions', { action: 'get' });
     if ((read.content.match(/Signed rule\./gu) ?? []).length !== 1) throw new Error('the signed write ran more than once');
+    const deleteAt = Date.now();
+    const computerWrite = await runTool('terminal', { command: 'curl -s -X DELETE "$CF_API/accounts/$CF_ACCOUNT/workers/scripts/pasta-timer"' });
+    if (!/"success":\s*true/u.test(computerWrite.content)) throw new Error(`a signed computer write did not run: ${computerWrite.content.slice(0, 200)}`);
+    if (!frames.some((each) => each.at >= deleteAt && each.frame._tag === 'PasskeyAsk' && /computer: DELETE/u.test(each.frame.summary))) throw new Error('the computer write did not stop at the passkey');
     const reads = await runTool('panels', { action: 'list' });
     if (/Not done/u.test(reads.content)) throw new Error('a read asked for the passkey');
     await cdp.send('WebAuthn.setAutomaticPresenceSimulation', { authenticatorId, enabled: false });

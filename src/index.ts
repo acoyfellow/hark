@@ -13,7 +13,7 @@ import { DUOTONE_APP_SKIN } from './site/duotone';
 
 export { Directory } from './directory';
 export { Hark } from './hark';
-export { HarkBridge } from './workbench';
+export { HarkBridge, HarkEgress } from './workbench';
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 

@@ -516,7 +516,7 @@ const terminal: Definition = {
     'Their computer. When they say "my computer", "run", "node", "npm", "git" or any shell command, call this right away. Run a shell command on their own durable Linux computer (bash, node 22, npm, git, python3, curl, jq, ripgrep, wrangler). It has the internet. Files in /workspace persist between sessions.',
     'Use it for real coding work: clone a repo, scaffold a project, install packages, run tests, write and run scripts. One command per call; chain with &&. 120 second limit.',
     'The output is shown to them as a terminal card. Then say in one sentence what happened. Never read the output aloud.',
-    'It has no Cloudflare token. For anything on their Cloudflare account use the cloudflare tool.',
+    'It never holds their Cloudflare token, but it can reach their account: curl "$CF_API/accounts/$CF_ACCOUNT/workers/scripts" (no auth header needed; hark adds it). Use this for multi-step account work that ends in a file or script, like "list my workers and write a summary". GET works at once. Changes need Biometrics for changes on and one passkey per call. For a single quick question use the cloudflare tool.',
   ].join('\n'),
   parameters: object({ command: { type: 'string' } }, ['command']),
   run: async (args, host) => {

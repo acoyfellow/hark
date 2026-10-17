@@ -32,6 +32,8 @@ import { added as withPanel, changed, keepsAPanel, listed as panelList, type Pan
 import { instructionsReminder, systemPrompt } from './prompt';
 import { Approvals, APPROVAL_SECONDS, callChallenge, randomChallenge, type StoredPasskey, verifyAssertion, verifyRegistration } from './passkey';
 
+const refuse = (message: string, status = 403) => ({ status, body: JSON.stringify({ success: false, errors: [{ code: status, message }] }) });
+
 const remindOf = (instructions: string): ChatMessage[] => {
   const reminder = instructionsReminder(instructions);
   return reminder === null ? [] : [{ role: 'system', content: reminder }];
@@ -59,7 +61,7 @@ import { COMPUTER_IMAGE, type Computer, sandboxComputer, WORKSPACE } from './com
 import { attachCommand, bridgeTerminal, TERMINAL_ENV, TERMINAL_PATH, type TerminalSize, terminalSize } from './terminal';
 import { pageText, pageTitle } from './page-text';
 import { parseResults, searchCommand } from './web-results';
-import { MAX_FILE_BYTES, runOnBench } from './workbench';
+import { CLOUDFLARE_PROXY_HOST, egressFor, MAX_FILE_BYTES, runOnBench } from './workbench';
 import { EchoGatedTranscriber, SpokenRecord } from './echo-gate';
 
 const HISTORY_KEEP = 24;
@@ -483,6 +485,20 @@ export class Hark extends VoiceAgent<Env> {
     return this.live;
   }
 
+  async computerCloudflare(method: string, path: string, body: unknown): Promise<{ readonly status: number; readonly body: string }> {
+    const verb = method.toUpperCase();
+    if (!path.startsWith('/')) return refuse('path must start with /', 400);
+    if (verb !== 'GET') {
+      const connection = [...this.getConnections()][0];
+      if (!this.guardOn()) return refuse('hark: the computer may only read your account. Turn on Biometrics for changes to let it write, one passkey per call.');
+      if (connection === undefined) return refuse('hark: open hark to approve this change with your passkey.');
+      const refused = await this.guarded(connection, { tool: 'cloudflare', args: { method: verb, path, body } }, `computer: ${verb} ${path.slice(0, 80)}`, this.turnSignal ?? undefined);
+      if (refused !== null) return refuse(`hark: not done, ${refused}.`);
+    }
+    const live = this.live ?? (await this.liveForBench());
+    return live.api(verb, path, body, AbortSignal.timeout(30_000));
+  }
+
   async benchCall(name: string, input: unknown): Promise<unknown> {
     const args = typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : {};
     const text = (key: string) => (typeof args[key] === 'string' ? args[key] : '');
@@ -573,7 +589,7 @@ export class Hark extends VoiceAgent<Env> {
     const computer = sandboxComputer(container, container.images[COMPUTER_IMAGE] ?? COMPUTER_IMAGE);
     const wasRunning = !fresh && computer.running();
 
-    await computer.boot({}, fresh);
+    await computer.boot({}, fresh, { host: CLOUDFLARE_PROXY_HOST, binding: egressFor(this.name) });
 
     if (!wasRunning) {
       const saved = this.savedWorkspace();

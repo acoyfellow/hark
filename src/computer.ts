@@ -1,17 +1,12 @@
 import { Files } from '@cloudflare/sandbox';
+import { SHELL_ENV } from './shell-env';
+
+export { CLOUDFLARE_PROXY, SHELL_ENV } from './shell-env';
 
 export const WORKSPACE = '/workspace';
 
 export const COMPUTER_IMAGE = 'computer';
 
-export const SHELL_ENV: Record<string, string> = {
-  PATH: '/usr/local/bin:/usr/bin:/bin',
-  HOME: '/root',
-  GIT_AUTHOR_NAME: 'hark',
-  GIT_AUTHOR_EMAIL: 'hark@users.noreply.github.com',
-  GIT_COMMITTER_NAME: 'hark',
-  GIT_COMMITTER_EMAIL: 'hark@users.noreply.github.com',
-};
 
 const RUN_LIMIT_SECONDS = 120;
 
@@ -39,7 +34,7 @@ export type Computer = {
   readonly running: () => boolean;
   readonly snapshot: () => Promise<string | null>;
   readonly restore: (archive: string) => Promise<void>;
-  readonly boot: (secrets: Record<string, string>, fresh?: boolean) => Promise<void>;
+  readonly boot: (secrets: Record<string, string>, fresh?: boolean, egress?: { readonly host: string; readonly binding: Fetcher }) => Promise<void>;
   readonly shell: (command: string) => Promise<ExecResult>;
   readonly readFile: (path: string) => Promise<string>;
   readonly writeFile: (path: string, content: string) => Promise<void>;
@@ -87,7 +82,7 @@ export const sandboxComputer = (container: Container, image: string): Computer =
       await files.writeFile(ARCHIVE_PATH, archive);
       await run(['bash', '-lc', `mkdir -p ${WORKSPACE} && base64 -d ${ARCHIVE_PATH} | tar -xzf - -C ${WORKSPACE} && rm -f ${ARCHIVE_PATH}`]);
     },
-    boot: async (secrets, fresh = false) => {
+    boot: async (secrets, fresh = false, egress) => {
       env = { ...SHELL_ENV, ...secrets };
 
       if (container.running && !fresh) return;
@@ -96,6 +91,7 @@ export const sandboxComputer = (container: Container, image: string): Computer =
 
       container.start({ enableInternet: true, image, labels: { app: 'hark' } } as ContainerStartupOptions);
       await untilStarted(() => container.setInactivityTimeout(INACTIVITY_MS));
+      if (egress !== undefined) await container.interceptOutboundHttp(egress.host, egress.binding);
     },
     shell: async (command) => {
       const process = await untilStarted(() => container.exec(['timeout', '--kill-after=5', String(RUN_LIMIT_SECONDS), 'bash', '-lc', command], { cwd: WORKSPACE, env }));

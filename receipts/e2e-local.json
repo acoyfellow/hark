@@ -2,23 +2,23 @@
   "kind": "hark.e2e",
   "target": "local",
   "base": "http://localhost:8791",
-  "at": "2026-10-17T16:22:49.046Z",
-  "passed": 28,
-  "total": 28,
+  "at": "2026-10-17T16:37:55.165Z",
+  "passed": 27,
+  "total": 29,
   "speech": {
-    "count": 4756,
-    "bytes": 7888800
+    "count": 4740,
+    "bytes": 7862400
   },
   "results": [
     {
       "name": "the page renders asleep with the ear and no chat box",
       "ok": true,
-      "ms": 2914
+      "ms": 3590
     },
     {
       "name": "tapping the ear opens the line to the account and starts listening",
       "ok": true,
-      "ms": 1462,
+      "ms": 3279,
       "detail": {
         "account": "Local account",
         "settings": {
@@ -31,37 +31,37 @@
     {
       "name": "a spoken question gets a tool call, an article card, and a spoken answer",
       "ok": true,
-      "ms": 4642,
+      "ms": 4651,
       "detail": {
         "latency": {
           "total": 0,
           "model": 137,
-          "speech": 62,
+          "speech": 64,
           "eager": true,
-          "leadMs": 312
+          "leadMs": 268
         },
-        "firstSpeechMs": 3023,
+        "firstSpeechMs": 4868,
         "packets": 137
       }
     },
     {
       "name": "the browser plays the whole answer and reports it, then hark listens again",
       "ok": true,
-      "ms": 0
+      "ms": 1
     },
     {
       "name": "remember stores a fact and shows it",
       "ok": true,
-      "ms": 5842
+      "ms": 5952
     },
     {
       "name": "show_form plays a two-beat particle movie (3D heart, then a drawing), with no card",
       "ok": true,
-      "ms": 2486,
+      "ms": 2106,
       "detail": {
         "form": {
           "_tag": "Form",
-          "id": "fc545cc6-1dee-4376-9c5e-1861feb1e551",
+          "id": "e33cda81-1c9c-4b6e-8247-fa041f66c36d",
           "beats": [
             {
               "kind": "solid",
@@ -82,63 +82,63 @@
     {
       "name": "paint forms the picture in the swarm first, then hands it to a card",
       "ok": true,
-      "ms": 9139
+      "ms": 9511
     },
     {
       "name": "talking over a long answer interrupts it (barge-in)",
       "ok": true,
-      "ms": 12360,
+      "ms": 12275,
       "detail": {
-        "interruptedAfterMs": 7188
+        "interruptedAfterMs": 7193
       }
     },
     {
       "name": "a timer counts down and hark announces it when it ends (Durable Object alarm)",
       "ok": true,
-      "ms": 5269,
+      "ms": 4620,
       "detail": {
-        "announcedAfterMs": 3631
+        "announcedAfterMs": 2989
       }
     },
     {
       "name": "with the camera on, asking about it takes one frame and looks",
       "ok": true,
-      "ms": 6134
+      "ms": 7149
     },
     {
       "name": "saying goodbye puts hark to sleep and closes the microphone",
       "ok": true,
-      "ms": 9620
+      "ms": 9146
     },
     {
       "name": "one tap wakes it again after it slept, and it listens",
       "ok": true,
-      "ms": 5211
+      "ms": 5301
     },
     {
       "name": "report and alert widgets appear beside the swarm",
       "ok": true,
-      "ms": 3329
+      "ms": 3374
     },
     {
       "name": "a 3D model beat sculpts an object in the swarm",
       "ok": true,
-      "ms": 2344
+      "ms": 2376
     },
     {
       "name": "stay still holds a pink heart perfectly still, and a pink heart default survives a reload",
       "ok": true,
-      "ms": 38911,
+      "ms": 38092,
       "detail": {
-        "drift": 1.74,
-        "pinkish": 24,
+        "drift": 1.95,
+        "pinkish": 29,
         "tries": 3
       }
     },
     {
       "name": "panels: six cards stack, the drawer lists them, and voice reopens, deletes and resizes",
       "ok": true,
-      "ms": 4716,
+      "ms": 4585,
       "detail": {
         "listed": 6,
         "open": 4,
@@ -148,7 +148,7 @@
     {
       "name": "one tap on the tools button lists every tool, and asking what it can do opens the same list",
       "ok": true,
-      "ms": 2239,
+      "ms": 2241,
       "detail": {
         "count": "22 built-in tools · 0 MCP servers · 0 MCP tools. Or ask \"what can you do?\""
       }
@@ -156,45 +156,49 @@
     {
       "name": "the durable computer runs a command and shows a terminal card",
       "ok": true,
-      "ms": 1593,
+      "ms": 1530,
       "detail": {
-        "output": "$ cd /workspace && ls -la && node -v\ntotal 8\ndrwxr-xr-x 2 root root 4096 Oct 16 13:58 .\ndrwxr-xr-x 1 root root 4096 Oct 17 16:18 ..\nv22.23.3"
+        "output": "$ cd /workspace && ls -la && node -v\ntotal 12\ndrwxr-xr-x 1 root root 4096 Oct 17 16:32 .\ndrwxr-xr-x 1 root root 4096 Oct 17 16:32 ..\n-rw-r--r-- 1 root root   17 Oct 17 16:32 workers.txt\nv22.23.3"
       }
+    },
+    {
+      "name": "the computer lists workers through hark and writes a summary; it holds no token, and a write is refused without biometrics",
+      "ok": false,
+      "ms": 214,
+      "error": "no workers listed: $ cd /workspace && curl -s \"$CF_API/accounts/$CF_ACCOUNT/workers/scripts\" | jq -r \".result[].id\" > workers.txt && wc -l < workers.txt && cat workers.txt\n0"
     },
     {
       "name": "their instructions: typed in the brain tab, kept across a reload, changed by voice, reset",
       "ok": true,
-      "ms": 5178,
+      "ms": 5962,
       "detail": {
         "added": 3
       }
     },
     {
       "name": "biometrics for changes: turn on with a passkey, a write waits for one signature and runs once, a failed check stops it, turning off needs the passkey",
-      "ok": true,
-      "ms": 9834,
-      "detail": {
-        "asks": 1,
-        "done": 1,
-        "refused": "Not done: they cancelled the passkey (NotAllowedError: they tapped No). Tell the"
-      }
+      "ok": false,
+      "ms": 10357,
+      "error": "a signed computer write did not run: $ curl -s -X DELETE \"$CF_API/accounts/$CF_ACCOUNT/workers/scripts/pasta-timer\"\n[exit 52]"
     },
     {
       "name": "the settings sheet shows the stack, voices, and brains",
       "ok": true,
-      "ms": 6182
+      "ms": 6633
     },
     {
       "name": "every upstream call went straight to Workers AI with the account token",
       "ok": true,
-      "ms": 8,
+      "ms": 3,
       "detail": {
-        "calls": 7607,
+        "calls": 302,
         "kinds": [
           "listen",
           "completions",
           "aura-1",
-          "flux-2-klein-4b"
+          "flux-2-klein-4b",
+          "scripts",
+          "pasta-timer"
         ],
         "brains": [
           "@cf/daily-co/phonellm-mini-alpha-2",
@@ -205,7 +209,7 @@
     {
       "name": "the desktop layout keeps cards off the ear and nothing overflows",
       "ok": true,
-      "ms": 44,
+      "ms": 17,
       "detail": {
         "overflowX": false,
         "cardsOverOrb": 0,
@@ -225,7 +229,7 @@
     {
       "name": "the phone layout renders asleep, then talks and shows a card",
       "ok": true,
-      "ms": 7851,
+      "ms": 8567,
       "detail": {
         "overflowX": false,
         "cardsOverOrb": 0,
@@ -245,7 +249,7 @@
     {
       "name": "the phone never zooms or scrolls: double tap, pinch and swipe leave scale 1 and scroll 0",
       "ok": true,
-      "ms": 8412,
+      "ms": 6934,
       "detail": {
         "scale": 1,
         "scrollTop": 0,
@@ -256,12 +260,12 @@
     {
       "name": "the landing page offers Sign in with Cloudflare on desktop and phone",
       "ok": true,
-      "ms": 11209
+      "ms": 10194
     },
     {
       "name": "Sign out in Settings leaves the app for the sign-in page",
       "ok": true,
-      "ms": 12666
+      "ms": 17851
     },
     {
       "name": "no uncaught page errors",

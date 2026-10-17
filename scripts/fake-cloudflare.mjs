@@ -187,6 +187,18 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  if (url.pathname.endsWith('/workers/scripts') && request.method === 'GET') {
+    response.writeHead(200, { 'content-type': 'application/json' });
+    response.end(JSON.stringify({ success: true, result: [{ id: 'pasta-timer', modified_on: '2026-10-01T00:00:00Z' }, { id: 'hark', modified_on: '2026-10-16T00:00:00Z' }] }));
+    return;
+  }
+
+  if (url.pathname.includes('/workers/scripts/') && request.method === 'DELETE') {
+    response.writeHead(200, { 'content-type': 'application/json' });
+    response.end(JSON.stringify({ success: true, result: null }));
+    return;
+  }
+
   if (url.pathname.endsWith('/ai/v1/chat/completions')) {
     const { messages, stream, model } = JSON.parse(body.toString('utf8'));
 
