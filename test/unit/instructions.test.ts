@@ -19,7 +19,7 @@ describe('their own instructions', () => {
 describe('a standing rule in what they said', () => {
   it('is caught for from-now-on, always, never, stop and call-me', async () => {
     const { setsARule } = await import('../../src/reply');
-    for (const heard of ['from now on keep it short', 'always show a shape', 'never say sorry', 'stop calling me Captain', 'call me Jordan', 'edit your system prompt']) expect(setsARule(heard)).toBe(true);
-    for (const heard of ['what is the weather', 'paint a cat', 'how are you']) expect(setsARule(heard)).toBe(false);
+    for (const heard of ['from now on keep it short', 'always show a shape', 'never say sorry', 'stop calling me Captain', 'edit your system prompt']) expect(setsARule(heard)).toBe(true);
+    for (const heard of ['what is the weather', 'paint a cat', 'how are you', 'call me Jordan']) expect(setsARule(heard)).toBe(false);
   });
 });

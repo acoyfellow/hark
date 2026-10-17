@@ -60,10 +60,6 @@ const header = (h: H, model: Model): Html =>
             [icon(h, 'terminal')],
           ),
           h.button(
-            [h.Type('button'), h.Id('tools'), h.AriaLabel('What hark can do'), h.Title('What hark can do'), h.Class('grid size-10 place-items-center rounded-full text-white/60 transition hover:bg-white/[0.06] hover:text-white'), h.OnClick(Message.ClickedTools())],
-            [icon(h, 'tools')],
-          ),
-          h.button(
             [h.Type('button'), h.Id('panels'), h.AriaLabel(`Panels (${model.panels.length})`), h.AriaExpanded(model.drawer), h.Class('relative grid size-10 place-items-center rounded-full text-white/60 transition hover:bg-white/[0.06] hover:text-white'), h.OnClick(Message.ClickedDrawer())],
             [icon(h, 'stack'), ...(model.panels.length === 0 ? [] : [h.span([h.Class('absolute top-1 right-1 grid min-w-4 place-items-center rounded-full bg-ember px-1 font-mono text-[9px] leading-4 text-black')], [String(model.panels.length)])])],
           ),

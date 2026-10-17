@@ -61,7 +61,7 @@ const actionsIn = (calls: readonly ToolCall[]) =>
     }
   }, 0);
 
-const STANDING = new RegExp(String.raw`\b(?:from now on|going forward|always|never|stop (?:calling|saying|doing|using)|don'?t ever|call me|(?:system )?prompt|your instructions)\b`, 'iu');
+const STANDING = new RegExp(String.raw`\b(?:from now on|going forward|always|never|stop (?:calling|saying|doing|using)|don'?t ever|(?:system )?prompt|your instructions)\b`, 'iu');
 
 export const setsARule = (heard: string) => STANDING.test(heard);
 
@@ -275,6 +275,13 @@ export async function* reply(
             ],
           });
       });
+
+      const refused = outcomes.find((outcome) => outcome.content.startsWith('Not done: '));
+      if (refused !== undefined) {
+        const reason = refused.content.slice('Not done: '.length).split('. Say so')[0] ?? 'it was not approved';
+        yield `I did not do that: ${reason}.`;
+        return;
+      }
     }
   } catch (cause) {
     if (signal.aborted) return;

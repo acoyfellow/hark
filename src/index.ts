@@ -27,7 +27,7 @@ const sitePage = (request: Request) => {
   return page === undefined ? null : htmlResponse(page());
 };
 
-const KNOWN_ROUTES = /^\/(|oauth\/(login|callback|logout|me)|mcp\/callback|callback|workspace\/(terminal|tree|file)|push\/key|sw\.js|__[a-z]+)$/u;
+const KNOWN_ROUTES = /^\/(|oauth\/(login|callback|logout|me)|mcp\/callback|callback|workspace\/(terminal|tree|file)|push\/key|me\/transcript|sw\.js|__[a-z]+)$/u;
 
 const isKnownRoute = (pathname: string) => KNOWN_ROUTES.test(pathname) || AGENT_PATH.test(pathname);
 
@@ -115,6 +115,8 @@ const route = async (request: Request, env: Env, owner: string, local: boolean):
   if (pathname === '/workspace/file' && request.method === 'GET') return new Response(await (await getAgentByName(env.HARK, owner)).workspaceFile(new URL(request.url).searchParams.get('path') ?? ''), { headers: { 'content-type': 'text/plain; charset=utf-8' } });
 
   if (pathname === '/__trace' && request.method === 'POST' && !isCrossOrigin(request)) return browserTrace(request);
+
+  if (pathname === '/me/transcript' && request.method === 'GET' && !isCrossOrigin(request)) return Response.json(await (await getAgentByName(env.HARK, owner)).transcript(), { headers: { 'cache-control': 'no-store' } });
 
   if (pathname === '/push/key' && request.method === 'GET') return new Response(await (await getAgentByName(env.HARK, owner)).pushKey(), { headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' } });
 

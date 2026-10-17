@@ -174,14 +174,16 @@ const remember: Definition = {
   name: 'remember',
   label: () => 'Remembering that',
   description:
-    'Save a lasting fact about the person (name, preferences, people, plans). Only when they share something worth keeping or ask you to remember.',
-  parameters: object({ fact: { type: 'string', description: 'One short sentence' } }, ['fact']),
+    'Save a lasting fact about the person (name, preferences, people, plans). Only when they share something worth keeping or ask you to remember. To correct or edit a saved fact ("that is wrong", "my name is spelled ...", "change my email"), pass replaces with words from the old fact and fact with the corrected one. Memories are not your instructions: never use the instructions tool for facts about them.',
+  parameters: object({ fact: { type: 'string', description: 'One short sentence' }, replaces: { type: 'string', description: 'Words from the old fact this corrects, to delete it' } }, ['fact']),
   run: async (args, host) => {
     const fact = str(args.fact);
 
     if (fact === '') return { content: 'Nothing to remember.' };
 
+    const replaced = str(args.replaces).trim() === '' ? 0 : host.forget(str(args.replaces));
     host.remember(fact);
+    if (str(args.replaces).trim() !== '') return { content: replaced > 0 ? `Corrected. Replaced ${replaced} old fact${replaced === 1 ? '' : 's'}.` : 'Saved the new fact; no old fact matched those words.', visual: { _tag: 'Memory', id: host.id(), text: fact, forgotten: false } };
 
     return {
       content: 'Saved.',
@@ -866,7 +868,7 @@ export const runTool = async (
 
   if (guarded !== null && host.approve !== undefined) {
     const refused = await host.approve({ tool: name, args }, guarded);
-    if (refused !== null) return { content: `Not done: ${refused}. Tell them in a few words; do not retry unless they ask.` };
+    if (refused !== null) return { content: `Not done: ${refused}. Say so in one short sentence and stop. Do not call this or any other tool again in this turn.` };
   }
 
   try {

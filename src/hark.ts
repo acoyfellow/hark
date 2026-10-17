@@ -205,6 +205,10 @@ export class Hark extends VoiceAgent<Env> {
     return { added, routines: this.routines(), schedules: this.getSchedules().filter((each) => each.callback === 'routineRun').map((each) => ({ id: each.id, type: each.type, time: each.time })) };
   }
 
+  transcript(limit = 200) {
+    return this.sql<{ role: string; text: string; timestamp: number }>`SELECT role, text, timestamp FROM cf_voice_messages ORDER BY id DESC LIMIT ${limit}`.toReversed();
+  }
+
   pushLog() {
     return this.sql<{ at: number; title: string; status: number; sent: number }>`SELECT at, title, status, sent FROM push_log ORDER BY id DESC LIMIT 20`;
   }
@@ -1146,7 +1150,7 @@ export class Hark extends VoiceAgent<Env> {
       openWorkspace: (path) => this.send(connection, { _tag: 'OpenWorkspace', path }),
       showTools: () => this.send(connection, { _tag: 'ShowTools' }),
       routines: { list: () => this.listRoutines(), add: (task, when, limit) => this.addRoutine(task, when, limit, caller.timeZone), remove: (which) => this.removeRoutine(which) },
-      approve: (call, summary) => this.guarded(connection, call, summary, this.turnSignal ?? undefined),
+      approve: (call, summary) => this.guarded(connection, call, summary),
       instructions: { get: () => this.instructions(), set: (text) => this.saveInstructions(text) },
       panels: {
         list: () => {
