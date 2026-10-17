@@ -1,0 +1,146 @@
+{
+  "lane": "L9",
+  "brain": "@cf/daily-co/phonellm-mini-alpha-2",
+  "passed": 12,
+  "total": 12,
+  "objectsAsModels": 10,
+  "imagesOnObjects": 0,
+  "pass": true,
+  "outcomes": [
+    {
+      "prompt": "show me a rocket",
+      "images": 0,
+      "models": 1,
+      "parts": 7,
+      "tools": [
+        "show_form"
+      ],
+      "kind": "object",
+      "ok": true
+    },
+    {
+      "prompt": "make a house",
+      "images": 0,
+      "models": 1,
+      "parts": 6,
+      "tools": [
+        "show_form"
+      ],
+      "kind": "object",
+      "ok": true
+    },
+    {
+      "prompt": "build me a chair",
+      "images": 0,
+      "models": 1,
+      "parts": 6,
+      "tools": [
+        "show_form"
+      ],
+      "kind": "object",
+      "ok": true
+    },
+    {
+      "prompt": "show me a car",
+      "images": 0,
+      "models": 1,
+      "parts": 9,
+      "tools": [
+        "show_form"
+      ],
+      "kind": "object",
+      "ok": true
+    },
+    {
+      "prompt": "can you make a robot",
+      "images": 0,
+      "models": 1,
+      "parts": 10,
+      "tools": [
+        "show_form"
+      ],
+      "kind": "object",
+      "ok": true
+    },
+    {
+      "prompt": "show a snowman",
+      "images": 0,
+      "models": 1,
+      "parts": 6,
+      "tools": [
+        "show_form"
+      ],
+      "kind": "object",
+      "ok": true
+    },
+    {
+      "prompt": "build a castle",
+      "images": 0,
+      "models": 1,
+      "parts": 10,
+      "tools": [
+        "show_form"
+      ],
+      "kind": "object",
+      "ok": true
+    },
+    {
+      "prompt": "show me a coffee mug",
+      "images": 0,
+      "models": 1,
+      "parts": 3,
+      "tools": [
+        "show_form"
+      ],
+      "kind": "object",
+      "ok": true
+    },
+    {
+      "prompt": "make a little scene with a house, a tree and a car",
+      "images": 0,
+      "models": 3,
+      "parts": 9,
+      "tools": [
+        "show_form",
+        "show_form",
+        "show_form"
+      ],
+      "kind": "object",
+      "ok": true
+    },
+    {
+      "prompt": "show me a sailboat",
+      "images": 0,
+      "models": 1,
+      "parts": 3,
+      "tools": [
+        "show_form"
+      ],
+      "kind": "object",
+      "ok": true
+    },
+    {
+      "prompt": "paint me a picture of a lighthouse at dusk",
+      "images": 1,
+      "models": 0,
+      "parts": 0,
+      "tools": [
+        "painting"
+      ],
+      "kind": "picture",
+      "ok": true
+    },
+    {
+      "prompt": "make an image of a dragon",
+      "images": 1,
+      "models": 0,
+      "parts": 0,
+      "tools": [
+        "imagine"
+      ],
+      "kind": "picture",
+      "ok": true
+    }
+  ],
+  "screenshots": "receipts/shots/model3d-*.png"
+}
