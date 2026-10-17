@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FILLERS, RECOVERY, type ReplyPorts, type ReplyResult, reply } from '../../src/reply';
+import { FILLERS, KEEP_YOUR_WORD, madeAPromise, RECOVERY, type ReplyPorts, type ReplyResult, reply } from '../../src/reply';
 import { UserSpeech } from '../../src/speech';
 import type { ToolCall } from '../../src/sse';
 import type { Upstream } from '../../src/upstream';
@@ -138,5 +138,34 @@ describe('the reply hark returns from onTurn', () => {
     await collect(reply(ports([{ deltas: [], calls: [{ id: 'r', name: 'rest', arguments: '{}' }] }, { deltas: ['Talk soon.'] }]), [], new AbortController().signal, result));
 
     expect(result.sleep).toBe(true);
+  });
+});
+
+describe('hark keeps its word', () => {
+  it('spots a spoken promise', () => {
+    expect(madeAPromise('Let me draw that for you.')).toBe(true);
+    expect(madeAPromise("Sure, I'll make a heart.")).toBe(true);
+    expect(madeAPromise('It is twenty degrees in Lisbon.')).toBe(false);
+  });
+
+  it('asks the brain once more when it promised but called no tool', async () => {
+    const result: ReplyResult = { sleep: false, tools: [], firstTextAt: null, error: null };
+    const p = ports([{ deltas: ['Let me draw a heart.'] }, { deltas: [], calls: [{ id: 'f', name: 'show_form', arguments: '{}' }] }, { deltas: [' There.'] }]);
+    const said = await collect(reply(p, [{ role: 'user', content: 'draw a heart' }], new AbortController().signal, result));
+
+    expect(said).toBe('Let me draw a heart. There.');
+    expect(result.tools).toEqual(['show_form']);
+    expect(result.nudged).toBe(true);
+    expect(JSON.stringify(p.seen[1])).toContain(KEEP_YOUR_WORD);
+  });
+
+  it('does not nudge a plain answer or nudge twice', async () => {
+    const plain: ReplyResult = { sleep: false, tools: [], firstTextAt: null, error: null };
+    await collect(reply(ports([{ deltas: ['Twenty degrees.'] }]), [], new AbortController().signal, plain));
+    expect(plain.nudged).toBeUndefined();
+    const stubborn = ports([{ deltas: ['Let me try.'] }, { deltas: [' Let me try again.'] }, { deltas: ['x'] }]);
+    const result: ReplyResult = { sleep: false, tools: [], firstTextAt: null, error: null };
+    await collect(reply(stubborn, [], new AbortController().signal, result));
+    expect(stubborn.seen.length).toBe(2);
   });
 });

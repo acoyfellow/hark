@@ -15,7 +15,7 @@ export type ReplyPorts = {
   readonly fail: (reason: string) => void;
 };
 
-export type ReplyResult = { sleep: boolean; tools: string[]; firstTextAt: number | null; error: string | null };
+export type ReplyResult = { sleep: boolean; tools: string[]; firstTextAt: number | null; error: string | null; nudged?: boolean };
 
 const FILLER_DELAY_MS = 500;
 
@@ -24,6 +24,12 @@ export const FILLERS = ['One moment.', 'Let me check on that.', 'Give me a secon
 export const RECOVERY = 'Sorry, I lost that. Could you say it again?';
 
 const MAX_ROUNDS = 4;
+
+const PROMISE = /\b(let me|i'?ll|i will|i'?m going to|here'?s|here is|watch|coming up|one sec|hang on|give me a (?:sec|second|moment))\b/iu;
+
+export const KEEP_YOUR_WORD = 'You just told them you would do something, but you called no tool, so nothing happened. Call the tool now. Do not repeat what you said and do not apologise.';
+
+export const madeAPromise = (text: string) => PROMISE.test(text);
 
 let fillerIndex = -1;
 
@@ -75,6 +81,7 @@ export async function* reply(
 ): AsyncGenerator<string> {
   const conversation: ChatMessage[] = [...history];
   let said = false;
+  let nudged = false;
 
   try {
     for (let round = 0; round < MAX_ROUNDS && !signal.aborted; round += 1) {
@@ -141,7 +148,16 @@ export async function* reply(
         yield parked;
       }
 
-      if (calls.length === 0 || round === MAX_ROUNDS - 1) return;
+      const lastRound = round === MAX_ROUNDS - 1;
+
+      if (calls.length === 0 && !lastRound && !nudged && result.tools.length === 0 && madeAPromise(text)) {
+        nudged = true;
+        result.nudged = true;
+        conversation.push({ role: 'assistant', content: text }, { role: 'user', content: KEEP_YOUR_WORD });
+        continue;
+      }
+
+      if (calls.length === 0 || lastRound) return;
 
       conversation.push({
         role: 'assistant',
