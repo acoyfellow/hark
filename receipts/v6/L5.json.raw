@@ -1,0 +1,63 @@
+{
+  "lane": "L5",
+  "brain": "@cf/daily-co/phonellm-mini-alpha-2",
+  "passed": 6,
+  "total": 6,
+  "pass": true,
+  "outcomes": [
+    {
+      "prompt": "what can you do?",
+      "ok": true,
+      "called": true,
+      "tools": [
+        "capabilities"
+      ],
+      "said": "Let me show you what I can do.\n\nI can shape the glowing swarm into emojis, words, or 3D shapes, paint pictures, run timers, remember your coffee order, and more. Want me to show you any of it?"
+    },
+    {
+      "prompt": "what tools do you have",
+      "ok": true,
+      "called": true,
+      "tools": [
+        "capabilities"
+      ],
+      "said": "Let me check.\n\nI can shape the glowing swarm on your screen, paint pictures, run code, and look things up. I also have a few other tools — want me to show you any of them?"
+    },
+    {
+      "prompt": "how big a 3d model can you build?",
+      "ok": true,
+      "called": true,
+      "tools": [
+        "capabilities"
+      ],
+      "said": "Let me check.\n\nI can build a 3D model with up to forty parts — spheres, boxes, cylinders, cones, tori, and capsules — and it spins so you see it from every side. Want me to make one now?"
+    },
+    {
+      "prompt": "can you edit files on my computer?",
+      "ok": true,
+      "called": false,
+      "tools": [
+        "open_computer"
+      ],
+      "said": "Yes, I can read and write files on your computer. Let me open your workspace so you can see what I'm doing.\n\nYour workspace is open. What file would you like me to look at or edit?"
+    },
+    {
+      "prompt": "what are you not able to do?",
+      "ok": true,
+      "called": true,
+      "tools": [
+        "capabilities"
+      ],
+      "said": "Let me check what I can't do.\n\nI can't see your screen unless you turn the camera on, and I can't browse sites that need a login. That's about it — everything else I can do."
+    },
+    {
+      "prompt": "which mcp servers do I have connected",
+      "ok": true,
+      "called": false,
+      "tools": [
+        "mcp"
+      ],
+      "said": "Let me check your connected MCP servers.\n\nYou've got one connected server — docs, ready for searching. Want me to look up something for you?"
+    }
+  ]
+}
