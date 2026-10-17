@@ -223,6 +223,7 @@ export const ServerFrame = Schema.Union([
   Schema.TaggedStruct('ServerNote', { note: Schema.String, authUrl: Schema.NullOr(Schema.String) }),
   Schema.TaggedStruct('Idle', { beats: Schema.Array(Beat) }),
   Schema.TaggedStruct('OpenWorkspace', { path: Schema.NullOr(Schema.String) }),
+  Schema.TaggedStruct('ShowTools', {}),
   Schema.TaggedStruct('Panels', { panels: Schema.Array(Panel), drawer: Schema.optional(Schema.Boolean) }),
 ]);
 

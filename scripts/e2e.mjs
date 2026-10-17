@@ -369,6 +369,26 @@ await scenario('panels: six cards stack, the drawer lists them, and voice reopen
   return { listed: before.length, open: before.filter((row) => row.open).length, after: afterClick.length };
 });
 
+await scenario('one tap on the tools button lists every tool, and asking what it can do opens the same list', async () => {
+  await page.locator('#tools').click();
+  await page.locator('#tool-count').waitFor({ timeout: 5000 });
+  const count = await page.locator('#tool-count').textContent();
+  const titles = await page.locator('[role=dialog], body').first().evaluate(() => document.body.innerText);
+  for (const title of ['Shape the swarm', 'Your panels', 'Terminal', 'Cloudflare API', 'What I can do']) if (!titles.includes(title)) throw new Error(`tool list is missing ${title}`);
+  await page.screenshot({ path: `${SHOTS}/tools-desktop.png` });
+  const sheetOpen = () => page.locator('[data-sheet-open]').getAttribute('data-sheet-open');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  if ((await sheetOpen()) !== 'false') throw new Error('Escape did not close the tool list');
+  if ((await page.locator('#swarm').getAttribute('data-look')) === 'asleep') await awake();
+  const report = await runTool('capabilities', {});
+  await page.waitForFunction(() => document.querySelector('[data-sheet-open]')?.getAttribute('data-sheet-open') === 'true' && document.querySelector('#tool-count') !== null, null, { timeout: 5000 });
+  if (!/Limits:/u.test(report.content) || !/panels/u.test(report.content)) throw new Error(`capabilities did not report: ${report.content.slice(0, 200)}`);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.querySelector('[data-sheet-open]')?.getAttribute('data-sheet-open') === 'false', null, { timeout: 5000 });
+  return { count };
+});
+
 await scenario('the durable computer runs a command and shows a terminal card', async () => {
   const result = await runTool('terminal', { command: 'cd /workspace && ls -la && node -v' });
 

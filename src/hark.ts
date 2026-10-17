@@ -877,6 +877,7 @@ export class Hark extends VoiceAgent<Env> {
         return { image: '', title: pageTitle(page.stdout, url), text: pageText(page.stdout, 6000) };
       },
       openWorkspace: (path) => this.send(connection, { _tag: 'OpenWorkspace', path }),
+      showTools: () => this.send(connection, { _tag: 'ShowTools' }),
       panels: {
         list: () => {
           this.savePanels(connection, this.panels(), true);

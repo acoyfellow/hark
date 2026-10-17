@@ -113,6 +113,7 @@ const onFrame = (model: Model, frame: ServerFrame): Return =>
       }),
       Sleep: ({ reason }): Return => ({ model: sleep(model, Option.some(reason)) }),
       Idle: ({ beats }): Return => ({ model: modifyFields(model, { idle: () => beats }) }),
+      ShowTools: (): Return => openSheet(modifyFields(model, { tab: () => 'tools', drawer: () => false })),
       Panels: ({ panels, drawer }): Return => ({ model: modifyFields(model, { panels: () => panels, drawer: (open) => drawer ?? open }) }),
       OpenWorkspace: ({ path }): Return => ({
         model: modifyFields(model, { workspace: (workspace) => ({ ...workspace, open: true, loading: true }), sheet: () => false }),
@@ -180,6 +181,7 @@ export const update = (model: Model, message: Message): Return =>
       return configure(model, { ...current, engine, voice });
     },
     ClickedSignOut: () => ({ model: sleep(model, Option.none()), commands: [SignOut()] }),
+    ClickedTools: () => (model.sheet && model.tab === 'tools' ? { model: modifyFields(model, { sheet: () => false }) } : openSheet(modifyFields(model, { tab: () => 'tools', drawer: () => false }))),
     ClickedDrawer: () => ({ model: modifyFields(model, { drawer: (open) => !open }) }),
     ClickedPanel: ({ id, action }) => ({
       model: modifyFields(model, { panels: (panels) => (action === 'delete' ? panels.filter((panel) => panel.id !== id) : panels.map((panel) => (panel.id === id ? { ...panel, open: action === 'open' || action === 'pin' ? true : action === 'close' ? false : panel.open, pinned: action === 'pin' ? true : action === 'unpin' ? false : panel.pinned } : panel))) }),

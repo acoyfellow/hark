@@ -249,7 +249,12 @@ const toolsTab = (h: H, model: Model): readonly Html[] => {
   const servers = model.servers.filter((server) => matches(model.query, server.name, server.host));
   const groups = TOOL_GROUPS.map((group) => ({ group, tools: TOOL_CATALOG.filter((tool) => tool.group === group && matches(model.query, tool.title, tool.say, tool.name, group)) })).filter((entry) => entry.tools.length > 0);
 
+  const builtIn = groups.map(({ group, tools }) => section(h, group, [h.div([h.Class('divide-y divide-white/[0.06] rounded-xl border border-white/[0.07] px-3.5')], tools.map((tool) => toolRow(h, tool)))]));
+  const mcpTools = model.servers.reduce((total, server) => total + server.tools, 0);
+
   return [
+    h.p([h.Id('tool-count'), h.Class('mb-5 font-mono text-[11px] tracking-[0.1em] text-white/45 uppercase')], [`${TOOL_CATALOG.length} built-in tools · ${model.servers.length} MCP servers · ${mcpTools} MCP tools. Or ask "what can you do?"`]),
+    ...builtIn,
     section(h, 'Your computer', [
       h.button(
         [h.Type('button'), h.Id('settings-open-workspace'), h.Class('flex w-full items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3.5 py-3 text-left hover:border-ember/40'), h.OnClick(Message.ClickedWorkspace())],
@@ -262,7 +267,6 @@ const toolsTab = (h: H, model: Model): readonly Html[] => {
         : h.div([h.Class('divide-y divide-white/[0.06] rounded-xl border border-white/[0.07] px-3.5')], servers.map((server) => serverRow(h, server))),
       addServer(h, model),
     ]),
-    ...groups.map(({ group, tools }) => section(h, group, [h.div([h.Class('divide-y divide-white/[0.06] rounded-xl border border-white/[0.07] px-3.5')], tools.map((tool) => toolRow(h, tool)))])),
   ];
 };
 

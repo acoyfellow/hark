@@ -2,6 +2,7 @@ import { shapeToolCall } from './tool-call-shape';
 import { modelProblem } from '../shared/model-parts';
 import { isEmptyWidget, widgetOf } from '../shared/widget-parse';
 import type { PanelChange } from './panels';
+import { TOOL_CATALOG, TOOL_GROUPS } from '../shared/tool-catalog';
 import { PANEL_SIZES, WIDGET_KINDS, WIDGET_TONES, type Beat, FAST_VOICES, FORM_ICONS, FORM_KINDS, FORM_MOTIONS, FORM_SOLIDS, RICH_VOICES, VOICES, type FormKind, type FormMotion, type Visual, type Voice } from '../shared/protocol';
 
 export type ToolOutcome = {
@@ -30,6 +31,7 @@ export type ToolHost = {
   readonly screenshot: (url: string) => Promise<{ readonly image: string; readonly title: string; readonly text: string }>;
   readonly setIdle: (beats: readonly Beat[]) => void;
   readonly openWorkspace: (path: string | null) => void;
+  readonly showTools: () => void;
   readonly panels: { readonly list: () => string; readonly change: (change: PanelChange) => string };
   readonly setVoice: (voice: Voice) => void;
   readonly fetch: typeof fetch;
@@ -667,6 +669,35 @@ const showWidget: Definition = {
   },
 };
 
+const LIMITS = [
+  `Shapes: up to ${MAX_BEATS} beats per show, each 1 to 12 seconds; hold keeps one on screen as long as they like.`,
+  '3D models: up to 40 parts (spheres, boxes, cylinders, cones, tori, capsules).',
+  'Panels: 4 open at once, 40 kept in the drawer; small, medium or large.',
+  'Terminal: one command at a time, 120 seconds each, on their own durable Linux computer.',
+  'Cloudflare: reads at once; changes only after they say yes.',
+  'Memory: facts they ask to keep; the last 24 messages as text; never audio or camera frames.',
+  'It cannot see the screen unless the camera is on, and it cannot browse logged-in sites.',
+];
+
+export const capabilityReport = (servers: readonly { readonly name: string; readonly state: string }[], tools: readonly { readonly server: string; readonly name: string }[]) =>
+  [
+    ...TOOL_GROUPS.map((group) => `${group}: ${TOOL_CATALOG.filter((tool) => tool.group === group).map((tool) => `${tool.title} (${tool.name}, say "${tool.say}")`).join('; ')}`),
+    servers.length === 0 ? 'MCP servers: none connected. They can add one by URL in Settings, Tools.' : `MCP servers: ${servers.map((server) => `${server.name} (${server.state}): ${tools.filter((tool) => tool.server === server.name).map((tool) => tool.name).join(', ') || 'no tools yet'}`).join('; ')}`,
+    'Limits:',
+    ...LIMITS,
+  ].join('\n');
+
+const capabilities: Definition = {
+  name: 'capabilities',
+  label: () => 'Checking what I can do',
+  description: 'Use this whenever they ask what you can do, what your tools are, what you cannot do, or how big or long something can be. It returns the real list and limits and opens the tool list on their screen. Answer from it in two or three spoken sentences, naming a few tools by what they do, then offer the tool list on screen.',
+  parameters: object({}, []),
+  run: async (_args, host) => {
+    host.showTools();
+    return { content: capabilityReport(host.mcp.servers(), host.mcp.tools()) };
+  },
+};
+
 const PANEL_VERBS = ['list', 'open', 'close', 'delete', 'pin', 'unpin', 'resize', 'close_all', 'delete_all'] as const;
 
 const panelsTool: Definition = {
@@ -703,6 +734,7 @@ const panelsTool: Definition = {
 };
 
 export const TOOLS: readonly Definition[] = [
+  capabilities,
   panelsTool,
   lookUp,
   setTimer,

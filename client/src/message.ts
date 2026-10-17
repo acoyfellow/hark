@@ -32,6 +32,7 @@ export const Message = defineMessageUnion({
   ClickedSignOut: {},
   DismissedVisual: { id: Schema.String },
   ClickedDrawer: {},
+  ClickedTools: {},
   ClickedPanel: { id: Schema.String, action: PanelAction },
   DismissedFault: {},
   StartedEngine: {},
