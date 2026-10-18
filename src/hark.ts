@@ -225,7 +225,11 @@ export class Hark extends VoiceAgent<Env> {
   }
 
   transcript(limit = 200) {
-    return this.sql<{ role: string; text: string; timestamp: number }>`SELECT role, text, timestamp FROM cf_voice_messages ORDER BY id DESC LIMIT ${limit}`.toReversed();
+    this.ensureVoiceHistory();
+    return {
+      lines: this.recentLines().map((line) => ({ ...line, time: new Date(line.at).toISOString() })),
+      messages: this.sql<{ role: string; text: string; timestamp: number }>`SELECT role, text, timestamp FROM cf_voice_messages ORDER BY id DESC LIMIT ${limit}`.toReversed(),
+    };
   }
 
   pushLog() {
