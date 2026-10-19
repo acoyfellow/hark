@@ -128,6 +128,8 @@ const route = async (request: Request, env: Env, owner: string, local: boolean):
 
 
 
+  if (isLoopback(request) && pathname === '/__reset' && request.method === 'POST') return Response.json(await (await getAgentByName(env.HARK, owner)).resetForTests());
+
   if (isLoopback(request) && pathname === '/__tool' && request.method === 'POST') {
     const agent = await getAgentByName(env.HARK, owner);
     const { name, args } = await request.json<{ name: string; args: Record<string, unknown> }>();

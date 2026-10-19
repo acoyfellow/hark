@@ -224,6 +224,17 @@ export class Hark extends VoiceAgent<Env> {
     return this.sql<TranscriptLine>`SELECT at, kind, text FROM lines ORDER BY id DESC LIMIT ${MAX_LINES}`.toReversed();
   }
 
+  async resetForTests() {
+    for (const each of this.getSchedules()) await this.cancelSchedule(each.id);
+    this.ensureVoiceHistory();
+    this.sql`DELETE FROM memories`;
+    this.sql`DELETE FROM lines`;
+    this.sql`DELETE FROM cf_voice_messages`;
+    this.sql`DELETE FROM settings WHERE key = 'instructions'`;
+    this.sessionStartsAfter = 0;
+    return { reset: true };
+  }
+
   transcript(limit = 200) {
     this.ensureVoiceHistory();
     return {
@@ -1269,12 +1280,13 @@ export class Hark extends VoiceAgent<Env> {
       label: (call) => toolLabel(call.name, parseArguments(call.arguments)),
       tool: async (call) => {
         trace('tool', { name: call.name, arguments: call.arguments.slice(0, 600) });
-        this.line('tool', `${call.name} ${call.arguments.slice(0, 300)}`);
+        const shaped = shapeToolCall(call.name, parseArguments(call.arguments), TOOLS.map((each) => each.name));
+        this.line('tool', `${shaped.name} ${JSON.stringify(shaped.args).slice(0, 300)}`);
 
         const outcome = (await context.confirmed) ? await runTool(call.name, parseArguments(call.arguments), host) : { content: 'The person kept talking, so this was not done.' };
 
         trace('tool-result', { name: call.name, content: outcome.content.slice(0, 300), visual: outcome.visual?._tag ?? null });
-        this.line(outcome.content.startsWith('Not done') || outcome.content.startsWith('That did not work') ? 'error' : 'result', `${call.name}: ${outcome.content.slice(0, 300)}`);
+        this.line(outcome.content.startsWith('Not done') || outcome.content.startsWith('That did not work') ? 'error' : 'result', `${shaped.name}: ${outcome.content.slice(0, 300)}`);
 
         return outcome;
       },

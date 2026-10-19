@@ -59,12 +59,23 @@ export class SpokenRecord {
 
     if (heardWords.length === 0) return true;
 
-    const recent = new Set(this.lines.flatMap((line) => wordsOf(line.text)));
-    const matching = heardWords.filter((word) => recent.has(word)).length;
+    const longest = Math.max(0, ...this.lines.map((line) => longestSharedRun(heardWords, wordsOf(line.text))));
 
-    return matching / heardWords.length >= ECHO_SHARE;
+    return longest / heardWords.length >= ECHO_SHARE;
   }
 }
+
+const longestSharedRun = (heard: readonly string[], spoken: readonly string[]) => {
+  let best = 0;
+  for (let start = 0; start < spoken.length; start += 1) {
+    for (let from = 0; from < heard.length; from += 1) {
+      let run = 0;
+      while (start + run < spoken.length && from + run < heard.length && spoken[start + run] === heard[from + run]) run += 1;
+      best = Math.max(best, run);
+    }
+  }
+  return best;
+};
 
 const isRealBargeIn = (record: SpokenRecord, heard: string) => heard.trim().length >= BARGE_MIN_CHARS && !record.isEcho(heard);
 

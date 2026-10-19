@@ -1,0 +1,22 @@
+name: replays
+scenarios:
+  - name: memory_fix_does_not_loop_on_passkeys
+    turns:
+      - user: "remember my name is Jordan Cooyman and my email is jcoyman@cloudflare.com"
+        expect: { tools: [remember] }
+      - user: "that's wrong, my name is Coeyman and the email is jcoeyman at cloudflare dot com, update my memory"
+        expect: { tools: [remember], never: [instructions], no_passkey: true, max_tools: 3 }
+      - user: "is it fixed now?"
+        expect: { never: [instructions], no_passkey: true, max_tools: 1 }
+  - name: talking_over_does_not_retry_guarded_calls
+    turns:
+      - user: "change my memory, my last name is Coeyman"
+        interrupt_after_ms: 1200
+        then: "yes, Coeyman with an e"
+        expect: { never: [instructions], no_passkey: true, max_tools: 3 }
+  - name: forget_by_pronoun_is_not_a_false_done
+    turns:
+      - user: "remember that I like jazz"
+        expect: { tools: [remember] }
+      - user: "actually forget that"
+        expect: { tools: [forget], no_false_done: true }

@@ -23,3 +23,29 @@ describe('a standing rule in what they said', () => {
     for (const heard of ['what is the weather', 'paint a cat', 'how are you', 'call me Jordan']) expect(setsARule(heard)).toBe(false);
   });
 });
+
+describe('asking to keep a fact', () => {
+  it('nudges remember for remember and memory fixes, not for rules', async () => {
+    const { asksToKeepAFact } = await import('../../src/reply');
+    for (const heard of ['remember my name is Jordan', 'please remember I like jazz', "that's wrong, update my memory", 'fix that memory']) expect(asksToKeepAFact(heard)).toBe(true);
+    for (const heard of ['always remember to answer in one sentence', 'what do you remember', 'how are you']) expect(asksToKeepAFact(heard)).toBe(false);
+  });
+});
+
+describe('who-was questions', () => {
+  it('turn a shape into a look-up unless they asked to see it', async () => {
+    const { asModel } = await import('../../src/reply');
+    const shape = { id: '1', name: 'show_form', arguments: '{"beats":[]}' };
+    expect(asModel(shape, 'who was Ada Lovelace?')).toMatchObject({ name: 'look_up', arguments: '{"topic":"Ada Lovelace"}' });
+    expect(asModel(shape, 'show me what Ada Lovelace looked like').name).toBe('show_form');
+    expect(asModel(shape, 'show me a heart').name).toBe('show_form');
+  });
+});
+
+describe('forget asks', () => {
+  it('are recognised', async () => {
+    const { asksToForget } = await import('../../src/reply');
+    for (const heard of ['forget that I like jazz', 'actually forget that', 'delete that memory']) expect(asksToForget(heard)).toBe(true);
+    for (const heard of ['remember I like jazz', 'how are you']) expect(asksToForget(heard)).toBe(false);
+  });
+});

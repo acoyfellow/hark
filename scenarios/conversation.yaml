@@ -1,0 +1,24 @@
+name: conversation
+scenarios:
+  - name: small_talk_uses_no_tools
+    turns:
+      - user: "how are you doing today?"
+        expect: { tools: [], never: [show_form, look_up, imagine] }
+  - name: garbled_asks_back
+    turns:
+      - user: "uh the um motocross thing"
+        expect: { tools: [], never: [look_up, imagine, look], reply_matches: "\\?" }
+  - name: thanks_and_goodbye_sleeps
+    turns:
+      - user: "thanks, that's all, goodbye"
+        expect: { tools: [rest], never: [show_form, look_up], sleeps: true }
+  - name: time_needs_no_tool
+    turns:
+      - user: "what time is it?"
+        expect: { tools: [], never: [look_up, show_form] }
+  - name: barge_in_cuts_and_obeys
+    turns:
+      - user: "tell me a long story about the ocean"
+        interrupt_after_ms: 2500
+        then: "stop, set a timer for two minutes instead"
+        expect: { tools: [set_timer] }

@@ -94,3 +94,13 @@ describe('the echo gate', () => {
     expect(record.agentAudible()).toBe(false);
   });
 });
+
+describe('echo needs the same words in the same order', () => {
+  it('keeps a real follow-up that reuses common words', () => {
+    const record = new SpokenRecord(() => 1000);
+    record.spoke("Got it, I like that you like jazz. I'll keep that in mind. What is on your mind?");
+    expect(record.isEcho('Forget that I like jazz.')).toBe(false);
+    expect(record.isEcho('What is my name?')).toBe(false);
+    expect(record.isEcho("I'll keep that in mind")).toBe(true);
+  });
+});

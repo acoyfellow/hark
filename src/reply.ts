@@ -27,9 +27,19 @@ const MAX_ROUNDS = 6;
 
 const PROMISE = /\b(let me|i'?ll|i will|i'?m going to|here'?s|here is|watch|coming up|one sec|hang on|give me a (?:sec|second|moment))\b/iu;
 
-const CLAIM = new RegExp(String.raw`\b(?:i'?ve|i have|i just)\s+(?:removed|deleted|closed|opened|pinned|resized|saved|set|cancelled|canceled|changed|made|drawn|painted|shown|added|started|stopped|sent|created|updated|moved|forgotten|cleared|let go)\b|^\s*(?:done|all set|got it,? (?:forgotten|removed|saved))\b|\b(?:done|deleted|removed|closed|forgotten|cleared)[.!]|\b(?:are|is|have been|has been) (?:now )?(?:closed|deleted|removed|forgotten|cleared|saved)\b`, 'iu');
+const CLAIM = new RegExp(String.raw`\b(?:i'?ve|i have|i just)\s+(?:removed|deleted|closed|opened|pinned|resized|saved|set|cancelled|canceled|changed|made|drawn|painted|shown|added|started|stopped|sent|created|updated|moved|forgotten|cleared|let (?:\w+ )?go|dropped|erased|wiped)\b|^\s*(?:done|all set|got it,? (?:forgotten|removed|saved))\b|\b(?:done|deleted|removed|closed|forgotten|cleared)[.!]|\b(?:are|is|have been|has been) (?:now )?(?:closed|deleted|removed|forgotten|cleared|saved)\b`, 'iu');
 
 export const KEEP_YOUR_WORD = 'You just told them you would do something, or that you did it, but you called no tool, so nothing happened. Call the tool now. Do not repeat what you said and do not apologise.';
+
+const FORGET_ASK = new RegExp(String.raw`\b(?:forget|delete|remove|erase|drop)\b.*\b(?:that|this|it|memory|memories|fact|about me|i like|my)\b|^\s*forget\b`, 'iu');
+
+export const asksToForget = (heard: string) => FORGET_ASK.test(heard);
+
+export const FORGET_IT = 'They asked you to forget something and you called no tool, so it is still saved. Call forget now with a few words from the saved fact. Do not call remember.';
+
+const PERSON_QUESTION = new RegExp(String.raw`^\s*(?:who (?:was|is|were|are)|what (?:was|is) (?:a|an|the)\b|tell me about|when (?:did|was)|where (?:is|was))\b`, 'iu');
+
+const asksAFactQuestion = (heard: string) => PERSON_QUESTION.test(heard);
 
 export const madeAPromise = (text: string) => PROMISE.test(text) || CLAIM.test(text);
 
@@ -65,6 +75,12 @@ const STANDING = new RegExp(String.raw`\b(?:from now on|going forward|always|nev
 
 export const setsARule = (heard: string) => STANDING.test(heard);
 
+const KEEP_THIS = new RegExp(String.raw`^\s*(?:please\s+)?(?:remember|don'?t forget|note|keep in mind)\b|\b(?:update|fix|correct|change) (?:my|that|the) memor(?:y|ies)\b`, 'iu');
+
+export const asksToKeepAFact = (heard: string) => KEEP_THIS.test(heard) && !STANDING.test(heard);
+
+export const SAVE_THE_FACT = 'They asked you to remember or correct a fact about them and you did not save it, so you will forget it. Call remember now with the fact as one short sentence. If it corrects an old fact, put words from the old fact in replaces. Then confirm in a few words.';
+
 export const SAVE_THE_RULE = 'They gave you a standing instruction and you did not save it, so you will forget it. Call the tool named instructions now, for example {"action":"add","text":"Keep every answer to one sentence."}. Use set to change or remove a rule, reset to clear all. No other tool. Then confirm in a few words.';
 
 export const finishTheList = (steps: readonly string[], done: number) =>
@@ -97,7 +113,13 @@ const subjectOf = (raw: string) => {
   }
 };
 
-export const asModel = (call: ToolCall, heard: string): ToolCall => {
+const SHOW_ASK = new RegExp(String.raw`\b(?:show|draw|picture|see|look like|model|build|make)\b`, 'iu');
+
+const asLookUp = (call: ToolCall, heard: string): ToolCall =>
+  (call.name === 'show_form' || call.name === 'imagine') && asksAFactQuestion(heard) && !SHOW_ASK.test(heard) ? { ...call, name: 'look_up', arguments: JSON.stringify({ topic: heard.replace(PERSON_QUESTION, '').replace(/[?.!]+$/u, '').trim() }) } : call;
+
+export const asModel = (raw: ToolCall, heard: string): ToolCall => {
+  const call = asLookUp(raw, heard);
   if (call.name !== 'imagine' || askedForAPicture(heard)) return call;
   const subject = subjectOf(call.arguments) || heard;
   return { ...call, name: 'show_form', arguments: JSON.stringify({ beats: [{ kind: 'model', value: subject.slice(0, 200), seconds: 8, motion: 'spin' }], hold: true }) };
@@ -150,6 +172,7 @@ export async function* reply(
   let actions = 0;
   const steps = stepsAsked(lastUserText(history));
   const ruled = setsARule(lastUserText(history));
+  const keeps = asksToKeepAFact(lastUserText(history));
   const heard = lastUserText(history);
 
   try {
@@ -219,6 +242,13 @@ export async function* reply(
 
       const lastRound = round === MAX_ROUNDS - 1;
 
+      if (calls.length === 0 && !lastRound && !nudged && result.tools.length === 0 && keeps) {
+        nudged = true;
+        result.nudged = true;
+        conversation.push({ role: 'assistant', content: text === '' ? null : text }, { role: 'user', content: SAVE_THE_FACT });
+        continue;
+      }
+
       if (calls.length === 0 && !lastRound && !nudged && result.tools.length === 0 && ruled) {
         nudged = true;
         result.nudged = true;
@@ -229,7 +259,7 @@ export async function* reply(
       if (calls.length === 0 && !lastRound && !nudged && result.tools.length === 0 && madeAPromise(text)) {
         nudged = true;
         result.nudged = true;
-        conversation.push({ role: 'assistant', content: text }, { role: 'user', content: KEEP_YOUR_WORD });
+        conversation.push({ role: 'assistant', content: text }, { role: 'user', content: asksToForget(heard) ? FORGET_IT : KEEP_YOUR_WORD });
         continue;
       }
 

@@ -1,0 +1,24 @@
+name: memory
+scenarios:
+  - name: remember_a_fact
+    turns:
+      - user: "remember that I like jazz"
+        expect: { tools: [remember], never: [instructions], no_passkey: true }
+  - name: fix_a_misspelled_name
+    turns:
+      - user: "remember my name is Jordan Cooyman"
+        expect: { tools: [remember] }
+      - user: "no, it is spelled C O E Y M A N, Coeyman. Fix that memory"
+        expect: { tools: [remember], args: { remember: "replaces" }, never: [instructions], no_passkey: true, max_tools: 3 }
+      - user: "what is my name?"
+        expect: { tools: [], reply_matches: "Coeyman", reply_not: "Cooyman" }
+  - name: forget_a_fact
+    turns:
+      - user: "remember that I like jazz"
+        expect: { tools: [remember] }
+      - user: "forget that I like jazz"
+        expect: { tools: [forget], never: [instructions], no_false_done: true }
+  - name: call_me_is_a_fact
+    turns:
+      - user: "call me Jordan"
+        expect: { never: [instructions], no_passkey: true }

@@ -1,0 +1,22 @@
+name: tools
+scenarios:
+  - name: timer
+    turns:
+      - user: "set a timer for five minutes"
+        expect: { tools: [set_timer], max_tools: 2 }
+  - name: look_up_a_person
+    turns:
+      - user: "who was Ada Lovelace?"
+        expect: { tools: [look_up], reply_matches: "(?i)(mathematic|babbage|engine|program)" }
+  - name: rule_goes_to_instructions
+    turns:
+      - user: "from now on always answer in one sentence"
+        expect: { tools: [instructions], never: [set_timer] }
+  - name: capabilities_from_the_tool
+    turns:
+      - user: "what can you do?"
+        expect: { tools: [capabilities] }
+  - name: close_panels
+    turns:
+      - user: "close all the panels"
+        expect: { tools: [panels], max_tools: 2 }

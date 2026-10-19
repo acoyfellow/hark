@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-19T13:29:03.096Z",
+  "text": {
+    "passed": 17,
+    "of": 17
+  },
+  "audio": {
+    "passed": 16,
+    "of": 17,
+    "need": 15
+  },
+  "e2e": "32/32 scenarios passed",
+  "check": "all checks passed"
+}
