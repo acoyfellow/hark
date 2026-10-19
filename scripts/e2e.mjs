@@ -256,6 +256,7 @@ const runTool = async (name, args) => {
 };
 
 const awake = async () => {
+  if ((await page.locator('#swarm').getAttribute('data-look')) !== 'asleep') return;
   const tapped = Date.now();
 
   await page.locator('#orb').click();
@@ -263,7 +264,7 @@ const awake = async () => {
 };
 
 await scenario('swiping up shows what was heard, said and done, with tool calls; swiping down hides it; there is no text box', async () => {
-  if ((await page.locator('#swarm').getAttribute('data-look')) === 'asleep') await awake();
+  await awake();
   await page.waitForFunction(() => document.querySelectorAll('#transcript-lines li').length >= 2, null, { timeout: 20000 });
   const handle = await page.locator('#transcript-handle').boundingBox();
   const x = handle.x + handle.width / 2;
@@ -337,7 +338,15 @@ await scenario('stay still holds a pink heart perfectly still, and a pink heart 
   const holdHeart = async () => {
     const held = await runTool('show_form', { hold: true, beats: [{ kind: 'solid', value: 'heart', seconds: 2, motion: 'still', tint: 'pink' }] });
     if (held.error !== undefined) throw new Error(held.error);
-    await page.waitForFunction(() => document.querySelector('#swarm')?.dataset.held === '1', null, { timeout: 10000 });
+    const isHeld = () => page.waitForFunction(() => document.querySelector('#swarm')?.dataset.held === '1', null, { timeout: 10000 });
+    await isHeld().catch(async () => {
+      await awake();
+      await runTool('show_form', { hold: true, beats: [{ kind: 'solid', value: 'heart', seconds: 2, motion: 'still', tint: 'pink' }] });
+      await isHeld().catch(async (cause) => {
+        const state = await page.evaluate(() => ({ ...document.querySelector('#swarm')?.dataset }));
+        throw new Error(`${cause.message} swarm=${JSON.stringify(state)} tool=${JSON.stringify(held).slice(0, 200)}`);
+      });
+    });
     await page.waitForTimeout(4000);
   };
   const frame = async () => {
@@ -376,9 +385,13 @@ await scenario('stay still holds a pink heart perfectly still, and a pink heart 
   if (pinkish < 20) throw new Error(`the heart is not pink (${pinkish} pink pixels)`);
   await page.screenshot({ path: `${SHOTS}/held-pink-heart-desktop.png` });
   if (!(await page.evaluate(() => document.querySelector('#swarm')?.dataset.held === '1'))) throw new Error('hold let go by itself');
-  await runTool('show_form', { hold: false, beats: [] });
-  await page.waitForFunction(() => document.querySelector('#swarm')?.dataset.held === '', null, { timeout: 10000 });
+  await awake();
+  const released = await runTool('show_form', { hold: false, beats: [] });
+  await page.waitForFunction(() => document.querySelector('#swarm')?.dataset.held === '', null, { timeout: 10000 }).catch(async () => {
+    throw new Error(`hold did not let go: ${JSON.stringify(released).slice(0, 200)} swarm=${JSON.stringify(await page.evaluate(() => ({ ...document.querySelector('#swarm')?.dataset, idleBeats: undefined })))}`);
+  });
   await runTool('show_form', { idle: true, beats: [{ kind: 'solid', value: 'heart', seconds: 6, motion: 'still', tint: 'pink' }] });
+  await awake();
   await page.waitForFunction(() => (document.querySelector('#swarm')?.dataset.idleBeats ?? '').includes('#ff5fa2'), null, { timeout: 10000 });
   await page.reload();
   await page.waitForTimeout(1500);

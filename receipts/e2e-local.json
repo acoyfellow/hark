@@ -2,23 +2,23 @@
   "kind": "hark.e2e",
   "target": "local",
   "base": "http://localhost:8791",
-  "at": "2026-10-17T21:40:38.743Z",
+  "at": "2026-10-19T05:06:07.451Z",
   "passed": 32,
   "total": 32,
   "speech": {
-    "count": 6597,
-    "bytes": 10807200
+    "count": 5687,
+    "bytes": 9391200
   },
   "results": [
     {
       "name": "the page renders asleep with the ear and no chat box",
       "ok": true,
-      "ms": 3064
+      "ms": 3349
     },
     {
       "name": "tapping the ear opens the line to the account and starts listening",
       "ok": true,
-      "ms": 1276,
+      "ms": 1347,
       "detail": {
         "account": "Local account",
         "settings": {
@@ -31,16 +31,16 @@
     {
       "name": "a spoken question gets a tool call, an article card, and a spoken answer",
       "ok": true,
-      "ms": 4433,
+      "ms": 4787,
       "detail": {
         "latency": {
           "total": 0,
-          "model": 124,
-          "speech": 64,
+          "model": 125,
+          "speech": 63,
           "eager": true,
-          "leadMs": 304
+          "leadMs": 334
         },
-        "firstSpeechMs": 2877,
+        "firstSpeechMs": 3036,
         "packets": 137
       }
     },
@@ -52,16 +52,16 @@
     {
       "name": "remember stores a fact and shows it",
       "ok": true,
-      "ms": 6175
+      "ms": 5886
     },
     {
       "name": "show_form plays a two-beat particle movie (3D heart, then a drawing), with no card",
       "ok": true,
-      "ms": 2043,
+      "ms": 2140,
       "detail": {
         "form": {
           "_tag": "Form",
-          "id": "eab19702-a011-4e54-a6cd-85b9310406f5",
+          "id": "8d0ddcd8-37f0-4b6b-808a-47a60267a375",
           "beats": [
             {
               "kind": "solid",
@@ -82,97 +82,97 @@
     {
       "name": "paint forms the picture in the swarm first, then hands it to a card",
       "ok": true,
-      "ms": 9844
+      "ms": 9391
     },
     {
       "name": "talking over a long answer interrupts it (barge-in)",
       "ok": true,
-      "ms": 11966,
+      "ms": 12374,
       "detail": {
-        "interruptedAfterMs": 7302
+        "interruptedAfterMs": 7155
       }
     },
     {
       "name": "a timer counts down and hark announces it when it ends (Durable Object alarm)",
       "ok": true,
-      "ms": 4563,
+      "ms": 4931,
       "detail": {
-        "announcedAfterMs": 2903
+        "announcedAfterMs": 3271
       }
     },
     {
       "name": "with the camera on, asking about it takes one frame and looks",
       "ok": true,
-      "ms": 6710
+      "ms": 6953
     },
     {
       "name": "saying goodbye puts hark to sleep and closes the microphone",
       "ok": true,
-      "ms": 9519
+      "ms": 6409
     },
     {
       "name": "one tap wakes it again after it slept, and it listens",
       "ok": true,
-      "ms": 5363
+      "ms": 1643
     },
     {
       "name": "swiping up shows what was heard, said and done, with tool calls; swiping down hides it; there is no text box",
       "ok": true,
-      "ms": 6447,
+      "ms": 7490,
       "detail": {
         "kinds": [
-          "said",
-          "heard",
           "tool",
-          "result"
+          "result",
+          "said",
+          "heard"
         ]
       }
     },
     {
       "name": "report and alert widgets appear beside the swarm",
       "ok": true,
-      "ms": 6841
+      "ms": 1808
     },
     {
       "name": "a 3D model beat sculpts an object in the swarm",
       "ok": true,
-      "ms": 2008
+      "ms": 2331
     },
     {
       "name": "ten objects and one scene are built as 3D models, each held still for a screenshot",
       "ok": true,
-      "ms": 72573,
+      "ms": 93733,
       "detail": {
         "kits": 11,
         "states": [
           0,
-          1,
           2,
-          0,
-          0,
-          0,
+          4,
           0,
           0,
           3,
+          2,
+          2,
           0,
-          1
+          0,
+          0
         ]
       }
     },
     {
       "name": "stay still holds a pink heart perfectly still, and a pink heart default survives a reload",
       "ok": true,
-      "ms": 16069,
+      "ms": 18542,
       "detail": {
-        "drift": 1.25,
-        "pinkish": 31,
+        "drift": 3.04,
+        "pinkish": 47,
         "tries": 1
       }
     },
     {
       "name": "panels: six cards stack, the drawer lists them, and voice reopens, deletes and resizes",
       "ok": true,
-      "ms": 4457,
+      "ms": 4705,
       "detail": {
         "listed": 6,
         "open": 4,
@@ -182,7 +182,7 @@
     {
       "name": "the Tools tab lists every tool, and asking what it can do opens the same list",
       "ok": true,
-      "ms": 2892,
+      "ms": 3218,
       "detail": {
         "count": "23 built-in tools · 0 MCP servers · 0 MCP tools. Or ask \"what can you do?\""
       }
@@ -190,15 +190,15 @@
     {
       "name": "the durable computer runs a command and shows a terminal card",
       "ok": true,
-      "ms": 1464,
+      "ms": 1707,
       "detail": {
-        "output": "$ cd /workspace && ls -la && node -v\ntotal 12\ndrwxr-xr-x 1 root root 4096 Oct 17 21:29 .\ndrwxr-xr-x 1 root root 4096 Oct 17 21:29 ..\n-rw-r--r-- 1 root root   17 Oct 17 21:35 workers.txt\nv22.23.3"
+        "output": "$ cd /workspace && ls -la && node -v\ntotal 12\ndrwxr-xr-x 1 root root 4096 Oct 19 04:42 .\ndrwxr-xr-x 1 root root 4096 Oct 19 04:42 ..\n-rw-r--r-- 1 root root   17 Oct 19 05:00 workers.txt\nv22.23.3"
       }
     },
     {
       "name": "the computer lists workers through hark and writes a summary; it holds no token, and a write is refused without biometrics",
       "ok": true,
-      "ms": 403,
+      "ms": 608,
       "detail": {
         "listed": "$ cd /workspace && curl -s \"$CF_API/accounts/$CF_ACCOUNT/workers/scripts\" | jq -r \".result[].id\" > workers.txt && wc -l "
       }
@@ -206,7 +206,7 @@
     {
       "name": "a routine every 2 minutes is scheduled on the Durable Object, runs twice, keeps each result as a panel, pushes it encrypted, and stops",
       "ok": true,
-      "ms": 663,
+      "ms": 736,
       "detail": {
         "pushes": 2,
         "alarm": "interval"
@@ -215,7 +215,7 @@
     {
       "name": "their instructions: typed in the brain tab, kept across a reload, changed by voice, reset",
       "ok": true,
-      "ms": 4718,
+      "ms": 6065,
       "detail": {
         "added": 3
       }
@@ -223,7 +223,7 @@
     {
       "name": "biometrics for changes: turn on with a passkey, a write waits for one signature and runs once, a failed check stops it, turning off needs the passkey",
       "ok": true,
-      "ms": 9497,
+      "ms": 9646,
       "detail": {
         "asks": 1,
         "done": 1,
@@ -233,14 +233,14 @@
     {
       "name": "the settings sheet shows the stack, voices, and brains",
       "ok": true,
-      "ms": 5182
+      "ms": 6164
     },
     {
       "name": "every upstream call went straight to Workers AI with the account token",
       "ok": true,
       "ms": 3,
       "detail": {
-        "calls": 1099,
+        "calls": 1291,
         "kinds": [
           "listen",
           "completions",
@@ -258,7 +258,7 @@
     {
       "name": "the desktop layout keeps cards off the ear and nothing overflows",
       "ok": true,
-      "ms": 22,
+      "ms": 65,
       "detail": {
         "overflowX": false,
         "cardsOverOrb": 0,
@@ -278,7 +278,7 @@
     {
       "name": "the phone layout renders asleep, then talks and shows a card",
       "ok": true,
-      "ms": 6871,
+      "ms": 7769,
       "detail": {
         "overflowX": false,
         "cardsOverOrb": 0,
@@ -298,7 +298,7 @@
     {
       "name": "the phone never zooms or scrolls: double tap, pinch and swipe leave scale 1 and scroll 0",
       "ok": true,
-      "ms": 7403,
+      "ms": 5893,
       "detail": {
         "scale": 1,
         "scrollTop": 0,
@@ -309,12 +309,12 @@
     {
       "name": "the landing page offers Sign in with Cloudflare on desktop and phone",
       "ok": true,
-      "ms": 10999
+      "ms": 11164
     },
     {
       "name": "Sign out in Settings leaves the app for the sign-in page",
       "ok": true,
-      "ms": 12069
+      "ms": 11323
     },
     {
       "name": "no uncaught page errors",

@@ -27,7 +27,7 @@ const MAX_ROUNDS = 6;
 
 const PROMISE = /\b(let me|i'?ll|i will|i'?m going to|here'?s|here is|watch|coming up|one sec|hang on|give me a (?:sec|second|moment))\b/iu;
 
-const CLAIM = /\b(?:i'?ve|i have|i just)\s+(?:removed|deleted|closed|opened|pinned|resized|saved|set|cancelled|canceled|changed|made|drawn|painted|shown|added|started|stopped|sent|created|updated|moved)\b|\b(?:done|deleted|removed|closed)[.!]/iu;
+const CLAIM = new RegExp(String.raw`\b(?:i'?ve|i have|i just)\s+(?:removed|deleted|closed|opened|pinned|resized|saved|set|cancelled|canceled|changed|made|drawn|painted|shown|added|started|stopped|sent|created|updated|moved|forgotten|cleared|let go)\b|^\s*(?:done|all set|got it,? (?:forgotten|removed|saved))\b|\b(?:done|deleted|removed|closed|forgotten|cleared)[.!]|\b(?:are|is|have been|has been) (?:now )?(?:closed|deleted|removed|forgotten|cleared|saved)\b`, 'iu');
 
 export const KEEP_YOUR_WORD = 'You just told them you would do something, or that you did it, but you called no tool, so nothing happened. Call the tool now. Do not repeat what you said and do not apologise.';
 
@@ -219,17 +219,17 @@ export async function* reply(
 
       const lastRound = round === MAX_ROUNDS - 1;
 
-      if (calls.length === 0 && !lastRound && !nudged && result.tools.length === 0 && madeAPromise(text)) {
-        nudged = true;
-        result.nudged = true;
-        conversation.push({ role: 'assistant', content: text }, { role: 'user', content: KEEP_YOUR_WORD });
-        continue;
-      }
-
       if (calls.length === 0 && !lastRound && !nudged && result.tools.length === 0 && ruled) {
         nudged = true;
         result.nudged = true;
         conversation.push({ role: 'assistant', content: text === '' ? null : text }, { role: 'user', content: SAVE_THE_RULE });
+        continue;
+      }
+
+      if (calls.length === 0 && !lastRound && !nudged && result.tools.length === 0 && madeAPromise(text)) {
+        nudged = true;
+        result.nudged = true;
+        conversation.push({ role: 'assistant', content: text }, { role: 'user', content: KEEP_YOUR_WORD });
         continue;
       }
 
@@ -275,6 +275,8 @@ export async function* reply(
             ],
           });
       });
+
+      if (result.sleep) return;
 
       const refused = outcomes.find((outcome) => outcome.content.startsWith('Not done: '));
       if (refused !== undefined) {

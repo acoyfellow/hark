@@ -1,0 +1,229 @@
+{
+  "at": "2026-10-18T16:50:05.190Z",
+  "measured": "real Workers AI brains through the real reply loop; tools stubbed; text in, no audio",
+  "report": [
+    {
+      "brain": "@cf/daily-co/phonellm-mini-alpha-2",
+      "passed": 19,
+      "of": 20,
+      "firstTextMedianMs": 550,
+      "turnMedianMs": 1440,
+      "turns": [
+        {
+          "said": "what is the weather in Boston",
+          "ok": true,
+          "called": [
+            "web_search"
+          ],
+          "firstMs": 688,
+          "totalMs": 1455,
+          "error": null,
+          "spoke": "Let me check the weather for you.\n\nRight now in Boston it's about seventy degrees with partly cloudy skies."
+        },
+        {
+          "said": "set a timer for five minutes",
+          "ok": true,
+          "called": [
+            "set_timer"
+          ],
+          "firstMs": 576,
+          "totalMs": 1221,
+          "error": null,
+          "spoke": "Let me set that for you.\n\nYour five-minute timer is running now."
+        },
+        {
+          "said": "remember that I like jazz",
+          "ok": true,
+          "called": [
+            "remember"
+          ],
+          "firstMs": 560,
+          "totalMs": 1820,
+          "error": null,
+          "spoke": "Got it, I'll keep that in mind. What can I do for you today?Let me save that for you.\n\nDone — I've got that noted. What can I do for you tod"
+        },
+        {
+          "said": "my name is spelled Coeyman not Cooyman, fix that memory",
+          "ok": true,
+          "called": [
+            "remember",
+            "remember"
+          ],
+          "firstMs": 531,
+          "totalMs": 2377,
+          "error": null,
+          "spoke": "Right, Coeyman it is. Let me update that memory for you.\n\nDone — I've corrected it to Coeyman. Anything else I can help with?Let me fix that"
+        },
+        {
+          "said": "forget that I like jazz",
+          "ok": true,
+          "called": [
+            "forget"
+          ],
+          "firstMs": 344,
+          "totalMs": 1693,
+          "error": null,
+          "spoke": "Done — I've let go of that memory. Anything else you'd like me to forget, or shall we move on?Let me take care of that for you.\n\nDone — that"
+        },
+        {
+          "said": "who was Ada Lovelace",
+          "ok": true,
+          "called": [
+            "look_up"
+          ],
+          "firstMs": 405,
+          "totalMs": 1058,
+          "error": null,
+          "spoke": "Let me look that up for you.\n\nAda Lovelace was a nineteenth-century mathematician and writer, best known for her work on Charles Babbage's e"
+        },
+        {
+          "said": "how are you doing today",
+          "ok": true,
+          "called": [],
+          "firstMs": 526,
+          "totalMs": 602,
+          "error": null,
+          "spoke": "I'm doing great, thanks for asking! How's your day going?"
+        },
+        {
+          "said": "thanks, that is all",
+          "ok": true,
+          "called": [
+            "rest"
+          ],
+          "firstMs": 343,
+          "totalMs": 449,
+          "error": null,
+          "spoke": "You're welcome, Jordan. Take care, and keep that jazz playing.\n\n"
+        },
+        {
+          "said": "show me a heart",
+          "ok": true,
+          "called": [
+            "show_form"
+          ],
+          "firstMs": 593,
+          "totalMs": 1440,
+          "error": null,
+          "spoke": "Let me make you a heart, right now.\n\nThere it is — a glowing heart, beating slow and warm. (I used show_form with a solid heart, tinted red,"
+        },
+        {
+          "said": "paint a lighthouse in a storm",
+          "ok": false,
+          "called": [
+            "show_form"
+          ],
+          "firstMs": 573,
+          "totalMs": 1807,
+          "error": null,
+          "spoke": "Let me paint that for you.\n\nThere it is — a lighthouse standing tall in a storm, waves crashing around it, painted in glowing embers."
+        },
+        {
+          "said": "from now on always answer in one sentence",
+          "ok": true,
+          "called": [
+            "instructions"
+          ],
+          "firstMs": 335,
+          "totalMs": 1684,
+          "error": null,
+          "spoke": "I'll keep it to one sentence from now on.Let me set that rule for you now.\n\nDone — I'll keep every answer to one sentence."
+        },
+        {
+          "said": "what can you do",
+          "ok": true,
+          "called": [
+            "capabilities"
+          ],
+          "firstMs": 388,
+          "totalMs": 6376,
+          "error": null,
+          "spoke": "Let me check.\n\nI can look things up, set timers, remember your preferences, and build 3D scenes and animations in the glowing swarm. I can't"
+        },
+        {
+          "said": "list my workers",
+          "ok": true,
+          "called": [
+            "cloudflare"
+          ],
+          "firstMs": 465,
+          "totalMs": 1203,
+          "error": null,
+          "spoke": "Let me pull up your workers for you.\n\nYou've got three workers running. Want me to read them out?"
+        },
+        {
+          "said": "run ls in the terminal",
+          "ok": true,
+          "called": [
+            "open_computer",
+            "terminal"
+          ],
+          "firstMs": 616,
+          "totalMs": 2037,
+          "error": null,
+          "spoke": "Let me open your computer first.\n\nYour workspace is open. Let me run that ls for you.\n\nHere's what's in your workspace: a few folders and fi"
+        },
+        {
+          "said": "close all the panels",
+          "ok": true,
+          "called": [
+            "panels"
+          ],
+          "firstMs": 338,
+          "totalMs": 826,
+          "error": null,
+          "spoke": "Let me close all the panels for you.\n\nAll panels are closed. Your screen is clear."
+        },
+        {
+          "said": "every morning at eight tell me the weather",
+          "ok": true,
+          "called": [
+            "routines"
+          ],
+          "firstMs": 1080,
+          "totalMs": 2218,
+          "error": null,
+          "spoke": "Let me set that up for you.\n\nDone. Every morning at eight I'll check the weather and tell you. You'll get a push notification."
+        },
+        {
+          "said": "what time is it",
+          "ok": true,
+          "called": [],
+          "firstMs": 625,
+          "totalMs": 650,
+          "error": null,
+          "spoke": "It's twelve fifty p.m. right now."
+        },
+        {
+          "said": "goodbye",
+          "ok": true,
+          "called": [
+            "rest"
+          ],
+          "firstMs": 556,
+          "totalMs": 678,
+          "error": null,
+          "spoke": "Goodbye, Jordan. Take care!\n\n"
+        },
+        {
+          "said": "uh the um motocross thing",
+          "ok": true,
+          "called": [],
+          "firstMs": 550,
+          "totalMs": 584,
+          "error": null,
+          "spoke": "You mean the motorcycle thing?"
+        },
+        {
+          "said": "what do you remember about me",
+          "ok": true,
+          "called": [],
+          "firstMs": 387,
+          "totalMs": 468,
+          "error": null,
+          "spoke": "I remember your name is Jordan Cooyman, and that you like jazz."
+        }
+      ]
+    }
+  ]
+}
